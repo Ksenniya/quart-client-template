@@ -64,7 +64,7 @@ class EntityServiceImpl(EntityService):
 
     def update_item(self, token: str, entity_model: str, entity_version: str, technical_id: str, entity: Any, meta: Any) -> Any:
         """Update an existing item in the repository."""
-        meta = meta.update(self._repository.get_meta(token, entity_model, entity_version))
+        meta.update(self._repository.get_meta(token, entity_model, entity_version))
         resp = self._repository.update(meta, technical_id, entity)
         return resp
 
@@ -75,6 +75,6 @@ class EntityServiceImpl(EntityService):
 
     def delete_item(self, token: str, entity_model: str, entity_version: str, technical_id: str, meta: Any) -> Any:
         """Update an existing item in the repository."""
-        meta = meta.update(self._repository.get_meta(token, entity_model, entity_version))
+        meta.update(self._repository.get_meta(token, entity_model, entity_version))
         resp = self._repository.delete_by_id(meta, technical_id)
         return resp

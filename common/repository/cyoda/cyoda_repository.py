@@ -29,7 +29,7 @@ class CyodaRepository(CrudRepository):
         pass
 
     def get_meta(self, token, entity_model, entity_version):
-        return {"token": token, "entity_model": entity_model, "entity_version": entity_version}
+        return {"token": token, "entity_model": entity_model, "entity_version": entity_version, "update_transition": "update"}
 
     def count(self, meta) -> int:
         pass
