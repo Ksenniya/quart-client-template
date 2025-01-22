@@ -252,16 +252,17 @@ Read this instruction, tell that you read it and wait for new instructions
 
 Example of server-side function file:
 ```python
+import asyncio
 import logging
 
 from common.config.config import ENTITY_VERSION
-from logic.app_init import entity_service
+from app_init.app_init import entity_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def process_name(meta, data):
-    entity = entity_service.get_item(meta["token"], "order", ENTITY_VERSION, data["id"])
+async def process_name(meta, data):
+    entity = await entity_service.get_item(meta["token"], "order", ENTITY_VERSION, data["id"])
     logger.info("processing ")
 
 ```

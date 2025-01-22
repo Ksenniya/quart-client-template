@@ -136,12 +136,12 @@ async def handle_keep_alive_event(response, queue: asyncio.Queue):
     await queue.put(event)
 
 
-# Function to process notification data and create the notification event
+# Function to process notification entity and create the notification event
 async def process_calc_req_event(token, data: dict, queue: asyncio.Queue):
     """
-    Process notification data and create a notification event to be added to the event queue.
+    Process notification entity and create a notification event to be added to the event queue.
 
-    :param data: The notification data received from the response.
+    :param data: The notification entity received from the response.
     :param queue: The asyncio queue for event processing.
     """
     processor_name = data.get('processorName')
@@ -149,8 +149,8 @@ async def process_calc_req_event(token, data: dict, queue: asyncio.Queue):
     try:
         # Process the first or subsequent versions of the entity
         if processor_name in process_dispatch:
-            logger.info(f"Processing notification data: {data}")
-            process_event(token, data, processor_name)
+            logger.info(f"Processing notification entity: {data}")
+            await process_event(token, data, processor_name)
 
     except Exception as e:
         logger.error(e)
@@ -175,7 +175,7 @@ async def handle_finish_workflow(data: dict, queue: asyncio.Queue):
 # Main function to consume the gRPC stream
 async def consume_stream(token):
     """
-    Handle bi-directional streaming with response-driven event generation.
+    Handle bidirectional streaming with response-driven event generation.
     """
     credentials = get_grpc_credentials(token)
     queue = asyncio.Queue()
@@ -193,7 +193,7 @@ async def consume_stream(token):
                 await handle_keep_alive_event(response, queue)
             elif response.type == CALC_REQ_EVENT_TYPE:
                 logger.info(f"Received calc request: {response}")
-                # Parse response data
+                # Parse response entity
                 data = json.loads(response.text_data)
                 processor_name = data.get('processorName')
 
