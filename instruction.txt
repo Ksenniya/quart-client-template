@@ -239,7 +239,11 @@ Auditability: Keeping a historical record of transitions for review and debuggin
       "entity_name": "raw_data_entity",
       "entity_source": "ENTITY_EVENT",
       "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
-      "entity_workflow": {}
+      "entity_workflow": {
+        "name": "raw_data_entity_workflow",
+        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+        "transitions": []
+      }
       }
       //other entities,
   //entities names, processor names - should be all lowercase and underscore in order to match python style
@@ -247,21 +251,26 @@ Auditability: Keeping a historical record of transitions for review and debuggin
   ]
 }
 
-For error 'None' is not of type 'object' use {} instead like  "entity_workflow": {}
+For error 'None' is not of type 'object' use {} instead or for workflow "entity_workflow": {
+        "name": "entity_workflow",
+        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+        "transitions": []
+      }
 Read this instruction, tell that you read it and wait for new instructions
 
 Example of server-side function file:
 ```python
+import asyncio
 import logging
 
 from common.config.config import ENTITY_VERSION
-from logic.app_init import entity_service
+from app_init.app_init import entity_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def process_name(meta, data):
-    entity = entity_service.get_item(meta["token"], "order", ENTITY_VERSION, data["id"])
+async def process_name(meta, data):
+    entity = await entity_service.get_item(meta["token"], "order", ENTITY_VERSION, data["id"])
     logger.info("processing ")
 
 ```
