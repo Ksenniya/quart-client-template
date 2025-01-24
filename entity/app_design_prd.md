@@ -62,6 +62,24 @@ The user flow outlines the sequence of actions that a user takes to interact wit
 7. **User Receives Notification**:
    - The user receives a notification once the final report is available.
 
+### User Journey Diagram
+
+```mermaid
+journey
+    title User Journey for London Houses Data Processing
+    section User Scheduling
+      User schedules data ingestion job: 5: User
+      Scheduler confirms job scheduled: 5: Scheduler
+    section Data Processing
+      Scheduler triggers data ingestion job: 5: Scheduler
+      Data ingestion job ingests raw data: 5: Data Ingestion Job
+      Data ingestion job analyzes the data: 5: Data Ingestion Job
+      Data ingestion job generates report: 5: Data Ingestion Job
+      Data ingestion job saves final report: 5: Data Ingestion Job
+    section Notification
+      User receives notification: 5: User
+```
+
 ### Workflow Overview
 
 The workflows in Cyoda define the processes tied to the single JOB entity. The `data_ingestion_job` includes transitions that specify how the entities change state based on events. The following flowchart represents the workflow for the JOB entity with transitions:
