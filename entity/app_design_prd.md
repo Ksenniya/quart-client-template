@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This document provides a comprehensive overview of the Cyoda-based application designed to manage the ingestion, analysis, and reporting of London Houses Data. The Cyoda design aligns with the specified requirements while ensuring an efficient workflow through well-defined entities, processes, and an event-driven architecture. The design is represented in a Cyoda JSON format, which is translated into a human-readable document for clarity.
+This document provides a comprehensive overview of the Cyoda-based application designed to manage the ingestion, analysis, and reporting of London Houses Data. The Cyoda design aligns with the specified requirements while ensuring an efficient workflow through a well-defined single JOB entity, streamlining processes and minimizing complexity. The design is represented in a Cyoda JSON format, which is translated into a human-readable document for clarity.
 
 ## What is Cyoda?
 
-Cyoda is a serverless, event-driven framework that facilitates the management of workflows through entities representing jobs and data. In this design, several key entities and their relationships have been defined, allowing the system to respond automatically to events, thus promoting scalability and efficiency in processing data.
+Cyoda is a serverless, event-driven framework that facilitates the management of workflows through entities representing jobs and data. In this design, a single JOB entity orchestrates the entire workflow, allowing the system to respond automatically to events, thus promoting scalability and efficiency in processing data.
 
 ### Cyoda Entity Database
 
@@ -15,7 +15,7 @@ The Cyoda entity database consists of several entities, each fulfilling specific
 1. **Data Ingestion Job (`data_ingestion_job`)**:
    - **Type**: JOB
    - **Source**: SCHEDULED
-   - **Description**: Initiates the data ingestion process for the London Houses Data.
+   - **Description**: Initiates the data ingestion process, analyzes the data, and generates reports.
 
 2. **Raw London Houses Data Entity (`raw_london_houses_data`)**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
@@ -39,47 +39,24 @@ The Cyoda entity database consists of several entities, each fulfilling specific
 
 ### Workflow Overview
 
-The workflows in Cyoda define the processes tied to each job entity. The `data_ingestion_job` includes transitions that specify how the entities change state based on events. The following flowcharts represent the workflow for each entity with transitions:
+The workflows in Cyoda define the processes tied to the single JOB entity. The `data_ingestion_job` includes transitions that specify how the entities change state based on events. The following flowchart represents the workflow for the JOB entity with transitions:
 
 #### Flowchart for Data Ingestion Job
 
 ```mermaid
 flowchart TD
     A[Start State] -->|transition: scheduled_ingestion, processor: ingest_raw_data, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| B[Data Ingested]
-    class A,B automated;
-```
-
-#### Flowchart for Analyzed London Houses Data
-
-```mermaid
-flowchart TD
-    A[data_ingested] -->|transition: analyze_london_houses_data, processor: analyze_data, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| B[data_analyzed]
-    class A,B automated;
-```
-
-#### Flowchart for Report Entity
-
-```mermaid
-flowchart TD
-    A[data_analyzed] -->|transition: generate_report, processor: generate_report, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| B[report_generated]
-    class A,B automated;
-```
-
-#### Graph of Entity Relationships
-
-```mermaid
-graph TD;
-    A[data_ingestion_job] -->|triggers| B[raw_london_houses_data];
-    B -->|analyzes into| C[analyzed_london_houses_data];
-    C -->|generates| D[report_entity];
-    D -->|produces| E[final_report];
+    B -->|transition: analyze_data, processor: analyze_data, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| C[Data Analyzed]
+    C -->|transition: generate_report, processor: generate_report, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| D[Report Generated]
+    D -->|transition: save_final_report, processor: save_final_report, processor attributes: sync_process=false, new_transaction_for_async=false, none_transactional_for_async=false| E[Final Report Saved]
+    class A,B,C,D,E automated;
 ```
 
 ### Event-Driven Approach
 
 1. **Data Ingestion**: The data ingestion job is triggered on a scheduled basis, automatically initiating the process of fetching data.
 2. **Data Analysis**: Upon ingestion, an event signals the need to analyze the raw data.
-3. **Report Generation**: After analysis, another event triggers the creation of the report.
+3. **Report Generation**: After analysis, another event triggers the creation of the report and saving the final report.
 
 This approach promotes scalability and efficiency by allowing the application to handle each process step automatically without manual intervention.
 
@@ -110,7 +87,7 @@ sequenceDiagram
 
 - **User**: Initiates the scheduling of the data ingestion job.
 - **Scheduler**: Responsible for triggering the job at predefined times.
-- **Data Ingestion Job**: Central to managing the workflow of data processing.
+- **Data Ingestion Job**: Central entity managing the workflow of data processing.
 - **Raw London Houses Data Entity**: Stores the ingested raw data.
 - **Analyzed London Houses Data Entity**: Holds the analyzed data.
 - **Report Entity**: Contains the generated report.
@@ -118,6 +95,6 @@ sequenceDiagram
 
 ## Conclusion
 
-The Cyoda design effectively aligns with the requirements for creating a robust data processing application. By utilizing the event-driven model, the application efficiently manages state transitions of each entity involved, from data ingestion to report delivery. The outlined entities, workflows, and events comprehensively cover the needs of the application, ensuring a smooth and automated process. 
+The Cyoda design effectively aligns with the requirements for creating a robust data processing application using a single JOB entity. By streamlining the workflow through a single orchestrating job, the application efficiently manages state transitions of each entity involved, from data ingestion to report delivery. The outlined entities, workflows, and events comprehensively cover the needs of the application, ensuring a smooth and automated process.
 
 This PRD serves as a foundation for implementation and development, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users who may be new to the Cyoda framework.
