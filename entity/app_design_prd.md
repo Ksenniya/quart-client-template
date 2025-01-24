@@ -88,9 +88,9 @@ The workflows in Cyoda define the processes tied to the single JOB entity. The `
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: scheduled_ingestion, processor: ingest_raw_data, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| B[Data Ingested]
-    B -->|transition: analyze_data, processor: analyze_data, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| C[Data Analyzed]
-    C -->|transition: generate_report, processor: generate_report, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| D[Report Generated]
+    A[None] -->|transition: scheduled_ingestion, processor: ingest_raw_data, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| B[Data Successfully Ingested]
+    B -->|transition: analyze_data, processor: analyze_data, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| C[Data Successfully Analyzed]
+    C -->|transition: generate_report, processor: generate_report, processor attributes: sync_process=false, new_transaction_for_async=true, none_transactional_for_async=false| D[Report Successfully Generated]
     D -->|transition: save_final_report, processor: save_final_report, processor attributes: sync_process=false, new_transaction_for_async=false, none_transactional_for_async=false| E[Final Report Saved]
     class A,B,C,D,E automated;
 ```
