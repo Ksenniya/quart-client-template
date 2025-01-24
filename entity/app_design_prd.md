@@ -37,6 +37,31 @@ The Cyoda entity database consists of several entities, each fulfilling specific
    - **Source**: ENTITY_EVENT
    - **Description**: Stores the finalized report for end-users.
 
+### User Flow
+
+The user flow outlines the sequence of actions that a user takes to interact with the Cyoda application, leading to the successful generation of the final report. The following steps summarize this flow:
+
+1. **User Schedules Data Ingestion**:
+   - The user accesses the application and schedules the data ingestion job to fetch London Houses Data.
+
+2. **Scheduler Triggers Job**:
+   - The scheduler automatically triggers the `data_ingestion_job` based on the defined schedule.
+
+3. **Data Ingestion**:
+   - The job ingests raw data from the specified sources and stores it in the `raw_london_houses_data` entity.
+
+4. **Data Analysis**:
+   - The job analyzes the ingested data and generates transformed data stored in the `analyzed_london_houses_data` entity.
+
+5. **Report Generation**:
+   - The job generates a report based on the analyzed data and stores it in the `report_entity`.
+
+6. **Final Report Creation**:
+   - The job saves the finalized report in the `final_report` entity, making it available for the user.
+
+7. **User Receives Notification**:
+   - The user receives a notification once the final report is available.
+
 ### Workflow Overview
 
 The workflows in Cyoda define the processes tied to the single JOB entity. The `data_ingestion_job` includes transitions that specify how the entities change state based on events. The following flowchart represents the workflow for the JOB entity with transitions:
