@@ -1,3 +1,43 @@
-The requirement you've provided is clear and sufficient for creating the Cyoda design. You specified the need for an orchestration via a single job entity that will be saved through an API call, specifically requiring a GET request with a pet ID to save the job entity.
-
-No further details are needed at this stage. I am ready to proceed with creating the Cyoda design JSON based on your specifications.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_ingestion",
+                        "description": "Triggered by a GET request with pet ID to save job entity.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_pet_data",
+                            "description": "Process to retrieve pet details from Petstore API using pet ID.",
+                            "adds_new_entites": "pet_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "pet_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "pet_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}
