@@ -22,11 +22,6 @@ In the Cyoda ecosystem, entities are fundamental components that represent proce
    - **Source**: ENTITY_EVENT
    - **Description**: This entity stores the raw data retrieved from the Petstore API.
 
-3. **Pet Details Entity (`pet_details_entity`)**:
-   - **Type**: SECONDARY_DATA
-   - **Source**: ENTITY_EVENT
-   - **Description**: This entity contains the processed details of the pet including name, category, status, and photo.
-
 ### Workflow Overview
 
 The workflows in Cyoda define how each job entity operates through a series of transitions. The `data_ingestion_job` includes a singular workflow that outlines the following transition:
