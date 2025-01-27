@@ -15,7 +15,6 @@ The Cyoda design JSON outlines the entities and their relationships for processi
 1. **Data Ingestion Job (`data_ingestion_job`)**: Responsible for initiating the data ingestion process.
 2. **Raw Data Entity (`raw_data_entity`)**: Stores the unprocessed data obtained from the specified source.
 3. **Analyzed Data Entity (`analyzed_data_entity`)**: Contains the results of the analysis performed on the raw data.
-4. **Final Report Entity (`final_report_entity`)**: Represents the report generated from the analyzed data.
 5. **Report Entity (`report_entity`)**: Contains the saved report.
 
 ### Cyoda Design JSON Structure
@@ -35,81 +34,15 @@ The following is a summary of the key components of the Cyoda design JSON:
 flowchart TD
     A[Start State] -->|transition: scheduled_ingestion, processor: ingest_raw_data| B[data_ingested]
     B --> D[End State]
-```
 
-#### Analyzed Data Entity Workflow
-
-```mermaid
-flowchart TD
     A[data_ingested] -->|transition: analyze_data, processor: analyze_raw_data| B[data_analyzed]
     B --> D[End State]
-```
 
-#### Final Report Entity Workflow
-
-```mermaid
-flowchart TD
     A[data_analyzed] -->|transition: generate_report, processor: generate_report_process| B[report_generated]
     B --> D[End State]
 ```
 
-## Entity Relationships
 
-### Entity Relationship Diagram
-
-```mermaid
-graph TD;
-    A[data_ingestion_job] -->|triggers| B[raw_data_entity];
-    B -->|transforms into| C[analyzed_data_entity];
-    C -->|generates| D[final_report_entity];
-    D -->|produces| E[report_entity];
-```
-
-## Sequence Diagram
-
-### User Interaction Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Scheduler
-    participant Data Ingestion Job
-    participant Raw Data Entity
-    participant Analyzed Data Entity
-    participant Final Report Entity
-    participant Report Entity
-
-    User->>Scheduler: Schedule data ingestion job
-    Scheduler->>Data Ingestion Job: Trigger scheduled ingestion
-    Data Ingestion Job->>Raw Data Entity: Ingest data
-    Raw Data Entity-->>Data Ingestion Job: Data ingested
-    Data Ingestion Job->>Analyzed Data Entity: Analyze data
-    Analyzed Data Entity-->>Data Ingestion Job: Data analyzed
-    Data Ingestion Job->>Final Report Entity: Generate report
-    Final Report Entity-->>Data Ingestion Job: Report generated
-    Data Ingestion Job->>Report Entity: Save report
-```
-
-## User Journey
-
-### User Journey for Downloading and Analyzing London Houses Data
-
-```mermaid
-journey
-    title User Flow for Downloading and Analyzing London Houses Data
-    section Start
-      User initiates the process: 5: User
-      User schedules the data ingestion job: 5: User
-    section Ingestion
-      Job is triggered: 5: System
-      Data is ingested: 5: System
-    section Analysis
-      Data is analyzed: 5: System
-      Report is generated: 5: System
-    section Completion
-      Report is saved: 5: System
-      User receives confirmation: 5: User
-```
 
 ## Conclusion
 
