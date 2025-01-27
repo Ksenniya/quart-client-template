@@ -1,0 +1,51 @@
+{
+    "data_ingestion_job": {
+        "job_id": "job_12345",
+        "request_parameters": {
+            "pet_id": "7517577846774566682",
+            "timestamp": "2023-10-12T14:35:00Z",
+            "requested_by": "user_67890"
+        },
+        "status": "pending",
+        "ingestion_start_time": null,
+        "ingestion_end_time": null,
+        "error_message": null,
+        "actions": [
+            {
+                "action": "fetch_pet_data",
+                "description": "Initiating data retrieval from Petstore API using the specified pet ID.",
+                "result": {
+                    "success": true,
+                    "response": {
+                        "id": 10,
+                        "name": "doggie",
+                        "category": {
+                            "id": 1,
+                            "name": "Dogs"
+                        },
+                        "photoUrls": [
+                            "https://example.com/photo1.jpg"
+                        ],
+                        "tags": [
+                            {
+                                "id": 0,
+                                "name": "playful"
+                            }
+                        ],
+                        "status": "available"
+                    }
+                }
+            }
+        ],
+        "next_steps": [
+            {
+                "step": "store_pet_data",
+                "description": "Store the retrieved pet data in the application database."
+            },
+            {
+                "step": "notify_user",
+                "description": "Send a notification to the user regarding the status of the data ingestion."
+            }
+        ]
+    }
+}
