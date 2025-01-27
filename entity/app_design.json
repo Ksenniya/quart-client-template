@@ -1,3 +1,3 @@
-The requirements you've provided for developing the application that interacts with the Petstore API are clear and sufficient to outline the necessary entities and workflows for the Cyoda design. The focus on data ingestion, user interaction, data display, and notifications establishes a solid foundation for proceeding with the design. 
+The requirement you've provided is clear and sufficient for creating the Cyoda design. You specified the need for an orchestration via a single job entity that will be saved through an API call, specifically requiring a GET request with a pet ID to save the job entity.
 
-No further details are needed at this stage. I am ready to proceed with creating the Cyoda design JSON as per your specifications.
+No further details are needed at this stage. I am ready to proceed with creating the Cyoda design JSON based on your specifications.
