@@ -37,7 +37,7 @@ The Cyoda design JSON comprises several entities primarily focused on data inges
 5. **Monitoring Entity (`monitoring_entity`)**:
    - **Type**: SECONDARY_DATA
    - **Source**: ENTITY_EVENT
-   - **Workflow**: Tracks the status and performance of the data processing workflows.
+   - **Workflow**: Tracks the status and performance of the data processing workflows, logging execution times, success/failure status, and any errors encountered during the process.
 
 ## Workflows as Flowcharts
 
@@ -104,4 +104,4 @@ journey
 
 ## Conclusion
 
-The Cyoda design outlined in this document effectively meets the requirements for downloading, analyzing, and reporting on London Houses Data. By leveraging an event-driven architecture, each entity can operate autonomously based on state transitions triggered by specific events. The provided workflows, flowcharts, and diagrams enhance clarity and provide a comprehensive understanding of the Cyoda framework and its alignment with the application's objectives.
+The Cyoda design outlined in this document effectively meets the requirements for downloading, analyzing, and reporting on London Houses Data. By leveraging an event-driven architecture, each entity can operate autonomously based on state transitions triggered by specific events. The addition of the monitoring entity enhances oversight and performance tracking of the data workflows. The provided workflows, flowcharts, and diagrams enhance clarity and provide a comprehensive understanding of the Cyoda framework and its alignment with the application's objectives.
