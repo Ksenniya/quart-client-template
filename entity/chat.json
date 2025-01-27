@@ -16,7 +16,9 @@
                 "iteration": 0,
                 "file_name": "entity/chat.json",
                 "max_iteration": 0,
-                "stack": "app_building_stack"
+                "stack": "app_building_stack",
+                "question_key": "Finished",
+                "processed": true
             }
         ],
         "finished_flow": [
@@ -682,149 +684,7 @@
                 "function": null,
                 "file_name": "entity/app_design_prd.md",
                 "flow_step": "Application design",
-                "iteration": 1,
-                "additional_questions": [
-                    {
-                        "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                        "approve": true
-                    }
-                ],
-                "max_iteration": 20,
-                "stack": "app_building_stack"
-            },
-            {
-                "question": "",
-                "prompt": {},
-                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design_prd.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/7bcf713a-dcc5-11ef-a165-40c2ba0ac9eb/entity/app_design_prd.md) \ud83d\udd17 (this will open in a new tab).\n\nIf you\u2019re happy with the changes, feel free to **modify the file** if needed and click **Approve** so I can pull your updates. \ud83d\udc4d\n\nAlso, you can use **Canvas** to discuss the changes with me anytime around the app-building flow! \ud83d\udd8c\ufe0f\ud83d\udcac\n\nLet me know if you have any questions or suggestions! \ud83d\ude04",
-                "answer": "",
-                "function": {},
-                "index": 0,
-                "iteration": 1,
-                "max_iteration": 20,
-                "data": {},
-                "entity": {},
-                "file_name": "entity/app_design_prd.md",
-                "context": {},
-                "approve": true,
-                "editable": true,
-                "flow_step": "Application design",
-                "additional_questions": [
-                    {
-                        "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                        "approve": true
-                    }
-                ]
-            },
-            {
-                "question": "",
-                "prompt": {},
-                "notification": "# Product Requirements Document (PRD) for Cyoda Design\n\n## Introduction\n\nThis document outlines the Cyoda design for managing the download, analysis, and reporting of London Houses Data. The design is aligned with the specified requirements and explains the structure of entities, their workflows, and an event-driven architecture. The document includes mermaid diagrams to visualize workflows and relationships between entities, with a focus on orchestrating the flow through a JOB entity.\n\n## What is Cyoda?\n\nCyoda is a serverless, event-driven framework that helps manage workflows through entities that represent jobs and data. Each entity has defined states, and transitions between these states are governed by events, enabling efficient and scalable processing.\n\n## Cyoda Design JSON Overview\n\nThe Cyoda design JSON outlines the following entities and their properties:\n\n1. **Data Collection Job (`data_collection_job`)**:\n   - **Type**: JOB\n   - **Source**: SCHEDULED\n   - **Description**: This job orchestrates the entire process, responsible for downloading the London Houses Data, analyzing it, and generating a report. \n\n2. **Raw Data Entity (`london_houses_raw_data`)**:\n   - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA\n   - **Source**: ENTITY_EVENT\n   - **Description**: Stores the raw data downloaded by the data collection job.\n\n3. **Analysis Result Entity (`london_houses_analysis_result`)**:\n   - **Type**: SECONDARY_DATA\n   - **Source**: ENTITY_EVENT\n   - **Description**: Holds the results of the data analysis performed on the raw data.\n\n4. **Report Entity (`london_houses_report`)**:\n   - **Type**: SECONDARY_DATA\n   - **Source**: ENTITY_EVENT\n   - **Description**: Contains the generated report based on the analysis results.\n\n### Entity Workflow Diagrams\n\n#### Flowchart for Data Collection Workflow\n\n```mermaid\nflowchart TD\n    A[Start State] -->|trigger: download_london_houses_data| B[data_downloaded]\n    B -->|trigger: analyze_london_houses_data| C[data_analyzed]\n    C -->|trigger: generate_report| D[report_generated]\n    D -->|End of Job| E[Job Completed]\n\n    class A,B,C,D,E automated;\n```\n\n#### Sequence Diagram\n\n```mermaid\nsequenceDiagram\n    participant User\n    participant Scheduler\n    participant Data Collection Job\n    participant Raw Data Entity\n    participant Analysis Result Entity\n    participant Report Entity\n    \n    User->>Scheduler: Schedule data collection job\n    Scheduler->>Data Collection Job: Trigger data collection\n    Data Collection Job->>Raw Data Entity: Download London Houses Data\n    Raw Data Entity-->>Data Collection Job: Data downloaded\n    Data Collection Job->>Analysis Result Entity: Analyze data\n    Analysis Result Entity-->>Data Collection Job: Analysis complete\n    Data Collection Job->>Report Entity: Generate report\n    Report Entity-->>Data Collection Job: Report generated\n    Data Collection Job->>User: Send report\n```\n\n### Entity Relationships Diagram\n\n```mermaid\ngraph TD;\n    A[data_collection_job] -->|triggers| B[london_houses_raw_data];\n    B -->|analyzes into| C[london_houses_analysis_result];\n    C -->|generates| D[london_houses_report];\n```\n\n### User Journey\n\n```mermaid\njourney\n    title User Flow for Downloading and Analyzing London Houses Data\n    section Start\n      User initiates the process: 5: User\n      User schedules the data collection job: 5: User\n    section Data Collection\n      Scheduler triggers the data collection job: 5: Scheduler\n      Data collection job downloads data: 5: Data Collection Job\n    section Analysis\n      Data collection job analyzes data: 4: Data Collection Job\n    section Reporting\n      Data collection job generates report: 5: Data Collection Job\n      User receives the report: 5: User\n```\n\n## Conclusion\n\nThe Cyoda design effectively aligns with the requirements for orchestrating the download, analysis, and reporting of London Houses Data through a JOB entity. By utilizing an event-driven model, the application efficiently manages state transitions among entities, ensuring a smooth and automated process from data collection to report delivery. \n\nThis PRD serves as a foundation for implementation, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users new to the framework.",
-                "answer": "",
-                "function": {},
-                "index": 0,
-                "iteration": 1,
-                "max_iteration": 20,
-                "data": {},
-                "entity": {},
-                "file_name": "entity/app_design_prd.md",
-                "context": {},
-                "approve": true,
-                "editable": false,
-                "flow_step": "Application design",
-                "additional_questions": [
-                    {
-                        "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                        "approve": true
-                    }
-                ]
-            },
-            {
-                "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                "approve": true,
-                "question_key": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                "processed": true
-            },
-            {
-                "question": null,
-                "prompt": {
-                    "text": "Improve the Cyoda PRD document based on the user answer if the user wants any improvements. Return the updated PRD document only"
-                },
-                "answer": "PLease add a monitoring entity",
-                "function": null,
-                "file_name": "entity/app_design_prd.md",
-                "flow_step": "Application design",
-                "iteration": 2,
-                "additional_questions": [
-                    {
-                        "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                        "approve": true
-                    }
-                ],
-                "max_iteration": 20,
-                "stack": "app_building_stack"
-            },
-            {
-                "question": "",
-                "prompt": {},
-                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design_prd.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/7bcf713a-dcc5-11ef-a165-40c2ba0ac9eb/entity/app_design_prd.md) \ud83d\udd17 (this will open in a new tab).\n\nIf you\u2019re happy with the changes, feel free to **modify the file** if needed and click **Approve** so I can pull your updates. \ud83d\udc4d\n\nAlso, you can use **Canvas** to discuss the changes with me anytime around the app-building flow! \ud83d\udd8c\ufe0f\ud83d\udcac\n\nLet me know if you have any questions or suggestions! \ud83d\ude04",
-                "answer": "",
-                "function": {},
-                "index": 0,
-                "iteration": 2,
-                "max_iteration": 20,
-                "data": {},
-                "entity": {},
-                "file_name": "entity/app_design_prd.md",
-                "context": {},
-                "approve": true,
-                "editable": true,
-                "flow_step": "Application design",
-                "additional_questions": [
-                    {
-                        "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                        "approve": true
-                    }
-                ]
-            },
-            {
-                "question": "",
-                "prompt": {},
-                "notification": "# Product Requirements Document (PRD) for Cyoda Design\n\n## Introduction\n\nThis document outlines the Cyoda design for managing the download, analysis, reporting, and monitoring of London Houses Data. The design is aligned with the specified requirements and explains the structure of entities, their workflows, and an event-driven architecture. The document includes mermaid diagrams to visualize workflows and relationships between entities, emphasizing the orchestration of the flow through a JOB entity and the addition of a monitoring entity.\n\n## What is Cyoda?\n\nCyoda is a serverless, event-driven framework that helps manage workflows through entities that represent jobs and data. Each entity has defined states, and transitions between these states are governed by events, enabling efficient and scalable processing.\n\n## Cyoda Design JSON Overview\n\nThe Cyoda design JSON outlines the following entities and their properties:\n\n1. **Data Collection Job (`data_collection_job`)**:\n   - **Type**: JOB\n   - **Source**: SCHEDULED\n   - **Description**: This job orchestrates the entire process, responsible for downloading the London Houses Data, analyzing it, generating a report, and monitoring the overall workflow.\n\n2. **Raw Data Entity (`london_houses_raw_data`)**:\n   - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA\n   - **Source**: ENTITY_EVENT\n   - **Description**: Stores the raw data downloaded by the data collection job.\n\n3. **Analysis Result Entity (`london_houses_analysis_result`)**:\n   - **Type**: SECONDARY_DATA\n   - **Source**: ENTITY_EVENT\n   - **Description**: Holds the results of the data analysis performed on the raw data.\n\n4. **Report Entity (`london_houses_report`)**:\n   - **Type**: SECONDARY_DATA\n   - **Source**: ENTITY_EVENT\n   - **Description**: Contains the generated report based on the analysis results.\n\n5. **Monitoring Entity (`workflow_monitor`)**:\n   - **Type**: UTIL\n   - **Source**: ENTITY_EVENT\n   - **Description**: Monitors the status of the data collection job and alerts if any issues arise during the workflow.\n\n### Entity Workflow Diagrams\n\n#### Flowchart for Data Collection Workflow\n\n```mermaid\nflowchart TD\n    A[Start State] -->|trigger: download_london_houses_data| B[data_downloaded]\n    B -->|trigger: analyze_london_houses_data| C[data_analyzed]\n    C -->|trigger: generate_report| D[report_generated]\n    D -->|trigger: monitor_workflow| E[workflow_monitored]\n    E -->|End of Job| F[Job Completed]\n\n    class A,B,C,D,E,F automated;\n```\n\n#### Sequence Diagram\n\n```mermaid\nsequenceDiagram\n    participant User\n    participant Scheduler\n    participant Data Collection Job\n    participant Raw Data Entity\n    participant Analysis Result Entity\n    participant Report Entity\n    participant Workflow Monitor\n    \n    User->>Scheduler: Schedule data collection job\n    Scheduler->>Data Collection Job: Trigger data collection\n    Data Collection Job->>Raw Data Entity: Download London Houses Data\n    Raw Data Entity-->>Data Collection Job: Data downloaded\n    Data Collection Job->>Analysis Result Entity: Analyze data\n    Analysis Result Entity-->>Data Collection Job: Analysis complete\n    Data Collection Job->>Report Entity: Generate report\n    Report Entity-->>Data Collection Job: Report generated\n    Data Collection Job->>Workflow Monitor: Monitor job status\n    Workflow Monitor-->>Data Collection Job: Status monitored\n    Data Collection Job->>User: Send report\n```\n\n### Entity Relationships Diagram\n\n```mermaid\ngraph TD;\n    A[data_collection_job] -->|triggers| B[london_houses_raw_data];\n    B -->|analyzes into| C[london_houses_analysis_result];\n    C -->|generates| D[london_houses_report];\n    A -->|monitors| E[workflow_monitor];\n```\n\n### User Journey\n\n```mermaid\njourney\n    title User Flow for Downloading, Analyzing, and Monitoring London Houses Data\n    section Start\n      User initiates the process: 5: User\n      User schedules the data collection job: 5: User\n    section Data Collection\n      Scheduler triggers the data collection job: 5: Scheduler\n      Data collection job downloads data: 5: Data Collection Job\n    section Analysis\n      Data collection job analyzes data: 4: Data Collection Job\n    section Reporting\n      Data collection job generates report: 5: Data Collection Job\n      User receives the report: 5: User\n    section Monitoring\n      Workflow monitor checks job status: 5: Workflow Monitor\n      User receives monitoring updates: 5: User\n```\n\n## Conclusion\n\nThe Cyoda design effectively aligns with the requirements for orchestrating the download, analysis, reporting, and monitoring of London Houses Data through a JOB entity. By utilizing an event-driven model, the application efficiently manages state transitions among entities, ensuring a smooth and automated process from data collection to report delivery and monitoring.\n\nThis PRD serves as a foundation for implementation, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users new to the framework.",
-                "answer": "",
-                "function": {},
-                "index": 0,
-                "iteration": 2,
-                "max_iteration": 20,
-                "data": {},
-                "entity": {},
-                "file_name": "entity/app_design_prd.md",
-                "context": {},
-                "approve": true,
-                "editable": false,
-                "flow_step": "Application design",
-                "additional_questions": [
-                    {
-                        "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                        "approve": true
-                    }
-                ]
-            },
-            {
-                "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                "approve": true,
-                "question_key": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
-                "processed": true
-            },
-            {
-                "question": null,
-                "prompt": {
-                    "text": "Improve the Cyoda PRD document based on the user answer if the user wants any improvements. Return the updated PRD document only"
-                },
-                "answer": "PLease add a monitoring entity",
-                "function": null,
-                "file_name": "entity/app_design_prd.md",
-                "flow_step": "Application design",
-                "iteration": 2,
+                "iteration": 0,
                 "additional_questions": [
                     {
                         "question": "Would you like to improve anything in the design?  Give me thumbs up if you are ready to proceed \ud83d\udc4d",
@@ -978,23 +838,6 @@
                 "flow_step": "Application design",
                 "max_iteration": 0,
                 "stack": "app_building_stack"
-            },
-            {
-                "question": "",
-                "prompt": {},
-                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/7bcf713a-dcc5-11ef-a165-40c2ba0ac9eb/entity/app_design.json) \ud83d\udd17 (this will open in a new tab).\n\nIf you\u2019re happy with the changes, feel free to **modify the file** if needed and click **Approve** so I can pull your updates. \ud83d\udc4d\n\nAlso, you can use **Canvas** to discuss the changes with me anytime around the app-building flow! \ud83d\udd8c\ufe0f\ud83d\udcac\n\nLet me know if you have any questions or suggestions! \ud83d\ude04",
-                "answer": "",
-                "function": {},
-                "index": 0,
-                "iteration": 0,
-                "max_iteration": 0,
-                "data": {},
-                "entity": {},
-                "file_name": "entity/app_design.json",
-                "context": {},
-                "approve": true,
-                "editable": true,
-                "flow_step": "Application design"
             },
             {
                 "question": null,
