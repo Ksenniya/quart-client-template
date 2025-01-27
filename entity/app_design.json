@@ -86,6 +86,17 @@
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }
+        },
+        {
+            "entity_name": "monitoring_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "monitoring_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
         }
     ]
 }
