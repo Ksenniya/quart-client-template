@@ -1,0 +1,39 @@
+{
+    "job_id": "job_001",
+    "job_name": "Daily Pet Data Ingestion Job",
+    "scheduled_time": "2023-10-01T05:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-01T05:00:00Z",
+    "end_time": "2023-10-01T05:05:00Z",
+    "parameters": {
+        "pet_id": "7517577846774566682"
+    },
+    "total_records_processed": 1,
+    "successful_records": 1,
+    "failed_records": 0,
+    "failure_reason": [],
+    "raw_data_summary": {
+        "technical_id": "raw_data_entity_001",
+        "records": [
+            {
+                "id": 7517577846774566682,
+                "name": "doggie",
+                "category": {
+                    "id": 1,
+                    "name": "Dogs"
+                },
+                "photoUrls": [
+                    "-R)Kse7Nq3qsffCK-c3K",
+                    "e&_oHQ2Ig<kBHl}#sU24j"
+                ],
+                "tags": [
+                    {
+                        "id": 7911873500464509041,
+                        "name": "sold"
+                    }
+                ],
+                "status": "available"
+            }
+        ]
+    }
+}
