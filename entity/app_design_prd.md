@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the Cyoda design for managing the download, analysis, and reporting of London Houses Data. The design is aligned with the specified requirements and explains the structure of entities, their workflows, and an event-driven architecture. The document includes mermaid diagrams to visualize workflows and relationships between entities.
+This document outlines the Cyoda design for managing the download, analysis, and reporting of London Houses Data. The design is aligned with the specified requirements and explains the structure of entities, their workflows, and an event-driven architecture. The document includes mermaid diagrams to visualize workflows and relationships between entities, with a focus on orchestrating the flow through a JOB entity.
 
 ## What is Cyoda?
 
@@ -15,7 +15,7 @@ The Cyoda design JSON outlines the following entities and their properties:
 1. **Data Collection Job (`data_collection_job`)**:
    - **Type**: JOB
    - **Source**: SCHEDULED
-   - **Description**: This job is responsible for downloading the London Houses Data, analyzing it, and generating a report.
+   - **Description**: This job orchestrates the entire process, responsible for downloading the London Houses Data, analyzing it, and generating a report. 
 
 2. **Raw Data Entity (`london_houses_raw_data`)**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
@@ -34,15 +34,16 @@ The Cyoda design JSON outlines the following entities and their properties:
 
 ### Entity Workflow Diagrams
 
-#### Flowchart for Data Collection Job (`data_collection_job`)
+#### Flowchart for Data Collection Workflow
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: download_london_houses_data, processor: download_data_process| B[data_downloaded]
-    B -->|transition: analyze_london_houses_data, processor: analyze_data_process| C[data_analyzed]
-    C -->|transition: generate_report, processor: generate_report_process| D[report_generated]
+    A[Start State] -->|trigger: download_london_houses_data| B[data_downloaded]
+    B -->|trigger: analyze_london_houses_data| C[data_analyzed]
+    C -->|trigger: generate_report| D[report_generated]
+    D -->|End of Job| E[Job Completed]
 
-    class A,B,C,D automated;
+    class A,B,C,D,E automated;
 ```
 
 #### Sequence Diagram
@@ -72,7 +73,7 @@ sequenceDiagram
 ```mermaid
 graph TD;
     A[data_collection_job] -->|triggers| B[london_houses_raw_data];
-    B -->|transforms into| C[london_houses_analysis_result];
+    B -->|analyzes into| C[london_houses_analysis_result];
     C -->|generates| D[london_houses_report];
 ```
 
@@ -96,6 +97,6 @@ journey
 
 ## Conclusion
 
-The Cyoda design effectively aligns with the requirements for downloading, analyzing, and reporting on London Houses Data. By utilizing an event-driven model, the application efficiently manages state transitions among entities, from data collection to report delivery. The outlined entities, workflows, and events comprehensively address the application’s needs, ensuring a smooth and automated process. 
+The Cyoda design effectively aligns with the requirements for orchestrating the download, analysis, and reporting of London Houses Data through a JOB entity. By utilizing an event-driven model, the application efficiently manages state transitions among entities, ensuring a smooth and automated process from data collection to report delivery. 
 
 This PRD serves as a foundation for implementation, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users new to the framework.
