@@ -1,0 +1,37 @@
+{
+    "final_report_entity": {
+        "report_id": "report_001",
+        "pet_id": 7517577846774566682,
+        "analysis_summary": {
+            "total_photos": 2,
+            "total_tags": 1,
+            "status_distribution": {
+                "available": 1,
+                "sold": 0
+            },
+            "average_id": 7911873500464509041
+        },
+        "details": {
+            "pet_name": "doggie",
+            "category": {
+                "id": 1,
+                "name": "Dogs"
+            },
+            "photo_urls": [
+                "-R)Kse7Nq3qsffCK-c3K",
+                "e&_oHQ2Ig<kBHl}#sU24j"
+            ],
+            "tags": [
+                {
+                    "id": 7911873500464509041,
+                    "name": "sold"
+                }
+            ],
+            "status": "available"
+        },
+        "generated_on": "2023-10-01T12:00:00Z",
+        "generated_by": "data_ingestion_job_001",
+        "report_format": "PDF",
+        "additional_notes": "This report summarizes the latest analysis of the pet data retrieved from the external source."
+    }
+}
