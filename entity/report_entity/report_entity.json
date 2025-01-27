@@ -1,0 +1,52 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "report_title": "London Houses Data Analysis Report",
+    "total_entries": 150,
+    "successful_ingests": 145,
+    "failed_ingests": 5,
+    "percentage_success": 96.67,
+    "analyzed_data_summary": {
+        "average_price": 425000,
+        "total_houses": 150,
+        "average_number_of_rooms": 3,
+        "most_common_neighborhood": "Camden",
+        "price_range": {
+            "min_price": 300000,
+            "max_price": 800000
+        }
+    },
+    "pet_data": {
+        "pet_id": "7517577846774566682",
+        "name": "doggie",
+        "category": {
+            "id": 1,
+            "name": "Dogs"
+        },
+        "photoUrls": [
+            "https://example.com/photo1.jpg",
+            "https://example.com/photo2.jpg"
+        ],
+        "tags": [
+            {
+                "id": 7911873500464509041,
+                "name": "sold"
+            }
+        ],
+        "status": "available"
+    },
+    "distribution_info": {
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Data Analyst",
+                "email": "analyst@example.com"
+            }
+        ],
+        "sent_at": "2023-10-01T10:05:00Z"
+    },
+    "comments": "This report summarizes the analysis of London Houses Data. It includes insights on average prices, successful ingests, and details about the associated pet."
+}
