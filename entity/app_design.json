@@ -1,15 +1,104 @@
-The requirement to download "London Houses Data," analyze it using pandas, and save a report is clear and provides a sufficient high-level overview of the task. 
-
-However, I would like to clarify a few points to ensure we accurately outline the entities and workflows:
-
-1. **Data Source**: What specific source will the London Houses Data be downloaded from? Is it a public API, a CSV file, or another source?
-  
-2. **Data Structure**: Do you have any information about the structure of the London Houses Data (e.g., what fields it contains)?
-
-3. **Analysis Details**: Are there specific analyses you want to perform using pandas? For example, statistical analysis, data cleaning, or exploratory data analysis?
-
-4. **Report Format**: What format do you want the report to be saved in (e.g., PDF, Excel, HTML)?
-
-5. **Scheduling**: Should the data downloading and report generation be scheduled (e.g., daily, weekly), or will it be a one-time task?
-
-Once I have this information, I can proceed to create the Cyoda design JSON. If you are ready to proceed without further details, please let me know!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "data_ingestion_workflow",
+                "transitions": [
+                    {
+                        "name": "scheduled_ingestion",
+                        "description": "Triggered by a scheduled job to ingest data.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the specified API.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "analyzed_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "analyzed_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "analyze_data",
+                        "description": "Analyze the raw data using pandas.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Raw data has been ingested and is ready for analysis.",
+                        "end_state": "data_analyzed",
+                        "end_state_description": "Data has been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_raw_data",
+                            "description": "Process to analyze the raw data with pandas.",
+                            "adds_new_entites": "final_report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "final_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "analyzed_data_entity",
+            "entity_workflow": {
+                "name": "report_generation_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "generate_report",
+                        "description": "Generate and store a report from the analyzed data.",
+                        "start_state": "data_analyzed",
+                        "start_state_description": "Data has been successfully analyzed and is ready for reporting.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "generate_report_process",
+                            "description": "Process to create a report from the analyzed data.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "final_report_entity",
+            "entity_workflow": {
+                "name": "report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}
