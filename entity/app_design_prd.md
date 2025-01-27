@@ -46,14 +46,11 @@ sequenceDiagram
     participant Scheduler
     participant Data Ingestion Job
     participant Raw Pet Data Entity
-    participant Pet Details Entity
 
     User->>Scheduler: Input pet ID
     Scheduler->>Data Ingestion Job: Trigger data ingestion
     Data Ingestion Job->>Raw Pet Data Entity: Ingest data from Petstore API
     Raw Pet Data Entity-->>Data Ingestion Job: Data ingested
-    Data Ingestion Job->>Pet Details Entity: Process pet details
-    Pet Details Entity-->>Data Ingestion Job: Pet details ready
     Data Ingestion Job->>User: Display pet details
 ```
 
@@ -62,7 +59,6 @@ sequenceDiagram
 ```mermaid
 graph TD;
     A[data_ingestion_job] -->|triggers| B[raw_pet_data_entity];
-    B -->|processes into| C[pet_details_entity];
 ```
 
 ## Event-Driven Approach
@@ -75,7 +71,6 @@ An event-driven architecture allows the application to respond automatically to 
 - **Scheduler**: Triggers the data ingestion job based on user input.
 - **Data Ingestion Job**: Manages the overall workflow of data processing.
 - **Raw Pet Data Entity**: Stores the raw data retrieved from the Petstore API.
-- **Pet Details Entity**: Contains the processed pet details ready for user display.
 
 ## Conclusion
 
