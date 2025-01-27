@@ -1,3 +1,54 @@
-The requirement provided is clear and sufficient for creating the Cyoda design. It specifies the use of a single job entity to interact with the API, which simplifies the design and aligns with the need to outline entities and their workflows.
-
-Since there are no uncertainties or additional details required at this time, I am ready to proceed with creating the Cyoda design JSON. Please let me know how you would like to continue!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process from the Petstore API using the provided pet ID.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw pet data from the Petstore API.",
+                            "adds_new_entites": "raw_pet_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_pet_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_pet_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "pet_details_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "pet_details_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}
