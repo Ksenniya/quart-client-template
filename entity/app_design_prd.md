@@ -34,6 +34,11 @@ The Cyoda design JSON comprises several entities, primarily focused on data inge
    - **Source**: ENTITY_EVENT
    - **Workflow**: Contains the generated report after analyzing the data.
 
+5. **Monitoring Entity (`monitoring_entity`)**:
+   - **Type**: SECONDARY_DATA
+   - **Source**: ENTITY_EVENT
+   - **Workflow**: Tracks the status and performance of the data ingestion and processing workflows. It provides insights on job execution times, errors, and system metrics.
+
 ## Workflows as Flowcharts
 
 ### Data Ingestion Job Workflow
@@ -52,6 +57,7 @@ graph TD;
     A[data_ingestion_job] -->|triggers| B[raw_data_entity];
     B -->|transforms into| C[analyzed_data_entity];
     C -->|generates| D[report_entity];
+    A -->|monitored by| E[monitoring_entity];
 ```
 
 ### Sequence Diagram
@@ -63,6 +69,7 @@ sequenceDiagram
     participant Raw Data Entity
     participant Analyzed Data Entity
     participant Report Entity
+    participant Monitoring Entity
 
     User->>Scheduler: Schedule data ingestion job
     Scheduler->>Data Ingestion Job: Trigger scheduled_ingestion
@@ -72,6 +79,7 @@ sequenceDiagram
     Analyzed Data Entity-->>Data Ingestion Job: Data analyzed
     Data Ingestion Job->>Report Entity: Generate report
     Report Entity-->>Data Ingestion Job: Report generated
+    Data Ingestion Job->>Monitoring Entity: Log job performance and status
 ```
 
 ### User Journey Diagram
@@ -89,8 +97,11 @@ journey
     section Reporting
       Report is generated: 5: System
       User receives report: 5: User
+    section Monitoring
+      Job performance is logged: 5: System
+      Monitoring entity reports status: 5: System
 ```
 
 ## Conclusion
 
-The Cyoda design outlined in this document effectively meets the requirements for downloading, analyzing, and reporting on London Houses Data. By leveraging an event-driven architecture, each entity can operate autonomously based on state transitions triggered by specific events. The provided workflows, flowcharts, and diagrams enhance clarity and provide a comprehensive understanding of the Cyoda framework and its alignment with the application's objectives.
+The Cyoda design outlined in this document effectively meets the requirements for downloading, analyzing, and reporting on London Houses Data. By leveraging an event-driven architecture, each entity can operate autonomously based on state transitions triggered by specific events. The addition of the monitoring entity enhances oversight and performance tracking of the data workflows. The provided workflows, flowcharts, and diagrams enhance clarity and provide a comprehensive understanding of the Cyoda framework and its alignment with the application's objectives.
