@@ -1,4 +1,4 @@
-# Here’s the implementation of the `ingest_raw_data` processor function for the `data_ingestion_job`, including proper handling of parameters, saving the `raw_data_entity`, and a set of tests. This implementation adheres to the user's feedback and reuses existing functions as specified:
+# Here's the implementation for the `ingest_raw_data` processor function for the `data_ingestion_job`. This version reuses the existing function for fetching raw data and includes logic for saving the `raw_data_entity`. Additionally, unit tests are included for immediate testing in an isolated environment.
 # 
 # ```python
 import asyncio
@@ -16,13 +16,13 @@ async def ingest_raw_data(meta, data):
         logger.info("Starting data ingestion process for job ID: %s", data["job_id"])
         
         # Call the reusable ingest_data function to fetch raw data
-        raw_data = await ingest_raw_data_connection()  # Ensure the function is called with correct parameters as needed
+        raw_data = await ingest_raw_data_connection(meta["token"], "raw_data_entity", ENTITY_VERSION)
 
         if not raw_data:
             logger.error("No raw data received for ingestion.")
             return {}
 
-        # Map the raw data to the expected structure
+        # Prepare the raw data entity
         raw_data_entity = {
             "id": data["pet_id"],  # Use pet_id as specified by the user
             "name": raw_data.get("name", "Unknown Pet"),
@@ -57,7 +57,7 @@ class TestDataIngestionJob(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
     @patch("entity.raw_data_entity.connections.connections.ingest_data")
-    def test_ingest_raw_data(self, mock_ingest_data, mock_add_item):
+    async def test_ingest_raw_data(self, mock_ingest_data, mock_add_item):
         # Mock the raw data response
         mock_ingest_data.return_value = {
             "name": "doggie",
@@ -87,7 +87,7 @@ class TestDataIngestionJob(unittest.TestCase):
         }
 
         # Run the ingest_raw_data function
-        asyncio.run(ingest_raw_data(meta, data))
+        await ingest_raw_data(meta, data)
 
         # Validate the calls and responses
         mock_add_item.assert_called_once()
@@ -99,19 +99,20 @@ if __name__ == "__main__":
 # 
 # ### Explanation of the Code:
 # 1. **Process Function (`ingest_raw_data`)**:
-#    - The function starts by logging the beginning of the ingestion process.
-#    - It retrieves raw data using the reusable `ingest_raw_data_connection` function.
-#    - The retrieved data is then mapped to the expected structure.
-#    - The mapped data is saved to `raw_data_entity` using the `entity_service.add_item` function.
+#    - This function begins by logging the start of the data ingestion process.
+#    - It calls the `ingest_raw_data_connection` to fetch raw data, passing necessary parameters (token, entity model, and version).
+#    - It checks if any raw data is returned. If not, it logs an error and exits.
+#    - The raw data is mapped to the expected structure for the `raw_data_entity`.
+#    - The mapped data is then saved using `entity_service.add_item`.
 # 
 # 2. **Unit Tests**:
-#    - The `TestDataIngestionJob` test class uses the `unittest` framework.
+#    - The `TestDataIngestionJob` class contains a test method that uses the `unittest` framework to ensure that the `ingest_raw_data` function behaves as expected.
 #    - It mocks both the `ingest_data` function (to simulate fetching raw data) and the `add_item` function (to simulate saving the raw data entity).
-#    - The test verifies that the correct methods are called with the expected parameters.
+#    - Assertions verify that the correct methods are called with the appropriate parameters.
 # 
 # ### Recommendations:
-# - Make sure that the `ingest_raw_data_connection` function has the necessary parameters if required in your application.
-# - Implement further error handling where necessary to ensure robust processing.
-# - Maintain clear logging throughout the process to facilitate debugging and monitoring.
+# - Ensure the `ingest_raw_data_connection` function correctly fetches data based on your application requirements.
+# - Implement any additional error handling needed for robustness.
+# - Use comprehensive logging to track the flow of data through the ingestion process.
 # 
-# This implementation provides a comprehensive setup for the `ingest_raw_data` processor function, ensuring proper usage of existing functionalities, and includes unit tests for immediate validation.
+# This implementation provides a complete setup for the `ingest_raw_data` processor function, ensuring proper reuse of existing functionalities and verification through unit tests.
