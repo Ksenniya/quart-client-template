@@ -41,12 +41,10 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
     participant Data Ingestion Job
     participant Pet Data Entity
 
-    User->>Scheduler: Input pet ID
-    Scheduler->>Data Ingestion Job: Trigger data ingestion
+    User->>Data Ingestion Job: Input pet ID
     Data Ingestion Job->>Pet Data Entity: Ingest pet data
     Pet Data Entity-->>Data Ingestion Job: Data ingested
     Data Ingestion Job->>User: Display pet details
@@ -86,4 +84,4 @@ journey
       Application displays pet details: 5: Application
 ``` 
 
-This updated PRD document reflects the user's feedback by specifying that the data ingestion source for the job entity is now set to API. The document comprehensively captures the Cyoda design and how it meets user expectations while providing visual aids to illustrate workflows and interactions.
+This updated PRD document reflects the user's feedback that the Scheduler is not an actor, and it clarifies that the API will facilitate the interaction for fetching pet details. The document maintains comprehensive details of the Cyoda design and how it meets user expectations while providing visual aids to illustrate workflows and interactions.
