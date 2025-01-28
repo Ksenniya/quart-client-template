@@ -10,13 +10,13 @@ Cyoda is a serverless, event-driven framework that facilitates the management of
 
 ## Cyoda Design Overview
 
-The Cyoda design consists of two primary entities: a Job entity (`data_ingestion_job`) and a Data entity (`pet_data_entity`). The design allows for seamless data ingestion, transformation, and error handling, in alignment with the user requirements of fetching pet details from the Petstore API based on user-provided input.
+The Cyoda design consists of two primary entities: a Job entity (`data_ingestion_job`) and a Data entity (`pet_data_entity`). This design allows for seamless data ingestion, transformation, and error handling in alignment with the user requirements of fetching pet details from the Petstore API based on user-provided input.
 
 ### Entities and Their Roles
 
 1. **Data Ingestion Job (`data_ingestion_job`)**:
    - **Type**: JOB
-   - **Source**: SCHEDULED
+   - **Source**: API
    - **Description**: Triggers the ingestion of pet data from the Petstore API whenever a user inputs a pet ID. It manages the workflow for retrieving and preparing the pet data.
 
 2. **Pet Data Entity (`pet_data_entity`)**:
@@ -86,4 +86,4 @@ journey
       Application displays pet details: 5: Application
 ``` 
 
-This document captures the essence of the Cyoda design and how it meets user requirements while providing diagrams to illustrate workflows and interactions clearly.
+This updated PRD document improves clarity by specifying that the data ingestion source is an API, further aligning with the user's requirements. The document comprehensively captures the Cyoda design and how it meets user expectations while providing visual aids to illustrate workflows and interactions.
