@@ -1,0 +1,34 @@
+{
+    "job_id": "job_001",
+    "job_name": "Fetch Pet Details Job",
+    "request_parameters": {
+        "pet_id": "7517577846774566682",
+        "request_format": "application/xml"
+    },
+    "status": "pending",
+    "start_time": null,
+    "end_time": null,
+    "total_records_processed": 0,
+    "successful_records": 0,
+    "failed_records": 0,
+    "failure_reason": [],
+    "raw_data": {
+        "id": "7517577846774566682",
+        "name": "doggie",
+        "category": {
+            "id": 1,
+            "name": "Dogs"
+        },
+        "photoUrls": [
+            "https://example.com/photo1.jpg"
+        ],
+        "tags": [
+            {
+                "id": 0,
+                "name": "friendly"
+            }
+        ],
+        "status": "available"
+    },
+    "timestamp": "2023-10-01T05:00:00Z"
+}
