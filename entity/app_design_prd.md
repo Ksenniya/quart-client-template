@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the Cyoda-based application designed to interact with the Petstore API to retrieve and display pet details based on user input. It explains how the Cyoda design aligns with the specified requirements and provides a comprehensive overview of the concepts involved in the Cyoda entity database, the event-driven architecture, and the various workflows, entities, and actors involved in the system.
+This document outlines the Cyoda-based application designed to interact with the Petstore API to retrieve and display details of pets based on user input. It explains how the Cyoda design aligns with the specified requirements and provides a comprehensive overview of the concepts involved in the Cyoda entity database, the event-driven architecture, and the various workflows, entities, and actors involved in the system.
 
 ## What is Cyoda?
 
@@ -86,4 +86,4 @@ journey
       Application displays pet details: 5: Application
 ``` 
 
-This updated PRD document improves clarity by specifying that the data ingestion source is an API, further aligning with the user's requirements. The document comprehensively captures the Cyoda design and how it meets user expectations while providing visual aids to illustrate workflows and interactions.
+This updated PRD document reflects the user's feedback by specifying that the data ingestion source for the job entity is now set to API. The document comprehensively captures the Cyoda design and how it meets user expectations while providing visual aids to illustrate workflows and interactions.
