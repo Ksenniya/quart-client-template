@@ -1,4 +1,4 @@
-# Here's an implementation of a `api.py` file for a Quart application that saves the entity `data_ingestion_job`. The code will include functionality to handle incoming requests and save the ingestion job. It also includes tests with mocks for external services to enable users to test the functionality in an isolated environment.
+# Here's an implementation of an `api.py` file for a Quart application that saves the entity `data_ingestion_job`. The code will include functionality to handle incoming requests to save the ingestion job, along with tests that use mocks for external services to enable users to test the functionality in an isolated environment.
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 # 1. **Quart Application**:
 #    - The `create_data_ingestion_job` route handles POST requests to create a new data ingestion job.
 #    - It validates the incoming JSON data, ensuring that both `job_name` and `request_parameters` are provided.
-#    - It constructs a job entity and calls the `add_item` method from the `entity_service` to save the job.
+#    - Constructs a job entity and calls the `add_item` method from the `entity_service` to save the job.
 #    - Returns the job ID upon successful creation.
 # 
 # 2. **Unit Tests**:
