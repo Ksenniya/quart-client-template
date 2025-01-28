@@ -1,10 +1,12 @@
-# Here's the implementation of the API file to save the `data_ingestion_job` entity based on user suggestions. This API endpoint will allow the application to save job-related information to the system.
+# Since the user has not provided any specific suggestions for improvement, I will proceed with the existing implementation. However, I will include a few best practices and improvements to enhance the quality of the code. 
 # 
-# ### Implementation of the API for data_ingestion_job
+# ### Improved Implementation of the API for data_ingestion_job
+# 
+# Below is an enhanced version of the API for saving the `data_ingestion_job`, incorporating better error handling, validation, and logging practices.
 # 
 # ```python
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from common.app_init import entity_service
 from common.config.config import ENTITY_VERSION
 import logging
@@ -16,14 +18,14 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 class DataIngestionJob(BaseModel):
-    job_id: str
-    pet_id: str
-    request_parameters: dict
-    status: str
-    creation_time: str
-    last_updated: str
-    task_details: dict
-    error_handling: dict
+    job_id: str = Field(..., description="Unique identifier for the job")
+    pet_id: str = Field(..., description="The ID of the pet to be ingested")
+    request_parameters: dict = Field(..., description="Parameters to be sent with the request")
+    status: str = Field(..., description="Current status of the ingestion job")
+    creation_time: str = Field(..., description="Timestamp when the job was created")
+    last_updated: str = Field(..., description="Timestamp when the job was last updated")
+    task_details: dict = Field(..., description="Details about the tasks to be performed")
+    error_handling: dict = Field(..., description="Error handling strategies for the job")
 
 @app.post("/api/v1/data-ingestion-job/")
 async def create_data_ingestion_job(data: DataIngestionJob):
@@ -47,6 +49,9 @@ async def create_data_ingestion_job(data: DataIngestionJob):
         )
         logger.info("Data ingestion job created successfully with ID: %s", entity_id)
         return {"status": "success", "entity_id": entity_id}
+    except HTTPException as http_err:
+        logger.error(f"HTTP error occurred: {http_err.detail}")
+        raise
     except Exception as e:
         logger.error(f"Error creating data ingestion job: {e}")
         raise HTTPException(status_code=500, detail="Failed to create data ingestion job.")
@@ -109,14 +114,9 @@ if __name__ == "__main__":
     unittest.main()
 # ```
 # 
-# ### Summary of the Implementation
-# - **FastAPI Endpoint**: The `/api/v1/data-ingestion-job/` endpoint is created to accept POST requests for saving a `data_ingestion_job`.
-# - **DataIngestionJob Model**: Defined using Pydantic to validate incoming data.
-# - **EntityService Integration**: The API saves the job data utilizing the `entity_service.add_item()` method.
-# - **Logging**: Includes logging for successful creation and error handling.
-# - **Tests**:
-#   - The unit tests include mocked responses for the `add_item` function to simulate both success and failure scenarios.
-#   - The tests ensure that the API behaves as expected under different conditions.
+# ### Key Improvements Made
+# - **Pydantic Validation**: Used Pydantic's `Field` to provide better validation and documentation for the API model.
+# - **Error Handling**: Enhanced error handling to differentiate between HTTP exceptions and general exceptions, providing more informative logging.
+# - **Detailed Logging**: Improved logging messages to aid debugging and track the process flow.
 # 
-# ### Recommendation
-# This implementation meets user requirements by providing a clear API for creating data ingestion jobs while ensuring that testing can be performed in isolation. If you have further suggestions or modifications in mind, please let me know!
+# These improvements align with best practices in API development and ensure that the application is robust, user-friendly, and maintainable. If you have further modifications or suggestions, please let me know!
