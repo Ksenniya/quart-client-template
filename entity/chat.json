@@ -2,7 +2,16 @@
     "user_id": "User IP: 127.0.0.1, User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
     "date": "2025-01-27T23:24:29.651+00:00",
     "questions_queue": {
-        "new_questions": [],
+        "new_questions": [
+            {
+                "notification": "\u2699\ufe0f Generating your Cyoda design... please wait a moment! \u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0
+            }
+        ],
         "asked_questions": []
     },
     "chat_flow": {
@@ -16,7 +25,9 @@
                 "iteration": 0,
                 "file_name": "entity/chat.json",
                 "max_iteration": 0,
-                "stack": "app_building_stack"
+                "stack": "app_building_stack",
+                "question_key": "Finished",
+                "processed": true
             }
         ],
         "finished_flow": [
@@ -4253,7 +4264,7 @@
                 "prompt": {
                     "text": "Generate the scheduler file for data_ingestion_job  based on the user suggestions if there are any, if not you can proceed. This function should save a job entity with data model $data to cyoda. Besides, it should not do any logic. Also generate main function with entry point so that the user can do end-to-end test. User says: "
                 },
-                "answer": "What would you recommend? ",
+                "answer": "What would you recommend?",
                 "function": null,
                 "entity": {
                     "entity_name": "data_ingestion_job",
@@ -4358,7 +4369,7 @@
             {
                 "question": "",
                 "prompt": {},
-                "notification": "Here\u2019s the implementation of the scheduler file for the `data_ingestion_job`. This file will include the function to save the job entity with the specified data model, along with a main function to serve as the entry point for end-to-end testing.\n\n```python\nimport logging\nimport asyncio\nfrom app_init.app_init import entity_service\nfrom common.config.config import ENTITY_VERSION\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\nasync def schedule_data_ingestion_job(data):\n    \"\"\"Schedule a data ingestion job and save the job entity.\"\"\"\n    logger.info(\"Scheduling data ingestion job.\")\n    \n    try:\n        # Save the job entity to Cyoda\n        job_entity_id = await entity_service.add_item(\n            token=data[\"token\"],\n            entity_model=\"data_ingestion_job\",\n            entity_version=ENTITY_VERSION,\n            entity=data\n        )\n        \n        logger.info(f\"Data ingestion job scheduled successfully with ID: {job_entity_id}\")\n    except Exception as e:\n        logger.error(f\"Error scheduling data ingestion job: {e}\")\n        raise\n\ndef main():\n    # Example data model for the job entity\n    job_data = {\n        \"job_id\": \"job_001\",\n        \"job_name\": \"Daily Pet Data Ingestion Job\",\n        \"scheduled_time\": \"2023-10-01T05:00:00Z\",\n        \"status\": \"pending\",\n        \"parameters\": {\n            \"pet_id\": \"7517577846774566682\"  # Using pet_id as a parameter\n        },\n        \"token\": \"your_auth_token_here\"  # Add the necessary token for authentication\n    }\n    \n    # Run the scheduling function\n    asyncio.run(schedule_data_ingestion_job(job_data))\n\nif __name__ == \"__main__\":\n    main()\n```\n\n### Explanation of the Code:\n1. **`schedule_data_ingestion_job` Function**:\n   - This asynchronous function is responsible for scheduling the data ingestion job.\n   - It takes a `data` parameter containing the job entity's details.\n   - The function logs the process and saves the job entity to Cyoda using the `entity_service.add_item` method.\n\n2. **`main` Function**:\n   - This function acts as the entry point for the script.\n   - It defines an example data model representing the job entity to be saved, including the required parameters.\n   - It calls the `schedule_data_ingestion_job` function to perform the job scheduling.\n\n3. **Entry Point**:\n   - The script checks if it is being run directly and calls the `main` function to initiate the scheduling process.\n\nYou can run this file to perform an end-to-end test of the data ingestion job scheduling process. Adjust the `job_data` structure as necessary to match your application\u2019s requirements.",
+                "notification": "Here\u2019s a simple implementation of a scheduler file for the `data_ingestion_job`. This file includes a function to save the job entity with the provided data model and a main function to serve as the entry point for end-to-end testing.\n\n```python\nimport logging\nimport asyncio\nfrom app_init.app_init import entity_service\nfrom common.config.config import ENTITY_VERSION\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\nasync def schedule_data_ingestion_job(data):\n    \"\"\"Schedule a data ingestion job and save the job entity.\"\"\"\n    logger.info(\"Scheduling data ingestion job.\")\n    \n    try:\n        # Save the job entity to Cyoda\n        job_entity_id = await entity_service.add_item(\n            token=data[\"token\"],  # Authentication token\n            entity_model=\"data_ingestion_job\",  # Model name\n            entity_version=ENTITY_VERSION,  # Version of the entity\n            entity=data  # The actual data to save\n        )\n        \n        logger.info(f\"Data ingestion job scheduled successfully with ID: {job_entity_id}\")\n    except Exception as e:\n        logger.error(f\"Error scheduling data ingestion job: {e}\")\n        raise\n\ndef main():\n    # Example data model for the job entity\n    job_data = {\n        \"job_id\": \"job_001\",\n        \"job_name\": \"Daily Pet Data Ingestion Job\",\n        \"scheduled_time\": \"2023-10-01T05:00:00Z\",\n        \"status\": \"pending\",\n        \"parameters\": {\n            \"pet_id\": \"7517577846774566682\"  # Use pet_id as a parameter\n        },\n        \"token\": \"your_auth_token_here\"  # Add the necessary token for authentication\n    }\n    \n    # Run the scheduling function\n    asyncio.run(schedule_data_ingestion_job(job_data))\n\nif __name__ == \"__main__\":\n    main()\n```\n\n### Explanation of the Code:\n1. **Function `schedule_data_ingestion_job(data)`**:\n   - This asynchronous function is responsible for scheduling the data ingestion job.\n   - The function takes a `data` parameter, which includes the job entity's details.\n   - It logs the action and calls the `entity_service.add_item` method to save the job entity to Cyoda.\n\n2. **Function `main()`**:\n   - This function serves as the entry point for the script.\n   - It defines an example data model that includes the necessary parameters for the job entity.\n   - It calls the `schedule_data_ingestion_job` function to perform the job scheduling.\n\n3. **Entry Point**:\n   - The script checks if it is being executed directly and invokes the `main` function to initiate the scheduling process.\n\nThis structure enables users to run the file directly for an end-to-end test of the data ingestion job scheduling, ensuring that the job is saved in the Cyoda system without implementing any additional logic. Adjust the `job_data` as necessary based on specific requirements or configurations in your environment.",
                 "answer": "",
                 "function": {},
                 "index": 0,
@@ -4420,7 +4431,7 @@
                 "prompt": {
                     "text": "Generate the scheduler file for data_ingestion_job  based on the user suggestions if there are any, if not you can proceed. This function should save a job entity with data model $data to cyoda. Besides, it should not do any logic. Also generate main function with entry point so that the user can do end-to-end test. User says: "
                 },
-                "answer": "What would you recommend? ",
+                "answer": "What would you recommend?",
                 "function": null,
                 "entity": {
                     "entity_name": "data_ingestion_job",
@@ -4449,6 +4460,59 @@
                 },
                 "index": 0,
                 "iteration": 1,
+                "context": {
+                    "prompt": {
+                        "data": [
+                            "data_ingestion_job",
+                            "data"
+                        ]
+                    }
+                },
+                "file_name": "entity/data_ingestion_job/logic.py",
+                "flow_step": "Additional logic code design",
+                "additional_questions": [
+                    {
+                        "question": "Could you please help me review my output and approve it you are happy with the result \ud83d\ude38",
+                        "approve": true
+                    }
+                ],
+                "max_iteration": -1,
+                "stack": "scheduler_stack"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Generate the scheduler file for data_ingestion_job  based on the user suggestions if there are any, if not you can proceed. This function should save a job entity with data model $data to cyoda. Besides, it should not do any logic. Also generate main function with entry point so that the user can do end-to-end test. User says: "
+                },
+                "answer": "What would you recommend? ",
+                "function": null,
+                "entity": {
+                    "entity_name": "data_ingestion_job",
+                    "entity_type": "JOB",
+                    "entity_source": "SCHEDULED",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "name": "data_ingestion_workflow",
+                        "transitions": [
+                            {
+                                "name": "scheduled_ingestion",
+                                "description": "Triggered by a scheduled job to ingest data.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before data ingestion.",
+                                "end_state": "data_ingested",
+                                "end_state_description": "Data has been successfully ingested.",
+                                "process": {
+                                    "name": "ingest_raw_data",
+                                    "description": "Process to ingest raw data from the specified API.",
+                                    "adds_new_entites": "raw_data_entity"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "index": 0,
+                "iteration": 0,
                 "context": {
                     "prompt": {
                         "data": [
