@@ -6,14 +6,14 @@ This document outlines the Cyoda-based application designed to interact with the
 
 ## Cyoda Design Explanation
 
-The Cyoda design JSON represents the core architecture of the application, detailing the entities involved, their types, sources, dependencies, and workflows. 
+The Cyoda design JSON represents the core architecture of the application, detailing the entities involved, their types, sources, dependencies, and workflows.
 
 ### Entities
 
 1. **Data Ingestion Job (`data_ingestion_job`)**:
    - **Type**: JOB
-   - **Source**: SCHEDULED
-   - **Description**: Responsible for ingesting pet details from the Petstore API based on user input.
+   - **Source**: API_REQUEST
+   - **Description**: Responsible for ingesting pet details from the Petstore API based on user input. This job will be triggered by an API call, allowing the application to retrieve data on-demand.
    - **Workflow**: Includes the process to initiate data ingestion when a user requests pet information.
 
 2. **Pet Data Entity (`pet_data_entity`)**:
@@ -43,22 +43,23 @@ flowchart TD
 
 ## Event-Driven Architecture
 
-The event-driven approach employed in this design allows the application to react to user inputs dynamically. The data ingestion job is triggered when a user enters a pet ID, which leads to the retrieval of data from the Petstore API. 
+The event-driven approach employed in this design allows the application to react to user inputs dynamically. The data ingestion job is triggered by an API call when a user enters a pet ID, which leads to the retrieval of data from the Petstore API. 
 
 ### Sequence Diagram for User Interaction
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
+    participant API
     participant Data Ingestion Job
     participant Pet Data Entity
 
-    User->>Scheduler: Input pet ID
-    Scheduler->>Data Ingestion Job: Trigger data ingestion
+    User->>API: Input pet ID
+    API->>Data Ingestion Job: Trigger data ingestion
     Data Ingestion Job->>Pet Data Entity: Retrieve pet details
     Pet Data Entity-->>Data Ingestion Job: Return pet data
-    Data Ingestion Job->>User: Display pet details
+    Data Ingestion Job->>API: Send pet details
+    API->>User: Display pet details
 ```
 
 ### Entity Relationship Diagram
@@ -89,6 +90,6 @@ journey
 
 ## Conclusion
 
-The Cyoda design effectively aligns with the requirements for creating a robust application capable of interacting with the Petstore API. By leveraging a clear structure of entities, workflows, and an event-driven architecture, the application fulfills the user’s goal of seamlessly retrieving and displaying pet information. 
+The Cyoda design effectively aligns with the requirements for creating a robust application capable of interacting with the Petstore API. By leveraging a clear structure of entities, workflows, and an event-driven architecture, the application fulfills the user’s goal of seamlessly retrieving and displaying pet information.
 
 This PRD serves as a foundation for implementation and a guide for the technical team in understanding the Cyoda architecture.
