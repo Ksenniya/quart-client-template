@@ -1,0 +1,28 @@
+{
+    "delivery_status_id": "67890",
+    "postcard_id": "54321",
+    "status": "in_transit",
+    "recipient": {
+        "name": "Jane Smith",
+        "address": "123 Main St, Springfield, IL, 62701, USA",
+        "email": "jane.smith@example.com"
+    },
+    "sent_date": "2023-10-01T12:10:00Z",
+    "estimated_delivery_date": "2023-10-05T15:00:00Z",
+    "tracking_number": "TRK123456789",
+    "delivery_updates": [
+        {
+            "update_time": "2023-10-02T08:00:00Z",
+            "message": "Your postcard is out for delivery."
+        },
+        {
+            "update_time": "2023-10-02T12:00:00Z",
+            "message": "Your postcard has been delivered."
+        }
+    ],
+    "request_parameters": {
+        "postcard_id": "54321",
+        "user_id": "12345",
+        "action": "check_delivery_status"
+    }
+}
