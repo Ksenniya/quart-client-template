@@ -1,0 +1,14 @@
+{
+    "sending_status_id": "status_2023_03_08",
+    "postcard_id": "postcard_2023_03_08",
+    "recipient_email": "user1@example.com",
+    "sent_at": "2024-03-08T09:05:00Z",
+    "status": "sent",
+    "error_message": null,
+    "sending_attempts": 1,
+    "request_parameters": {
+        "request_id": "req_001",
+        "timestamp": "2024-03-08T09:00:00Z",
+        "source": "postcard_sending_workflow"
+    }
+}
