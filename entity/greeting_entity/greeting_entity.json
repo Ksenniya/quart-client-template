@@ -1,0 +1,13 @@
+{
+    "greeting_entity": {
+        "greeting_id": "abc123",
+        "user_id": "user001",
+        "message": "Hello, John!",
+        "timestamp": "2023-10-01T12:00:00Z",
+        "request_parameters": {
+            "input_name": "John",
+            "request_time": "2023-10-01T12:00:00Z",
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"
+        }
+    }
+}
