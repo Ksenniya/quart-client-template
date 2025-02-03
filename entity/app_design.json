@@ -1,0 +1,68 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "email_list_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "email_list_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "postcard_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "email_list_entity",
+            "entity_workflow": {
+                "name": "postcard_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "create_postcard",
+                        "description": "Create a postcard with design and content.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before postcard creation.",
+                        "end_state": "postcard_created",
+                        "end_state_description": "Postcard has been successfully created.",
+                        "process": {
+                            "name": "create_postcard_process",
+                            "description": "Process to create a postcard.",
+                            "adds_new_entites": "postcard_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "sending_status_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "postcard_entity",
+            "entity_workflow": {
+                "name": "sending_status_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "send_postcards",
+                        "description": "Send postcards to the list of email addresses.",
+                        "start_state": "postcard_created",
+                        "start_state_description": "Postcards are ready to be sent.",
+                        "end_state": "postcards_sent",
+                        "end_state_description": "Postcards have been successfully sent.",
+                        "process": {
+                            "name": "send_postcards_process",
+                            "description": "Process to send postcards via email.",
+                            "adds_new_entites": "sending_status_entity"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
