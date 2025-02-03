@@ -1,0 +1,67 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "postcard_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "postcard_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "create_postcard",
+                        "description": "Create a new postcard with the provided image and message.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before postcard creation.",
+                        "end_state": "postcard_created",
+                        "end_state_description": "Postcard has been successfully created.",
+                        "process": {
+                            "name": "process_create_postcard",
+                            "description": "Process to create a postcard from user input.",
+                            "adds_new_entites": "postcard_entity"
+                        }
+                    },
+                    {
+                        "name": "send_postcard",
+                        "description": "Send the created postcard to the specified recipient.",
+                        "start_state": "postcard_created",
+                        "start_state_description": "Postcard has been created and is ready to send.",
+                        "end_state": "postcard_sent",
+                        "end_state_description": "Postcard has been successfully sent.",
+                        "process": {
+                            "name": "process_send_postcard",
+                            "description": "Process to send the postcard.",
+                            "adds_new_entites": "delivery_status_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "postcard_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "postcard_job",
+            "entity_workflow": {
+                "name": "postcard_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "delivery_status_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "postcard_job",
+            "entity_workflow": {
+                "name": "delivery_status_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}
