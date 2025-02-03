@@ -1,0 +1,15 @@
+{
+    "postcard_id": "postcard_2024_03_08",
+    "design": "floral_design",
+    "content": "Happy International Women's Day! Celebrate the achievements of women everywhere.",
+    "recipient_email": "user1@example.com",
+    "send_date": "2024-03-08",
+    "request_parameters": {
+        "email_list_id": "email_list_001",
+        "scheduled_send_time": "2024-03-08T09:00:00Z",
+        "created_by": "admin@example.com",
+        "creation_timestamp": "2024-01-01T10:00:00Z"
+    },
+    "status": "pending",
+    "error_message": null
+}
