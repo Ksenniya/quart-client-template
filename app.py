@@ -7,21 +7,14 @@ from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
 #please update this line to your entity
-from entity.email_list_entity
-from entity.email_list_entity.api import api_bp_email_list_entity
-app.register_blueprint(api_bp_email_list_entity, url_prefix='/api/email_list_entity').api import api_bp_email_list_entity
-from entity.email_list_entity.api import api_bp_email_list_entity
-app.register_blueprint(api_bp_email_list_entity, url_prefix='/api/email_list_entity')
+from entity.test_entity.api import api_bp_test_entity
+from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
-app.register_blueprint(api_bp_email_list_entity
-from entity.email_list_entity.api import api_bp_email_list_entity
-app.register_blueprint(api_bp_email_list_entity, url_prefix='/api/email_list_entity'), url_prefix='/api/email_list_entity
-from entity.email_list_entity.api import api_bp_email_list_entity
-app.register_blueprint(api_bp_email_list_entity, url_prefix='/api/email_list_entity')')
+app.register_blueprint(api_bp_test_entity, url_prefix='/api/test_entity')
 
 @app.before_serving
 async def startup():
@@ -38,3 +31,4 @@ async def shutdown():
 
 if __name__ == '__main__':
     app.run()
+
