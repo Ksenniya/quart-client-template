@@ -1,0 +1,45 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "greeting_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "greeting_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "create_greeting",
+                        "description": "Generate a personalized greeting message based on user input.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before greeting creation.",
+                        "end_state": "greeting_created",
+                        "end_state_description": "Greeting has been successfully created.",
+                        "process": {
+                            "name": "generate_greeting",
+                            "description": "Process to generate greeting message.",
+                            "adds_new_entites": "greeting_entity"
+                        }
+                    },
+                    {
+                        "name": "display_greeting",
+                        "description": "Show the personalized greeting to the user.",
+                        "start_state": "greeting_created",
+                        "start_state_description": "Greeting has been created and is ready to be displayed.",
+                        "end_state": "greeting_displayed",
+                        "end_state_description": "Greeting has been successfully displayed to the user.",
+                        "process": {
+                            "name": "show_greeting",
+                            "description": "Process to display the greeting message.",
+                            "adds_new_entites": "greeting_entity"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
