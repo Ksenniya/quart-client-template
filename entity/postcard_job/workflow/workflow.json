@@ -1,0 +1,93 @@
+{
+    "name": "postcard_workflow",
+    "description": "Workflow for creating and sending postcards.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "postcard_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "postcard_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_postcard",
+            "description": "Create a new postcard with the provided image and message.",
+            "start_state": "None",
+            "start_state_description": "Initial state before postcard creation.",
+            "end_state": "postcard_created",
+            "end_state_description": "Postcard has been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "process_create_postcard",
+                        "description": "Process to create a postcard from user input.",
+                        "calculation_nodes_tags": "44525d1e-e269-11ef-a1d7-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "send_postcard",
+            "description": "Send the created postcard to the specified recipient.",
+            "start_state": "postcard_created",
+            "start_state_description": "Postcard has been created and is ready to send.",
+            "end_state": "postcard_sent",
+            "end_state_description": "Postcard has been successfully sent.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "process_send_postcard",
+                        "description": "Process to send the postcard.",
+                        "calculation_nodes_tags": "44525d1e-e269-11ef-a1d7-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
