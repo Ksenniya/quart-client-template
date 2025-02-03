@@ -1,0 +1,93 @@
+{
+    "name": "greeting_workflow",
+    "description": "A workflow to generate and display personalized greeting messages based on user input.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "greeting_entity",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "greeting_entity",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_greeting",
+            "description": "Generate a personalized greeting message based on user input.",
+            "start_state": "None",
+            "start_state_description": "Initial state before greeting creation.",
+            "end_state": "greeting_created",
+            "end_state_description": "Greeting has been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "generate_greeting",
+                        "description": "Process to generate greeting message.",
+                        "calculation_nodes_tags": "4473b5d3-e26f-11ef-8cf0-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "display_greeting",
+            "description": "Show the personalized greeting to the user.",
+            "start_state": "greeting_created",
+            "start_state_description": "Greeting has been created and is ready to be displayed.",
+            "end_state": "greeting_displayed",
+            "end_state_description": "Greeting has been successfully displayed to the user.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "show_greeting",
+                        "description": "Process to display the greeting message.",
+                        "calculation_nodes_tags": "4473b5d3-e26f-11ef-8cf0-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
