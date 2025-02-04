@@ -1,0 +1,45 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "message",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "message_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "create_message",
+                        "description": "Save the Hello, World! message.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before the message is created.",
+                        "end_state": "message_created",
+                        "end_state_description": "The Hello, World! message has been successfully created.",
+                        "process": {
+                            "name": "save_message",
+                            "description": "Processor to save the message.",
+                            "adds_new_entites": "message"
+                        }
+                    },
+                    {
+                        "name": "display_message",
+                        "description": "Display the Hello, World! message.",
+                        "start_state": "message_created",
+                        "start_state_description": "The message has been created and is ready to be displayed.",
+                        "end_state": "message_displayed",
+                        "end_state_description": "The Hello, World! message has been displayed to the user.",
+                        "process": {
+                            "name": "display_message",
+                            "description": "Processor to display the message.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
