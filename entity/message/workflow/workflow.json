@@ -1,0 +1,93 @@
+{
+    "name": "message_workflow",
+    "description": "A workflow to create and display a Hello, World! message.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "message",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "message",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_message",
+            "description": "Save the Hello, World! message.",
+            "start_state": "None",
+            "start_state_description": "Initial state before the message is created.",
+            "end_state": "message_created",
+            "end_state_description": "The Hello, World! message has been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "save_message",
+                        "description": "Processor to save the message.",
+                        "calculation_nodes_tags": "4f188f63-e304-11ef-94de-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "display_message",
+            "description": "Display the Hello, World! message.",
+            "start_state": "message_created",
+            "start_state_description": "The message has been created and is ready to be displayed.",
+            "end_state": "message_displayed",
+            "end_state_description": "The Hello, World! message has been displayed to the user.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "display_message",
+                        "description": "Processor to display the message.",
+                        "calculation_nodes_tags": "4f188f63-e304-11ef-94de-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
