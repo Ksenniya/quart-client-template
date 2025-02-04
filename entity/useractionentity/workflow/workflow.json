@@ -1,0 +1,93 @@
+{
+    "name": "useraction_workflow",
+    "description": "Workflow to record and notify user actions.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "useractionentity",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "useractionentity",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "record_action",
+            "description": "Record the user's action.",
+            "start_state": "None",
+            "start_state_description": "Initial state before recording the action.",
+            "end_state": "action_recorded",
+            "end_state_description": "User action has been recorded.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "log_action",
+                        "description": "Process to log the user's action (e.g., refresh).",
+                        "calculation_nodes_tags": "64633087-e30c-11ef-913a-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "notify_action",
+            "description": "Notify the user after an action is recorded.",
+            "start_state": "action_recorded",
+            "start_state_description": "User action has been successfully recorded.",
+            "end_state": "user_notified",
+            "end_state_description": "User has been notified of their action.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "notify_user",
+                        "description": "Process to notify the user about the recorded action.",
+                        "calculation_nodes_tags": "64633087-e30c-11ef-913a-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
