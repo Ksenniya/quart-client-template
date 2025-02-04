@@ -1,0 +1,83 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "helloworldentity",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "helloworld_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "display_message",
+                        "description": "Start the message display process.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before displaying the message.",
+                        "end_state": "message_displayed",
+                        "end_state_description": "Message has been successfully displayed.",
+                        "process": {
+                            "name": "render_message",
+                            "description": "Process to render and display the Hello World message.",
+                            "adds_new_entites": "helloworldentity"
+                        }
+                    },
+                    {
+                        "name": "refresh_message",
+                        "description": "Refresh the displayed message.",
+                        "start_state": "message_displayed",
+                        "start_state_description": "Message is currently displayed.",
+                        "end_state": "message_refreshed",
+                        "end_state_description": "Message has been refreshed.",
+                        "process": {
+                            "name": "refresh_message",
+                            "description": "Process to refresh the displayed Hello World message.",
+                            "adds_new_entites": "helloworldentity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "useractionentity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "helloworldentity",
+            "entity_workflow": {
+                "name": "useraction_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "record_action",
+                        "description": "Record the user's action.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before recording the action.",
+                        "end_state": "action_recorded",
+                        "end_state_description": "User action has been recorded.",
+                        "process": {
+                            "name": "log_action",
+                            "description": "Process to log the user's action (e.g., refresh).",
+                            "adds_new_entites": "useractionentity"
+                        }
+                    },
+                    {
+                        "name": "notify_action",
+                        "description": "Notify the user after an action is recorded.",
+                        "start_state": "action_recorded",
+                        "start_state_description": "User action has been successfully recorded.",
+                        "end_state": "user_notified",
+                        "end_state_description": "User has been notified of their action.",
+                        "process": {
+                            "name": "notify_user",
+                            "description": "Process to notify the user about the recorded action.",
+                            "adds_new_entites": "useractionentity"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
