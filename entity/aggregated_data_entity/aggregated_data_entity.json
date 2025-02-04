@@ -1,0 +1,34 @@
+{
+    "aggregated_data_entity": {
+        "id": 1,
+        "total_activities": 2,
+        "completed_activities": 1,
+        "pending_activities": 1,
+        "activity_summary": [
+            {
+                "activity_id": 1,
+                "title": "Activity 1",
+                "due_date": "2025-01-22T21:36:27.6587562+00:00",
+                "status": "Pending"
+            },
+            {
+                "activity_id": 2,
+                "title": "Activity 2",
+                "due_date": "2025-01-22T22:36:27.6587592+00:00",
+                "status": "Completed"
+            }
+        ],
+        "overall_status": "Partially Completed",
+        "aggregation_timestamp": "2023-10-01T10:00:00Z",
+        "comments": "This aggregated data reflects the current status of activities processed within the specified period.",
+        "request_parameters": {
+            "user_id": "user_001",
+            "token": "test_token"
+        },
+        "ingestion_details": {
+            "data_source": "https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv",
+            "status": "success",
+            "ingestion_timestamp": "2023-10-01T09:00:00Z"
+        }
+    }
+}
