@@ -1,0 +1,23 @@
+{
+    "id": 1,
+    "action_type": "refresh",
+    "timestamp": "2023-10-01T12:00:00Z",
+    "user_id": "abc123",
+    "message_id": "msg001",
+    "request_parameters": {
+        "refresh_count": 3,
+        "requested_style": "font-size: 24px; color: blue;"
+    },
+    "previous_message": {
+        "message": "Hello World!",
+        "style": "font-size: 24px; color: blue;"
+    },
+    "new_message": {
+        "message": "Hello World! Updated!",
+        "style": "font-size: 24px; color: green;"
+    },
+    "user_feedback": {
+        "rating": 5,
+        "comments": "Loved the refresh feature!"
+    }
+}
