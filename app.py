@@ -9,6 +9,7 @@ from app_init.app_init import cyoda_token
 #please update this line to your entity
 from entity.environment.api import api_bp_environment
 from entity.application.api import api_bp_application
+from entity.cancellation_request.api import api_bp_cancellation_request
 from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +18,7 @@ app = Quart(__name__)
 QuartSchema(app)
 app.register_blueprint(api_bp_environment, url_prefix='/api/environment')
 app.register_blueprint(api_bp_application, url_prefix='/api/application')
+app.register_blueprint(api_bp_cancellation_request, url_prefix='/api/cancellation_request')
 app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
 
 @app.before_serving
