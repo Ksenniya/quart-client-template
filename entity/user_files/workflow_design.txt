@@ -1,0 +1,130 @@
+Sure! Below is a detailed outline of pseudocode for the workflow functions (processors) grouped by entities. Each function represents the business logic and technical details specified in your requirements.
+
+### 1. Environment CI/CD Configuration Entity Workflow Functions
+
+#### Processor: `create_env_configuration_processor`
+- **Description**: Handles the creation of a new environment CI/CD configuration.
+```pseudocode
+function create_env_configuration_processor(meta, data):
+    current_entity = {
+        "id": "env_cicd_" + generate_unique_id(),
+        "user_name": data["user_name"],
+        "created_at": get_current_time(),
+        "updated_at": get_current_time()
+    }
+    call entity_service.add(current_entity)
+    return current_entity
+```
+
+#### Processor: `update_env_configuration_processor`
+- **Description**: Handles updates to an existing environment CI/CD configuration.
+```pseudocode
+function update_env_configuration_processor(meta, data):
+    existing_entity = call entity_service.get(data["id"])
+    if existing_entity is not null:
+        existing_entity["user_name"] = data.get("user_name", existing_entity["user_name"])
+        existing_entity["updated_at"] = get_current_time()
+        call entity_service.add(existing_entity)
+        return existing_entity
+    else:
+        raise Error("Entity not found")
+```
+
+### 2. Build CI/CD Entity Workflow Functions
+
+#### Processor: `trigger_build_processor`
+- **Description**: Initiates the build process.
+```pseudocode
+function trigger_build_processor(meta, data):
+    build_entity = {
+        "id": "build_cicd_" + generate_unique_id(),
+        "user_name": data["user_name"],
+        "repository_url": data["repository_url"],
+        "is_public": data["is_public"],
+        "build_status": "queued",
+        "triggered_at": get_current_time(),
+        "finished_at": null
+    }
+    call entity_service.add(build_entity)
+    start_external_build_process(build_entity)
+    return build_entity
+```
+
+#### Processor: `monitor_build_processor`
+- **Description**: Monitors the build status and updates the build entity accordingly.
+```pseudocode
+function monitor_build_processor(meta, build_id):
+    build_entity = call entity_service.get(build_id)
+    current_status = check_external_build_status(build_entity)
+    
+    if current_status == "succeeded":
+        build_entity["build_status"] = "completed"
+        build_entity["finished_at"] = get_current_time()
+    elif current_status == "failed":
+        build_entity["build_status"] = "failed"
+        build_entity["finished_at"] = get_current_time()
+    
+    call entity_service.add(build_entity)
+    return build_entity
+```
+
+#### Processor: `complete_build_processor`
+- **Description**: Completes the build process and finalizes the build entity.
+```pseudocode
+function complete_build_processor(meta, data):
+    build_entity = call entity_service.get(data["id"])
+    build_entity["build_status"] = "completed"
+    build_entity["finished_at"] = get_current_time()
+    
+    call entity_service.add(build_entity)
+    return build_entity
+```
+
+#### Processor: `fail_build_processor`
+- **Description**: Handles the failure of a build.
+```pseudocode
+function fail_build_processor(meta, data):
+    build_entity = call entity_service.get(data["id"])
+    build_entity["build_status"] = "failed"
+    build_entity["finished_at"] = get_current_time()
+    
+    call entity_service.add(build_entity)
+    return build_entity
+```
+
+### 3. Status/Statistics Entity Workflow Functions
+
+#### Processor: `gather_statistics_processor`
+- **Description**: Gathers statistics for builds and updates the status/statistics entity.
+```pseudocode
+function gather_statistics_processor(meta, data):
+    build_entity = call entity_service.get(data["build_id"])
+    statistics = {
+        "id": "status_" + generate_unique_id(),
+        "build_id": build_entity["id"],
+        "success_rate": calculate_success_rate(build_entity),
+        "failure_count": count_failures(build_entity),
+        "average_duration": calculate_average_duration(build_entity),
+        "created_at": get_current_time()
+    }
+    call entity_service.add(statistics)
+    return statistics
+```
+
+#### Processor: `update_statistics_processor`
+- **Description**: Updates an existing statistics entry.
+```pseudocode
+function update_statistics_processor(meta, data):
+    statistics_entity = call entity_service.get(data["id"])
+    if statistics_entity is not null:
+        statistics_entity["success_rate"] = data.get("success_rate", statistics_entity["success_rate"])
+        statistics_entity["failure_count"] = data.get("failure_count", statistics_entity["failure_count"])
+        statistics_entity["average_duration"] = data.get("average_duration", statistics_entity["average_duration"])
+        call entity_service.add(statistics_entity)
+        return statistics_entity
+    else:
+        raise Error("Statistics entity not found")
+```
+
+### Summary
+This pseudocode outlines the necessary workflow functions for each entity, detailing the business logic and relevant technical implementations as specified in your requirements. Each function is designed to handle specific tasks related to creating, updating, and processing the CI/CD configurations, builds, and statistics, ensuring a comprehensive workflow within the application. If you have any further modifications or additional requirements, please let me know!
