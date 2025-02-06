@@ -1,0 +1,39 @@
+{
+    "deployment_id": "deploy_12345",
+    "environment_id": "env_001",
+    "repository_url": "https://repository.url/user-app",
+    "is_public": true,
+    "status": "in_progress",
+    "teamcity_build_id": "build_teamcity_67890",
+    "timestamp": "2023-10-03T10:00:00Z",
+    "user_id": "user_12345",
+    "deployment_parameters": {
+        "deployment_type": "full",
+        "resource_limits": {
+            "cpu": "500m",
+            "memory": "256Mi"
+        },
+        "environment_variables": {
+            "DATABASE_URL": "postgres://user:pass@db:5432/mydb",
+            "API_KEY": "abc123xyz"
+        }
+    },
+    "logs": [
+        {
+            "timestamp": "2023-10-03T10:01:00Z",
+            "message": "Deployment initiated.",
+            "level": "info"
+        },
+        {
+            "timestamp": "2023-10-03T10:02:30Z",
+            "message": "Pulling application image from repository.",
+            "level": "info"
+        },
+        {
+            "timestamp": "2023-10-03T10:03:45Z",
+            "message": "Deployment in progress...",
+            "level": "info"
+        }
+    ],
+    "errors": []
+}
