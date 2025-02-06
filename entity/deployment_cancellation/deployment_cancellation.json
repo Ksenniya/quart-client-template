@@ -1,0 +1,19 @@
+{
+    "cancellation_id": "cancel_001",
+    "deployment_id": "deploy_001",
+    "user_id": "12345",
+    "comment": "User requested cancellation due to a change in requirements.",
+    "timestamp": "2023-10-03T10:00:00Z",
+    "status": "cancellation_requested",
+    "request_parameters": {
+        "api_endpoint": "/deploy/cancel/user_app/deploy_001",
+        "method": "POST",
+        "headers": {
+            "Authorization": "Bearer token...",
+            "Content-Type": "application/json"
+        },
+        "body": {
+            "deployment_id": "deploy_001"
+        }
+    }
+}
