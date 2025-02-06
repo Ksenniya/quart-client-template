@@ -1,0 +1,138 @@
+# Certainly! Here’s an outline of the user APIs for each API_REQUEST type entity, specifying the action for each type of request (POST and GET). Each API will include the appropriate calls to the `entity_service` for adding or retrieving the entities.
+# 
+# ---
+# 
+# # User API Outline
+# 
+# ## 1. Environment Entity APIs
+# 
+# ### POST Request: Deploy Environment
+# - **API**: `POST /deploy/cyoda-env`
+# - **Request Body**:
+#     ```json
+#     {
+#       "user_name": "test_user",
+#       "name": "Production Environment",
+#       "applications": [
+#         {
+#           "id": "app456",
+#           "name": "Web Service"
+#         },
+#         {
+#           "id": "app789",
+#           "name": "Database Service"
+#         }
+#       ]
+#     }
+#     ```
+# - **Action**: 
+#     ```python
+    current_entity = {
+        "user_name": "test_user",
+        "name": "Production Environment",
+        "applications": [
+            {"id": "app456", "name": "Web Service"},
+            {"id": "app789", "name": "Database Service"}
+        ]
+    }
+    entity_service.add(current_entity)
+#     ```
+# 
+# ### GET Request: Get Environment Status
+# - **API**: `GET /deploy/cyoda-env/status/{id}`
+# - **Action**: 
+#     ```python
+    current_entity = {"id": "env123"}
+    entity_service.get(current_entity)
+#     ```
+# 
+# ### GET Request: Get Environment Statistics
+# - **API**: `GET /deploy/cyoda-env/statistics/{id}`
+# - **Action**: 
+#     ```python
+    current_entity = {"id": "env123"}
+    entity_service.get(current_entity)
+#     ```
+# 
+# ## 2. Application Entity APIs
+# 
+# ### POST Request: Deploy User Application
+# - **API**: `POST /deploy/user_app`
+# - **Request Body**:
+#     ```json
+#     {
+#       "user_name": "test_user",
+#       "name": "Web Service",
+#       "repository_url": "http://repository.url/app456"
+#     }
+#     ```
+# - **Action**: 
+#     ```python
+    current_entity = {
+        "user_name": "test_user",
+        "name": "Web Service",
+        "repository_url": "http://repository.url/app456"
+    }
+    entity_service.add(current_entity)
+#     ```
+# 
+# ### GET Request: Get User Application Status
+# - **API**: `GET /deploy/user_app/status/{id}`
+# - **Action**: 
+#     ```python
+    current_entity = {"id": "app456"}
+    entity_service.get(current_entity)
+#     ```
+# 
+# ### GET Request: Get User Application Statistics
+# - **API**: `GET /deploy/user_app/statistics/{id}`
+# - **Action**: 
+#     ```python
+    current_entity = {"id": "app456"}
+    entity_service.get(current_entity)
+#     ```
+# 
+# ## 3. Deployment Status Entity APIs
+# 
+# ### GET Request: Get Deployment Status
+# - **API**: `GET /deploy/cyoda-env/status/{envId}/application/{appId}`
+# - **Action**:
+#     ```python
+    current_entity = {"environment_id": "env123", "application_id": "app456"}
+    entity_service.get(current_entity)
+#     ```
+# 
+# ## 4. Cancellation Request Entity APIs
+# 
+# ### POST Request: Cancel User Application Deployment
+# - **API**: `POST /deploy/cancel/user_app/{id}`
+# - **Request Body**:
+#     ```json
+#     {
+#       "user_name": "test_user",
+#       "comment": "Canceling a queued build",
+#       "readdIntoQueue": false
+#     }
+#     ```
+# - **Action**: 
+#     ```python
+    current_entity = {
+        "user_name": "test_user",
+        "request_id": "req456",
+        "application_id": "app456",
+        "status": "Requested"
+    }
+    entity_service.add(current_entity)
+#     ```
+# 
+# ### GET Request: Get Cancellation Status
+# - **API**: `GET /deploy/cancel/user_app/status/{id}`
+# - **Action**:
+#     ```python
+    current_entity = {"id": "cancel123"}
+    entity_service.get(current_entity)
+#     ```
+# 
+# ---
+# 
+# This outline provides a clear API structure for each entity type, detailing how each API request corresponds to actions in the entity service. If you have any further adjustments or specific details to add, please let me know!
