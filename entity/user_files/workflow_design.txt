@@ -1,0 +1,118 @@
+Below is the pseudocode for each workflow function (processor), grouped by entities. I’ll also explain how these functions will be launched within the Cyoda architecture.
+
+### 1. User Entity Processors
+
+**Processor: Save User**
+```plaintext
+function save_user(meta, user_data):
+    # Validate user data
+    if not is_valid_user(user_data):
+        return error("Invalid user data")
+    
+    # Save user entity to Cyoda
+    user = entity_service.add(User, user_data)
+    
+    # Generate Bearer token for the user
+    token = generate_token(user)
+    
+    # Return user details along with the token
+    return { user_details: user, token: token }
+```
+
+### 2. Environment Entity Processors
+
+**Processor: Save Environment**
+```plaintext
+function save_environment(meta, environment_data):
+    # Validate environment configuration
+    if not is_valid_environment(environment_data):
+        return error("Invalid environment data")
+    
+    # Save environment entity to Cyoda
+    environment = entity_service.add(Environment, environment_data)
+
+    # Trigger workflow for environment creation
+    trigger_environment_creation_workflow(environment)
+
+    # Return environment details to the user
+    return environment
+```
+
+**Processor: Update Environment**
+```plaintext
+function update_environment(meta, environment_id, environment_data):
+    # Validate updated environment configuration
+    if not is_valid_environment(environment_data):
+        return error("Invalid environment update data")
+    
+    # Update environment entity in Cyoda
+    environment = entity_service.update(Environment, environment_id, environment_data)
+
+    # Return updated environment details to the user
+    return environment
+```
+
+### 3. Deployment Entity Processors
+
+**Processor: Save Deployment**
+```plaintext
+function save_deployment(meta, deployment_data):
+    # Validate deployment data
+    if not is_valid_deployment(deployment_data):
+        return error("Invalid deployment data")
+    
+    # Save deployment entity to Cyoda
+    deployment = entity_service.add(Deployment, deployment_data)
+
+    # Trigger build in TeamCity for the deployment
+    teamcity_build_id = trigger_teamcity_build(deployment)
+
+    # Update deployment entity with TeamCity build ID
+    deployment.teamcity_build_id = teamcity_build_id
+    
+    # Return deployment details to the user
+    return deployment
+```
+
+**Processor: Fetch Deployment Status**
+```plaintext
+function fetch_deployment_status(meta, deployment_id):
+    # Fetch deployment details from Cyoda
+    deployment = entity_service.get(Deployment, deployment_id)
+    
+    # Fetch current status from TeamCity
+    status = get_status_from_teamcity(deployment.teamcity_build_id)
+
+    # Return deployment status to the user
+    return { deployment_id: deployment_id, status: status }
+```
+
+**Processor: Cancel Deployment**
+```plaintext
+function cancel_deployment(meta, deployment_id):
+    # Fetch deployment details to be canceled
+    deployment = entity_service.get(Deployment, deployment_id)
+
+    if deployment.status != "queued":
+        return error("Deployment is not in a cancellable state")
+    
+    # Trigger cancellation in TeamCity
+    cancel_teamcity_build(deployment.teamcity_build_id)
+
+    # Return confirmation of cancellation
+    return { deployment_id: deployment_id, status: "cancellation requested" }
+```
+
+### How It Works
+
+1. **Entity Creation and API Calls**: When a user makes an API call to create a new user or environment, the corresponding entity is saved directly via the API. This triggers the relevant processor when Cyoda detects the entity change.
+
+2. **Workflow Start Notification**: Once the entity is saved (for example, an Environment entity), Cyoda emits an event that starts the associated workflow. This involves notifying the gRPC server about the workflow initiation.
+
+3. **gRPC Communication**: The gRPC server sends a request to the gRPC client with the name of the processor (e.g., `save_environment`). The client invokes the corresponding function in an isolated manner.
+
+4. **Processor Execution**: Each processor function executes the specified business logic independently. For instance, `save_environment` validates input data, saves the environment entity, and triggers further workflows without needing to reference or call other processors directly.
+
+5. **Automatic Updates**: After processing, the entity is automatically updated in Cyoda, eliminating the need for explicit save calls within the processors.
+
+By structuring it this way, each processor remains isolated and agnostic of other processors, ensuring clean and manageable service architecture. If you have any further questions or adjustments needed, feel free to ask!
