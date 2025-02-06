@@ -1,0 +1,1023 @@
+{
+    "user_id": "User IP: 127.0.0.1, User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+    "date": "2025-02-06T18:09:40.532+00:00",
+    "questions_queue": {
+        "new_questions": [
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/app_design.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            }
+        ],
+        "asked_questions": []
+    },
+    "chat_flow": {
+        "current_flow": [
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 10,
+                "additional_questions": [
+                    {
+                        "question": "Feel free to ask any questions or discuss the design in the chat \ud83d\udcac\ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "Your application is finished! Thank you for collaboration!",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "remove_api_registration"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "app.py",
+                "notification_text": "\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "save_env_file"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": ".env.template",
+                "notification_text": "\n### Setup Instructions for Your Application\n\nYour application is ready! Please follow the steps below to configure it:\n\n1. **Move the `.env.template` to `.env`**:\n    Rename the `.env.template` file to `.env`:\n    ```bash\n    mv .env.template .env\n    ```\n\n2. **Update the `.env` file**:\n    Open the `.env` file and replace the placeholder values with your actual environment variables and credentials. For example, replace `CHAT_ID_VAR` with `$chat_id` and fill in other necessary values.\n\n    You might need to specify the path to .env file in your IDE run configurations.\n\n3. **Start Your Application**:\n    Once you've updated the `.env` file, you can start your application by running:\n    ```bash\n    python app.py\n    ```\n    or just run the app.py in your IDE.\nPlease also update your api.py files to use cyoda_token until authentication featute is fully implemented. Sorry for inconvenience!\nYour application should now be up and running! \ud83c\udf89\n\nYou can check the api with http://localhost:5000/scalar\n\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ],
+        "finished_flow": [
+            {
+                "notification": "\n\ud83c\udf3f\ud83e\udeb7\ud83c\udff5\ufe0f\u269c\ufe0f\ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "notification": "\n\ud83d\udc4b Welcome to Cyoda Application Builder! We\u2019re excited to build something amazing with you! \ud83d\ude04  \n\nWe\u2019re here to help with building and deploying on Cyoda Cloud! Reach out anytime! \ud83c\udf1f Your branch will be ready soon, and I\u2019ll notify you when I push changes. If you have suggestions, message me or use Canvas! \ud83d\ude0a  \n\nIn Canvas, you can code, edit, and improve around the main app build flow! It\u2019s a great way to collaborate and make changes! \ud83d\udcbb  \n\nIf you\u2019re happy with the progress or want me to pull your changes, just give me a thumbs up! \ud83d\udc4d  (currently approve button in the top panel)\n\nIf something goes wrong, no worries\u2014just roll back! \ud83d\ude2c Your app will be live on Cyoda Platform GitHub soon! \ud83d\ude80 Let\u2019s build your branch together! \ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "clone_repo"
+                },
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\ud83c\udf89 **Your branch is ready!** Please update the project and check it out when you get a chance. \ud83d\ude0a\n\nTo get started:\n\n1. **Clone the repository** using the following command:  \n   `git clone https://github.com/Cyoda-platform/quart-client-template/` \ud83d\ude80\n\n2. **Checkout your branch** using:  \n   `git checkout 88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb` \ud83d\udd04\n\nYou can access your branch directly on GitHub here: [Cyoda Platform GitHub](https://github.com/Cyoda-platform/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb) \ud83d\ude04\n\nThis repository is a **starter template** for your app and has two main modules:\n\n- **Common Module**: This is all about integration with Cyoda! You don\u2019t need to edit it unless you want to \u2013 it\u2019s all done for you! \ud83c\udf89  \n- **Entity Module**: This is where your business logic and custom files will go. We'll add your files here, and you can track your progress. \ud83d\udcc8 Feel free to **add or edit** anything in the Entity module. I\u2019ll be pulling changes now and then, so just push your updates to let me know! \ud83d\ude80\n\nYou can ask **questions in the chat** or in your project files anytime. When I make changes, I\u2019ll let you know, and you can simply **pull** to sync with me! \ud83d\udd04\ud83d\udcac\n\nHappy coding! \ud83d\ude04\ud83c\udf89",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "init_chats"
+                },
+                "flow_step": "Gathering requirements",
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "add_instruction"
+                },
+                "file_name": "instruction.txt",
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "\n\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a\n\n***Example answers***:\nHello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca\n\nHello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": false,
+                "example_answers": [
+                    "\n                              Hello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca",
+                    "\n                              Hello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0."
+                ],
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please analyze and improve the following requirements. If any details are missing or unclear, ask up to 3 questions. Once reviewed, provide a formal markdown requirement with suggestions for improvement, taking into account Cyoda's app flow and user needs for Cyoda-compliant apps.\n\nKey Concepts in Cyoda:\nEntity Management: Cyoda manages core data models (entities) for the application.\nPOST Requests: Users send POST requests to save entities to Cyoda, triggering an event that starts a workflow. The app listens for this event and initiates business logic asynchronously.\nGET Requests: GET requests fetch entities directly from Cyoda without triggering workflows. The app may perform business logic on retrieved data.\nWorkflow Orchestration:\nWorkflows are triggered by Cyoda events. Processors encapsulate business logic and interact with entities, updating or saving data where necessary.\ngRPC Communication:\nCyoda uses gRPC for real-time notifications about workflow events.\nGeneral Flow:\nUser Interaction:\nUser sends a request to create/update an entity, and the app processes it.\nEntity Management:\nEntity is saved to Cyoda, triggering a workflow. The app executes business logic based on the workflow.\nFetching Entity:\nApp fetches and processes entity data on GET requests.\nWorkflow Completion:\nThe app updates the entity\u2019s status and informs the user when the workflow completes.\n My requirement: "
+                },
+                "answer": "Hello! i'd like to build an app that manages deployment and env configuration for multiple users. The application should have the following api: For all auth via Bearer token POST /deploy/cyoda-env {     \"user_name\": \"test\" } Action: POST https://teamcity.cyoda.org/app/rest/buildQueue {     \"buildType\": {         \"id\": \"KubernetesPipeline_CyodaSaas\"     },     \"properties\": {         \"property\": [             {                 \"name\": \"user_defined_keyspace\",                 \"value\": user_name             },             {                 \"name\": \"user_defined_namespace\",                 \"value\": user_name             }         ]     } } it will return build id POST /deploy/user_app {     \"repository_url\": \"http://....\",     \"is_public\": \"true\", } Action: POST https://teamcity.cyoda.org/app/rest/buildQueue {     \"buildType\": {         \"id\": \"KubernetesPipeline_CyodaSaasUserEnv\"     },     \"properties\": {         \"property\": [             {                 \"name\": \"user_defined_keyspace\",                 \"value\": user_name             },             {                 \"name\": \"user_defined_namespace\",                 \"value\": user_name             }         ]     } } it will return build id GET /deploy/cyoda-env/status/$id {     \"repository_url\": \"http://....\",     \"is_public\": \"true\" } Action: GET https://teamcity.cyoda.org/app/rest/buildQueue/id:build_id GET /deploy/cyoda-env/statistics/$id {     \"repository_url\": \"http://....\",     \"is_public\": \"true\" } Action: GET https://teamcity.cyoda.org/app/rest/builds/id:build_id/statistics/ POST /deploy/cancel/user_app/$id {     \"repository_url\": \"http://....\",     \"is_public\": \"true\", } Action: POST https://teamcity.cyoda.org/app/rest/builds/id:99405 {     \"comment\": \"Canceling a queued build\",     \"readdIntoQueue\": false } U can improve this api to comply with RESTful",
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here is an analysis of the provided requirements along with suggestions for improvement to ensure compliance with RESTful standards and clarity for Cyoda's application flow:\n\n### Analysis of Current Requirements:\n\n1. **Authentication**: The requirements mention authentication via Bearer token but do not specify how to handle token expiration or invalid tokens.\n\n2. **POST Requests**: The actions for POST requests include building tasks but do not clarify how these tasks are related to users or environments distinctly.\n\n3. **GET Requests**: The GET endpoints need clearer definitions about their purposes and expected return formats. The details about how to handle the responses or errors are missing.\n\n4. **Action Descriptions**: Each action's intent is not fully clear, particularly with regard to the parameters needed and the response structures.\n\n5. **Error Handling**: There is no mention of how errors will be managed or communicated to the user, which is critical for a smooth user experience.\n\n### Suggested Questions:\n\n1. **User and Environment Context**: How are users and environments related, and what attributes are essential for each environment managed by users?\n\n2. **Response Formats**: What format do you expect for the responses from the API? Should they be uniform across different endpoints?\n\n3. **Error Management**: What specific errors need to be handled, and how should they be communicated to the users (status codes, messages, etc.)?\n\n### Improved Requirements Document:\n\n```markdown\n# Cyoda Application Deployment and Environment Configuration API Requirements\n\n## Overview\nThis document outlines the requirements for a Cyoda-compliant application that manages deployment and environment configurations for multiple users. The API design adheres to RESTful principles and facilitates user interactions with various deployment operations via HTTP requests.\n\n## Key Concepts\n\n- **Entity Management:** Cyoda manages core data models (entities) for the application.\n- **Authentication:** All API requests must be authenticated using Bearer tokens.\n- **Workflow Orchestration:** API actions trigger workflows that encapsulate business logic related to deployments and environment configurations.\n- **gRPC Communication:** Cyoda utilizes gRPC for real-time notifications regarding workflow events.\n\n## API Endpoints\n\n### 1. User Environment Management\n\n#### POST /deploy/cyoda-env\n- **Description:** Create or update a user's environment configuration.\n- **Request Body:**\n  ```json\n  {\n    \"user_name\": \"test\"\n  }\n  ```\n- **Response:** Returns a build ID on success, and a standard error response if the request fails.\n  \n#### Action\n- **POST**\n  - Endpoint: `https://teamcity.cyoda.org/app/rest/buildQueue`\n  - Payload:\n  ```json\n  {\n    \"buildType\": {\n      \"id\": \"KubernetesPipeline_CyodaSaas\"\n    },\n    \"properties\": {\n      \"property\": [\n        {\n          \"name\": \"user_defined_keyspace\",\n          \"value\": \"{user_name}\"\n        },\n        {\n          \"name\": \"user_defined_namespace\",\n          \"value\": \"{user_name}\"\n        }\n      ]\n    }\n  }\n  ```\n\n### 2. User Application Deployment\n\n#### POST /deploy/user_app\n- **Description:** Deploy a user application based on the repository URL.\n- **Request Body:**\n  ```json\n  {\n    \"repository_url\": \"http://....\",\n    \"is_public\": true\n  }\n  ```\n- **Response:** Returns a build ID on success.\n\n#### Action\n- **POST**\n  - Endpoint: `https://teamcity.cyoda.org/app/rest/buildQueue`\n  - Payload similar to the above, with `buildType` updated for user environment.\n\n### 3. Environment Status and Statistics\n\n#### GET /deploy/cyoda-env/status/{id}\n- **Description:** Retrieve the status of a deployed environment.\n- **Response:** Returns the status of the environment associated with the provided ID.\n\n#### Action\n- **GET**\n  - Endpoint: `https://teamcity.cyoda.org/app/rest/buildQueue/id:{build_id}`\n\n#### GET /deploy/cyoda-env/statistics/{id}\n- **Description:** Fetch statistics for the deployed environment.\n- **Response:** Returns relevant statistics for the environment.\n\n#### Action\n- **GET**\n  - Endpoint: `https://teamcity.cyoda.org/app/rest/builds/id:{build_id}/statistics`\n\n### 4. Cancel User Application Deployment\n\n#### POST /deploy/cancel/user_app/{id}\n- **Description:** Cancel a queued user application build.\n- **Response:** Confirms the cancellation of the build.\n\n#### Action\n- **POST**\n  - Endpoint: `https://teamcity.cyoda.org/app/rest/builds/id:{build_id}`\n  - Payload:\n  ```json\n  {\n    \"comment\": \"Canceling a queued build\",\n    \"readdIntoQueue\": false\n  }\n  ```\n\n## Error Handling\n- Define standard error responses across all endpoints, including:\n  - HTTP Status Codes (e.g., 400, 401, 404, 500)\n  - Response Body Structure:\n    ```json\n    {\n      \"error\": {\n        \"code\": \"ERR_CODE\",\n        \"message\": \"Detailed error message\"\n      }\n    }\n    ```\n\n## Conclusion\nThe API requirements aim to provide a clear, consistent interface for managing deployments and environment configurations on Cyoda. By adhering to RESTful principles and clarifying user interactions, these enhancements will support the functionality effectively.\n```\n\nThis refined document addresses the key components of the API, clarifies responsibilities, and ensures the design aligns with Cyoda's application flow and user needs.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!"
+                },
+                "answer": "approved",
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please validate my requirement and return user requirement doc with \nuser stories, journey diagram and sequence diagram. Use markdown with mermaid dialect (```mermaid). \nExplain your choice in simple words. \n\n### General diagrams for a Cyoda-like Application, please adjust it to our requirement and return the customised variant.\n\n```mermaid\njourney\n    title General User Journey for Cyoda-like Application\n    section User Interaction\n      User sends request to the app: 5: User\n      Application processes the request: 3: App\n\n    section Entity Management\n      Application saves entity to Cyoda: 3: App\n      Cyoda confirms entity save: 3: Cyoda\n      Cyoda triggers workflow event: 3: Cyoda\n      App receives workflow start notification: 3: App\n      App executes entity workflow processors: 3: Workflow\n\n    section Fetching Entity\n      User requests to view an entity: 5: User\n      Application fetches entity from Cyoda: 3: App\n      Cyoda returns entity details: 3: Cyoda\n      Application executes business logic: 3: App\n      Application returns entity details to the user: 5: User\n\n    section Workflow Completion\n      Workflow processes business logic: 3: Workflow\n      Application updates entity status: 3: App\n      Application informs user of completion: 5: User\n```\n\n```mermaid\nsequenceDiagram\n    participant U as User\n    participant A as App\n    participant E as Entity ()\n    participant W as Workflow (Business Logic, isolated functions \"processors\")\n    participant C as Cyoda\n    participant G as gRPC Server\n\n    %% User Interaction Flow\n    U->>A: Send Request (Create or Update Entity)\n    A->>C: Save Entity to Cyoda\n    C-->>A: Entity Saved Confirmation\n\n    %% Workflow Trigger Flow\n    C->>G: Trigger Workflow Event\n    G-->>A: Notify App to Start Workflow\n    A->>W: Execute Entity Workflow Processors\n    W-->>A: Workflow Completed\n\n    %% Fetching Entity Flow\n    U->>A: Request to View Entity\n    A->>C: Fetch Entity from Cyoda\n    C-->>A: Return Entity Details\n    A->>W: Execute Business Logic (if needed)\n    A-->>U: Return Entity Details\n\n    %% Workflow Completion Flow\n    W->>A: Update Entity Status\n    A-->>U: Inform User of Completion\n    ```\n"
+                },
+                "file_name": "entity/user_requirement.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_requirement.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/user_requirement.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s the validated user requirement document, including user stories, a customized journey diagram, and a sequence diagram tailored to your deployment and environment management application:\n\n### User Requirement Document\n\n#### User Stories\n\n1. **User Story 1**: As a user, I want to create or update my environment configuration so that I can manage my application settings easily.\n2. **User Story 2**: As a user, I want to deploy my application using a specified repository URL, so that I can ensure my application is running the correct version.\n3. **User Story 3**: As a user, I want to view the status of my deployed environment, so I can monitor its performance and health.\n4. **User Story 4**: As a user, I want to cancel a queued deployment if I change my mind, so I can manage my resources efficiently.\n5. **User Story 5**: As a user, I want to receive notifications about the completion of my workflows, so I can take further actions based on the results.\n\n### Journey Diagram\n\n```mermaid\njourney\n    title User Journey for Environment and Application Deployment\n    section User Interaction\n      User sends request to create or update environment: 5: User\n      Application processes the request: 3: App\n\n    section Entity Management\n      Application saves environment entity to Cyoda: 3: App\n      Cyoda confirms entity save: 3: Cyoda\n      Cyoda triggers workflow event: 3: Cyoda\n      App receives workflow start notification: 3: App\n      App executes entity workflow processors: 3: Workflow\n\n    section Deploying Application\n      User sends request to deploy application: 5: User\n      Application processes deployment request: 3: App\n      Application saves deployment entity to Cyoda: 3: App\n      Cyoda confirms deployment entity save: 3: Cyoda\n      Cyoda triggers deployment workflow: 3: Cyoda\n      App receives deployment workflow notification: 3: App\n\n    section Fetching Entity\n      User requests to view environment status: 5: User\n      Application fetches environment status from Cyoda: 3: App\n      Cyoda returns environment details: 3: Cyoda\n      Application executes business logic if needed: 3: App\n      Application returns environment status to the user: 5: User\n\n    section Workflow Completion\n      Workflow processes business logic and updates status: 3: Workflow\n      Application informs user of workflow completion: 5: User\n```\n\n### Sequence Diagram\n\n```mermaid\nsequenceDiagram\n    participant U as User\n    participant A as App\n    participant E as Entity (Environment/Deployment)\n    participant W as Workflow (Business Logic, isolated functions \"processors\")\n    participant C as Cyoda\n    participant G as gRPC Server\n\n    %% User Interaction Flow\n    U->>A: Send Request (Create or Update Environment)\n    A->>C: Save Environment Entity to Cyoda\n    C-->>A: Environment Entity Saved Confirmation\n\n    %% Workflow Trigger Flow\n    C->>G: Trigger Environment Workflow Event\n    G-->>A: Notify App to Start Workflow\n    A->>W: Execute Environment Workflow Processors\n    W-->>A: Workflow Completed\n\n    %% Deploying Application Flow\n    U->>A: Send Request to Deploy Application\n    A->>C: Save Deployment Entity to Cyoda\n    C-->>A: Deployment Entity Saved Confirmation\n    C->>G: Trigger Deployment Workflow Event\n    G-->>A: Notify App to Start Deployment Workflow\n    A->>W: Execute Deployment Workflow Processors\n    W-->>A: Deployment Workflow Completed\n\n    %% Fetching Entity Flow\n    U->>A: Request to View Environment Status\n    A->>C: Fetch Environment Status from Cyoda\n    C-->>A: Return Environment Details\n    A->>W: Execute Business Logic (if needed)\n    A-->>U: Return Environment Status\n\n    %% Workflow Completion Flow\n    W->>A: Update Entity Status\n    A-->>U: Inform User of Workflow Completion\n```\n\n### Explanation of Choices\n\n1. **User Stories**: The user stories capture the specific needs and actions of the user within the application, facilitating a clear understanding of user expectations.\n\n2. **Journey Diagram**: The journey diagram visualizes the steps a user takes when interacting with the application, focusing on key actions like creating/updating environments and deploying applications, and the corresponding responses from Cyoda.\n\n3. **Sequence Diagram**: The sequence diagram illustrates the flow of interactions between the user, the application, Cyoda, and the workflow processors. It provides a detailed view of how requests are processed, workflows are triggered, and responses are returned, ensuring clarity in the overall process.\n\nThese diagrams and user stories collectively form a comprehensive understanding of how users will interact with the application and the underlying mechanics driven by Cyoda's architecture.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you! "
+                },
+                "answer": "approved",
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nThanks for the go-ahead! We have fully composed our requirement. Now let's take a look at the architecture design for it.\nThere are many ways to structure systems. We suggest using **event-driven design** with **entities** and **state machines**. This approach has proven to work exceptionally well for **high-availability** and **data-intensive** applications, ensuring scalability and simplicity.\n\n### What are **Entities**? \ud83e\udd14\nEntities are **data units** that represent real-world objects. Each entity has a **lifecycle**, **states**, and **transitions** that define how it evolves over time.\n\n### Our Approach: \ud83d\udca1\n- **Entities** represent things like a **Light Bulb** \ud83d\udca1.\n- **State Machines** visualize the **lifecycle** of entities (states + transitions) \ud83d\udd04.\n- **Event-Driven Architecture** triggers actions based on events, making systems responsive and scalable \u26a1.\n\n### Simple Light Bulb Example \ud83d\udca1:\n- **States**:  \n  - **OFF** \ud83d\udeab  \n  - **ON** \u2705\n\n- **Transitions**:  \n  - **New** \u2192 OFF (initial state)  \n  - **Flip Switch** \u2192 ON  \n  - **Flip Switch Again** \u2192 OFF\n---\n\n### Light Bulb Flowchart:\n\n```mermaid\nstateDiagram-v2\n    [*] --> OFF\n    OFF --> ON : Flip Switch\n    ON --> OFF : Flip Switch Again\n```    \n\ud83c\udf89 Let\u2019s dive into creating your project\u2019s **entities** and **workflow** to build a scalable and data-intensive system! \n\nFor more on entity databases, check out this article by [Paul Schleger](https://medium.com/@paul_42036/whats-an-entity-database-11f8538b631a) \ud83d\udcda.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please outline entities for this requirement. Return entities diagram (mermaid or plantuml).\nPlease give me some json examples of data models for each entity, based on my requirement (you can use abridged json versions substituting excessive text with ...) . Provide only example data. If I provided entity schemas - just use them (abridged), if no - generate yours. \nFor each entity specify how it should be saved - through the workflow of a different entity (ENTITY_EVENT, SECONDARY_DATA) or directly via an API call or maybe via scheduler.\nFor an orchestration entity (if there is any) consider adding a single workflow per app. If there is no orchestration entity - then add workflow to any entity where it makes sense.\n\n***For each workflow let's provide a flowchart***\nExample:\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: transition_name_1, processor: processor_name_1, processor attributes: sync_process=true/false, new_transaction_for_async=true/false, none_transactional_for_async=true/false| B[State 1]\n  B -->|transition: transition_name_2, processor: processor_name_2, processor attributes: sync_process=true/false, new_transaction_for_async=true/false, none_transactional_for_async=true/false| C[State 2]\n  C --> D[End State]\n  %% Decision point for criteria (only if necessary!)\n  B -->|criteria: criteria_name, entityModelName equals some_value| D1{Decision: Check Criteria}\n  D1 -->|true| C\n  D1 -->|false| E[Error: Criteria not met]\nclass A,B,C,D,D1 automated;\n``` \nIf I ask you a general question, just return an answer to this question.\nIf I ask you a general question, just return an answer to this question. \nI say: "
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s a detailed outline of the entities based on your requirements, including example data models, how they should be saved, and flowcharts for their workflows.\n\n### Entities Outline\n\n1. **User Environment Entity**\n   - **Description**: Represents the environment configuration for a user.\n   - **Saving Method**: Saved through a POST API call.\n   - **Example JSON**:\n     ```json\n     {\n       \"id\": \"env_123\",\n       \"user_name\": \"test_user\",\n       \"configuration\": {\n         \"keyspace\": \"user_defined_keyspace\",\n         \"namespace\": \"user_defined_namespace\"\n       },\n       \"status\": \"active\"\n     }\n     ```\n   - **Workflow**:\n     ```mermaid\n     flowchart TD\n       A[Start State] -->|transition: save_env_config, processor: save_environment| B[Environment Configuration Saved]\n       B -->|transition: trigger_workflow, processor: trigger_workflow_event| C[Workflow Initiated]\n       C --> D[End State]\n     class A,B,C,D automated;\n     ```\n\n2. **Deployment Entity**\n   - **Description**: Represents a specific deployment of an application.\n   - **Saving Method**: Saved through a POST API call.\n   - **Example JSON**:\n     ```json\n     {\n       \"id\": \"deploy_456\",\n       \"repository_url\": \"http://example.com/repo.git\",\n       \"is_public\": true,\n       \"environment_id\": \"env_123\",\n       \"status\": \"pending\"\n     }\n     ```\n   - **Workflow**:\n     ```mermaid\n     flowchart TD\n       A[Start State] -->|transition: deploy_app, processor: deploy_application| B[Application Deployment Initiated]\n       B -->|transition: check_status, processor: check_deployment_status| C[Deployment Status Updated]\n       C --> D[End State]\n     class A,B,C,D automated;\n     ```\n\n3. **Environment Status Entity**\n   - **Description**: Contains the status information of a deployed environment.\n   - **Saving Method**: Saved via ENTITY_EVENT after deployment completion.\n   - **Example JSON**:\n     ```json\n     {\n       \"id\": \"status_789\",\n       \"deployment_id\": \"deploy_456\",\n       \"status\": \"successful\",\n       \"details\": {\n         \"log\": \"...\",\n         \"timestamp\": \"2023-10-01T12:00:00Z\"\n       }\n     }\n     ```\n   - **Workflow**:\n     ```mermaid\n     flowchart TD\n       A[Start State] -->|transition: update_status, processor: update_environment_status| B[Status Updated]\n       B --> D[End State]\n     class A,B,D automated;\n     ```\n\n4. **Cancellation Entity**\n   - **Description**: Represents a request to cancel a queued deployment.\n   - **Saving Method**: Saved through a POST API call.\n   - **Example JSON**:\n     ```json\n     {\n       \"id\": \"cancel_101\",\n       \"deployment_id\": \"deploy_456\",\n       \"comment\": \"User requested cancellation\",\n       \"status\": \"canceled\"\n     }\n     ```\n   - **Workflow**:\n     ```mermaid\n     flowchart TD\n       A[Start State] -->|transition: cancel_deployment, processor: cancel_deployment_request| B[Cancellation Processed]\n       B -->|transition: update_status, processor: update_cancellation_status| C[Cancellation Status Updated]\n       C --> D[End State]\n     class A,B,C,D automated;\n     ```\n\n### Entities Diagram\n\n```mermaid\ngraph TD;\n    A[User Environment Entity] -->|creates| B[Deployment Entity]\n    B -->|triggers| C[Environment Status Entity]\n    B -->|can be canceled by| D[Cancellation Entity]\n```\n\n### Summary of Choices\n- **Entities**: Four primary entities were created to encompass user environment configurations, deployment requests, status updates, and cancellation requests, allowing for clear data management and operational workflow.\n- **Saving Methods**: Each entity has been assigned a suitable saving method based on its lifecycle in the application, ensuring consistency in how data is managed.\n- **Workflows**: Workflows were designed to illustrate the steps involved in each entity's lifecycle, highlighting the interactions and transitions that occur.\n- **Diagrams**: The diagrams visually represent the relationships and workflows associated with each entity, providing a clear overview of how they interact in the context of the application. \n\nThese elements combine to create a coherent and structured approach to managing the deployment and environment configuration for users in a Cyoda-like application.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "I'm ready with the design - we can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "I'm ready with the design - we can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you! "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Now we have decided which apis we will have.\nPlease outline to the user apis for each API_REQUEST type entity separately:\nspecify entity name and related api, so that I can confirm it. The endpoints should be complete,\nbut instead of code at this iteration just provide a description of code or pseudocode.\nDo not forget that we save job entities in some of the controllers, and in some of the controllers \nwe get entities from cyoda. Keep it short but complete\nGeneral requests, you can use them as a starting point , but need to customise to the current application:\n\n**API Endpoint:** `POST /your_endpoint`\n\n**Description:**\n- **Pseudocode:**\n  ```plaintext\n  #some code here\n  save new entity\n  #some code here\n  return entity details to user\n  ```\n\n**API Endpoint:** `PUT /your_endpoint`\n\n**Description:**\n- **Pseudocode:**\n  ```plaintext\n  #some code here\n  update entity\n  #some code here\n  return entity details to user\n  ```\n---\n\n**API Endpoint:** `GET /your_endpoint`\n\n**Description:**\n- **Pseudocode:**\n  ```plaintext\n  #some code here\n  fetch entity by ID from Cyoda\n  return entity details to user\n   "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "file_name": "entity/user_files/api_design.txt",
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_files/api_design.txt` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/user_files/api_design.txt) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/api_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here is the outline of user APIs for each API_REQUEST type entity, specifying the entity name and related API endpoints along with descriptions and pseudocode.\n\n### 1. User Environment Entity\n\n**API Endpoint:** `POST /deploy/cyoda-env`\n\n**Description:**\n- This endpoint creates or updates the user environment configuration.\n- **Pseudocode:**\n  ```plaintext\n  # Validate user input\n  # Create or update the environment configuration\n  save_environment(user_name, configuration)\n  # Trigger workflow event for environment setup\n  trigger_workflow(user_name, environment_id)\n  return environment details to user\n  ```\n\n**API Endpoint:** `PUT /deploy/cyoda-env/{id}`\n\n**Description:**\n- This endpoint updates an existing user environment configuration.\n- **Pseudocode:**\n  ```plaintext\n  # Validate user input\n  # Update the environment configuration by ID\n  update_environment(id, new_configuration)\n  return updated environment details to user\n  ```\n\n**API Endpoint:** `GET /deploy/cyoda-env/{id}`\n\n**Description:**\n- This endpoint retrieves the details of a specific user environment configuration.\n- **Pseudocode:**\n  ```plaintext\n  # Fetch environment by ID from Cyoda\n  environment = fetch_environment_by_id(id)\n  return environment details to user\n  ```\n\n### 2. Deployment Entity\n\n**API Endpoint:** `POST /deploy/user_app`\n\n**Description:**\n- This endpoint initiates the deployment process for a user application using a repository URL.\n- **Pseudocode:**\n  ```plaintext\n  # Validate user input\n  # Save deployment request and trigger workflow\n  save_deployment(repository_url, is_public)\n  trigger_workflow(deployment_id)\n  return deployment details to user\n  ```\n\n**API Endpoint:** `PUT /deploy/user_app/{id}`\n\n**Description:**\n- This endpoint updates the details of an existing application deployment.\n- **Pseudocode:**\n  ```plaintext\n  # Validate user input\n  # Update deployment details by ID\n  update_deployment(id, updated_data)\n  return updated deployment details to user\n  ```\n\n**API Endpoint:** `GET /deploy/user_app/{id}`\n\n**Description:**\n- This endpoint retrieves the status of a specific application deployment.\n- **Pseudocode:**\n  ```plaintext\n  # Fetch deployment by ID from Cyoda\n  deployment = fetch_deployment_by_id(id)\n  return deployment details to user\n  ```\n\n### 3. Environment Status Entity\n\n**API Endpoint:** `GET /deploy/cyoda-env/status/{id}`\n\n**Description:**\n- This endpoint fetches the status of a deployed environment.\n- **Pseudocode:**\n  ```plaintext\n  # Fetch environment status by deployment ID from Cyoda\n  status = fetch_environment_status_by_id(id)\n  return environment status details to user\n  ```\n\n### 4. Cancellation Entity\n\n**API Endpoint:** `POST /deploy/cancel/user_app/{id}`\n\n**Description:**\n- This endpoint requests the cancellation of a queued deployment.\n- **Pseudocode:**\n  ```plaintext\n  # Validate cancellation request\n  # Process cancellation of deployment by ID\n  cancel_deployment(id, comment)\n  return cancellation confirmation to user\n  ```\n\n**API Endpoint:** `GET /deploy/cancel/user_app/{id}`\n\n**Description:**\n- This endpoint retrieves the cancellation status of a deployment.\n- **Pseudocode:**\n  ```plaintext\n  # Fetch cancellation status by deployment ID from Cyoda\n  cancellation_status = fetch_cancellation_status_by_id(id)\n  return cancellation status details to user\n  ```\n\n### Summary\nEach endpoint is tailored to the relevant entity, providing a clear structure for how to manage and retrieve information related to user environments and deployments. The pseudocode gives a simplified representation of the logic behind the endpoints, ensuring clarity on what operations will be performed.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/api_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you! "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 10,
+                "file_name": "entity/user_files/api_design.txt",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_files/api_design.txt` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/user_files/api_design.txt) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 10,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/api_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "You're welcome! If you have any more questions or need further assistance, feel free to ask. Good luck with your project! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 10,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/api_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you! "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "file_name": "entity/user_files/api_design.txt",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Now we have decided which workflows and processors we will have.\nPlease outline  pseudocode for each workflow function (processor), group by entities, \nso that I can confirm it. Help me understand how it will work and how the functions will be launched \n(explain that such and such entity will be saved via api call, its workflow will be started by Cyoda, \nand grpc server will send a request to grpc client with the name of the processor\n\nGeneral workflow example, you can use them as a starting point , but need to customise to the current application:\n1. Entity A processors (isolated functions like aws lambda)\nPseudocode:\nfunction do_some_business_logic(meta, entity_data):\n    validate entity_data\n    get some other entity to fetch data if necessary\n    add new Supplementary/Secondary entity if necessary\n    entity_data[\"attribute\"] = new_value #update current entity directly, it will be saved implicitly\n\nLaunch Process:\nWhen a user sends a POST request and a new entity is saved this function is called asynchronously in the background.\nThis function does not know about other processors, so it should not call any other processors. Processors call is managed by Cyoda\n"
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/user_files/workflow_design.txt",
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_files/workflow_design.txt` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/user_files/workflow_design.txt) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/workflow_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s the pseudocode for each workflow function (processor) grouped by entities, along with an explanation of how they will work and how the functions will be launched.\n\n### 1. User Environment Entity Processors\n\n#### 1.1 Processor: `save_environment`\n\n**Pseudocode:**\n```plaintext\nfunction save_environment(meta, environment_data):\n    validate environment_data\n    # Create or update the environment configuration in the database\n    environment_id = database.save_environment(environment_data)\n    # Trigger workflow for environment setup\n    workflow.trigger(\"environment_workflow\", environment_id)\n    return environment_id\n```\n\n**Launch Process:**\nWhen a user sends a POST request to `/deploy/cyoda-env`, the environment entity is created or updated, and the `save_environment` function is called asynchronously in the background. The function will validate the incoming data and save it in the database. Once the entity is saved, it triggers the corresponding workflow for further processing.\n\n### 2. Deployment Entity Processors\n\n#### 2.1 Processor: `save_deployment`\n\n**Pseudocode:**\n```plaintext\nfunction save_deployment(meta, deployment_data):\n    validate deployment_data\n    # Create a new deployment request in the database\n    deployment_id = database.save_deployment(deployment_data)\n    # Trigger workflow for deployment\n    workflow.trigger(\"deployment_workflow\", deployment_id)\n    return deployment_id\n```\n\n**Launch Process:**\nWhen a user sends a POST request to `/deploy/user_app`, the deployment entity is created, and the `save_deployment` function is invoked asynchronously. This function validates the request data, saves the deployment information, and then triggers the relevant workflow for the deployment process.\n\n#### 2.2 Processor: `update_deployment`\n\n**Pseudocode:**\n```plaintext\nfunction update_deployment(meta, deployment_data):\n    validate deployment_data\n    # Update the deployment information in the database\n    database.update_deployment(deployment_data.id, deployment_data)\n    return deployment_data.id\n```\n\n**Launch Process:**\nWhen a user sends a PUT request to `/deploy/user_app/{id}`, this function will be called to update the existing deployment's information. It validates the input and updates the record in the database.\n\n### 3. Environment Status Entity Processors\n\n#### 3.1 Processor: `fetch_environment_status`\n\n**Pseudocode:**\n```plaintext\nfunction fetch_environment_status(meta, deployment_id):\n    # Retrieve environment status by deployment ID\n    status = database.get_environment_status(deployment_id)\n    return status\n```\n\n**Launch Process:**\nWhen a user sends a GET request to `/deploy/cyoda-env/status/{id}`, this function will be invoked to fetch the status of the specified environment. It interacts with the database to retrieve the relevant information.\n\n### 4. Cancellation Entity Processors\n\n#### 4.1 Processor: `cancel_deployment`\n\n**Pseudocode:**\n```plaintext\nfunction cancel_deployment(meta, deployment_id):\n    # Validate if the deployment can be canceled\n    if can_cancel(deployment_id):\n        database.cancel_deployment(deployment_id)\n        return \"Deployment canceled\"\n    else:\n        return \"Cancellation not allowed\"\n```\n\n**Launch Process:**\nWhen a user sends a POST request to `/deploy/cancel/user_app/{id}`, the function is triggered to process the cancellation of the specified deployment. It checks whether the deployment can be canceled and performs the action accordingly.\n\n### Summary of How Functions Will Work\n\n- Each processor function is designed to handle specific business logic associated with its respective entity.\n- Functions will be launched based on user interactions with the defined API endpoints. For example, when a user sends a POST request to create a new environment, the `save_environment` function is triggered.\n- Once invoked, the processor functions perform their tasks independently, such as validating data, saving entities, and triggering workflows, without direct knowledge of other processors. This approach maintains separation of concerns and ensures that each function is self-contained.\n- The orchestration between the entities and workflows is managed by Cyoda, which ensures that proper events are triggered, and gRPC notifications are sent to the client as needed. This allows for seamless communication and processing of requests throughout the application.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/workflow_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you! "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "file_name": "entity/user_files/workflow_design.txt",
+                "max_iteration": 10,
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_files/workflow_design.txt` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/user_files/workflow_design.txt) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 10,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/workflow_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "You're welcome! If you have any more questions or need further assistance in the future, feel free to reach out. Good luck with your project! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 10,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_files/workflow_design.txt",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "approve": true,
+                "question_key": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you! "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "file_name": "entity/user_files/workflow_design.txt",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nAwesome! Let's dive into generating your application code! \ud83d\ude80 \n\nI'll keep you updated with notifications on my progress, and let you know when it's time to discuss any changes.\n \nFeel free to grab a coffee \u2615 while I work\u2014it's going to take about 2 minutes. \n \nJust relax and wait for the update!\n\nIn this process, we will walk through each stage of building an application, from gathering initial requirements to designing, coding, and implementing the final logic.\n\n### The stages of the process are as follows:\n\n1. **Application design**:  \n   Let's design the application using diagrams and chat. You'll receive a text document with the PRD as the output.  \n   *Output documents*: entity/app_design.md\n\n2. **Entities design**:  \n   Let's define the JSON data structure for each entity.\n   *Output documents*: entity/*\n\n3. **Workflow design**:  \n   Let's ensure our entity workflow is correctly defined.\n   *Output documents*: entity/*/workflow.json\n\n4. **Workflow processors code design**:  \n   Let's implement the workflow processors.\n   *Output documents*: entity/*/workflow.py\n\n5. **Additional logic code design**:  \n   Let's develop any additional business logic.\n   *Output documents*: entity/*/api.py or entity/*/logic.py\n\n---\n\n### Process Flow:\n\nGathering requirements --> **Application design** --> **Entities design** --> **Workflow design** --> **Workflow processors code design** --> **Additional logic code design**         \n                          ",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please, return a complete prd."
+                },
+                "file_name": "entity/app_design_prd.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": false
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design_prd.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/app_design_prd.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design_prd.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s a complete Product Requirements Document (PRD) for the Cyoda-based application focusing on the authors app for managing deployment and environment configuration:\n\n---\n\n# Product Requirements Document (PRD)\n\n## Project Overview\nThe goal of this project is to develop a Cyoda-based application that manages deployment and environment configuration for multiple users. The application will provide a robust API for users to create, update, fetch, and cancel their environment configurations and application deployments.\n\n### Key Concepts\n\n- **Entity Management**: Cyoda manages core data models (entities) for the application.\n- **API Requests**: Users interact with the application via defined API endpoints.\n- **Workflow Orchestration**: Workflows are triggered by entity events and managed by Cyoda.\n\n## Functional Requirements\n\n### User Stories\n\n1. **User Story 1**: As a user, I want to create or update my environment configuration so that I can manage my application settings easily.\n2. **User Story 2**: As a user, I want to deploy my application using a specified repository URL, so that I can ensure my application is running the correct version.\n3. **User Story 3**: As a user, I want to view the status of my deployed environment, so I can monitor its performance and health.\n4. **User Story 4**: As a user, I want to cancel a queued deployment if I change my mind, so I can manage my resources efficiently.\n5. **User Story 5**: As a user, I want to receive notifications about the completion of my workflows, so I can take further actions based on the results.\n\n## API Endpoints\n\n### User Environment Entity\n\n**API Endpoint:** `POST /deploy/cyoda-env`\n\n- **Description**: Creates or updates the user environment configuration.\n- **Pseudocode**:\n  ```plaintext\n  validate environment_data\n  environment_id = database.save_environment(environment_data)\n  workflow.trigger(\"environment_workflow\", environment_id)\n  return environment_id\n  ```\n\n**API Endpoint:** `PUT /deploy/cyoda-env/{id}`\n\n- **Description**: Updates an existing user environment configuration.\n- **Pseudocode**:\n  ```plaintext\n  validate environment_data\n  database.update_environment(id, new_configuration)\n  return updated environment details to user\n  ```\n\n**API Endpoint:** `GET /deploy/cyoda-env/{id}`\n\n- **Description**: Retrieves details of a specific user environment configuration.\n- **Pseudocode**:\n  ```plaintext\n  environment = fetch_environment_by_id(id)\n  return environment details to user\n  ```\n\n### Deployment Entity\n\n**API Endpoint:** `POST /deploy/user_app`\n\n- **Description**: Initiates the deployment process for a user application.\n- **Pseudocode**:\n  ```plaintext\n  validate deployment_data\n  deployment_id = database.save_deployment(deployment_data)\n  workflow.trigger(\"deployment_workflow\", deployment_id)\n  return deployment details to user\n  ```\n\n**API Endpoint:** `PUT /deploy/user_app/{id}`\n\n- **Description**: Updates the details of an existing application deployment.\n- **Pseudocode**:\n  ```plaintext\n  validate deployment_data\n  database.update_deployment(id, updated_data)\n  return updated deployment details to user\n  ```\n\n**API Endpoint:** `GET /deploy/user_app/{id}`\n\n- **Description**: Retrieves the status of a specific application deployment.\n- **Pseudocode**:\n  ```plaintext\n  deployment = fetch_deployment_by_id(id)\n  return deployment details to user\n  ```\n\n### Environment Status Entity\n\n**API Endpoint:** `GET /deploy/cyoda-env/status/{id}`\n\n- **Description**: Fetches the status of a deployed environment.\n- **Pseudocode**:\n  ```plaintext\n  status = fetch_environment_status_by_id(deployment_id)\n  return status details to user\n  ```\n\n### Cancellation Entity\n\n**API Endpoint:** `POST /deploy/cancel/user_app/{id}`\n\n- **Description**: Requests the cancellation of a queued deployment.\n- **Pseudocode**:\n  ```plaintext\n  if can_cancel(deployment_id):\n      database.cancel_deployment(deployment_id)\n      return \"Deployment canceled\"\n  else:\n      return \"Cancellation not allowed\"\n  ```\n\n**API Endpoint:** `GET /deploy/cancel/user_app/{id}`\n\n- **Description**: Retrieves the cancellation status of a deployment.\n- **Pseudocode**:\n  ```plaintext\n  cancellation_status = fetch_cancellation_status_by_id(id)\n  return cancellation status details to user\n  ```\n\n## Entity Outline\n\n### 1. User Environment Entity\n- **Description**: Represents the environment configuration for a user.\n- **Saving Method**: Saved via POST API call.\n- **Example JSON**:\n  ```json\n  {\n    \"id\": \"env_123\",\n    \"user_name\": \"test_user\",\n    \"configuration\": {\n      \"keyspace\": \"user_defined_keyspace\",\n      \"namespace\": \"user_defined_namespace\"\n    },\n    \"status\": \"active\"\n  }\n  ```\n\n### 2. Deployment Entity\n- **Description**: Represents a specific deployment of an application.\n- **Saving Method**: Saved via POST API call.\n- **Example JSON**:\n  ```json\n  {\n    \"id\": \"deploy_456\",\n    \"repository_url\": \"http://example.com/repo.git\",\n    \"is_public\": true,\n    \"environment_id\": \"env_123\",\n    \"status\": \"pending\"\n  }\n  ```\n\n### 3. Environment Status Entity\n- **Description**: Contains the status information of a deployed environment.\n- **Saving Method**: Saved via ENTITY_EVENT after deployment completion.\n- **Example JSON**:\n  ```json\n  {\n    \"id\": \"status_789\",\n    \"deployment_id\": \"deploy_456\",\n    \"status\": \"successful\",\n    \"details\": {\n      \"log\": \"...\",\n      \"timestamp\": \"2023-10-01T12:00:00Z\"\n    }\n  }\n  ```\n\n### 4. Cancellation Entity\n- **Description**: Represents a request to cancel a queued deployment.\n- **Saving Method**: Saved via POST API call.\n- **Example JSON**:\n  ```json\n  {\n    \"id\": \"cancel_101\",\n    \"deployment_id\": \"deploy_456\",\n    \"comment\": \"User requested cancellation\",\n    \"status\": \"canceled\"\n  }\n  ```\n\n## Workflow Processing\n\n### User Environment Entity Processors\n\n#### Processor: `save_environment`\n- Description: Handles the saving of user environment data and triggers the corresponding workflow.\n\n#### Processor: `update_environment`\n- Description: Updates user environment data.\n\n### Deployment Entity Processors\n\n#### Processor: `save_deployment`\n- Description: Saves deployment data and triggers the deployment workflow.\n\n#### Processor: `update_deployment`\n- Description: Updates existing deployment information.\n\n### Environment Status Entity Processors\n\n#### Processor: `fetch_environment_status`\n- Description: Retrieves the environment status for a given deployment.\n\n### Cancellation Entity Processors\n\n#### Processor: `cancel_deployment`\n- Description: Processes the cancellation of a deployment.\n\n## Conclusion\nThis PRD outlines the design and requirements for the Cyoda-based application focused on managing deployments and environment configurations. The provided details on APIs, entities, and workflow processes will guide the development and ensure that user needs are met effectively.\n\n---\n\nPlease review this document and let me know if there are any changes or additional details you would like to include!",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design_prd.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": false,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Generate Cyoda design json, based on the complete prd. Use only lowercase underscore for namings. If the entity is saved in the workflow of another entity then its source will be ENTITY_EVENT. The JOB entity_source defaults to API_REQUEST. Prefer entity source/type mentioned in the prd, if it is unclear default to API_REQUEST or ENTITY_EVENT for secondary data. You should not change entities or their workflows. You should not omit or add entities which are not listed in the prd. You should follow the complete prd 100% as it was confirmed.",
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "Cyoda design",
+                        "type": "object",
+                        "properties": {
+                            "entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "entity_type": {
+                                            "type": "string",
+                                            "enum": [
+                                                "JOB",
+                                                "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+                                                "WEB_SCRAPING_PULL_BASED_RAW_DATA",
+                                                "TRANSACTIONAL_PULL_BASED_RAW_DATA",
+                                                "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
+                                                "WEB_SCRAPING_PUSH_BASED_RAW_DATA",
+                                                "TRANSACTIONAL_PUSH_BASED_RAW_DATA",
+                                                "SECONDARY_DATA",
+                                                "UTIL",
+                                                "CONFIG",
+                                                "BUSINESS_ENTITY"
+                                            ]
+                                        },
+                                        "entity_source": {
+                                            "type": "string",
+                                            "enum": [
+                                                "API_REQUEST",
+                                                "SCHEDULED",
+                                                "ENTITY_EVENT"
+                                            ]
+                                        },
+                                        "depends_on_entity": {
+                                            "type": "string"
+                                        },
+                                        "entity_workflow": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "class_name": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "com.cyoda.tdb.model.treenode.TreeNodeEntity"
+                                                    ]
+                                                },
+                                                "transitions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_state": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_state_description": {
+                                                                "type": "string"
+                                                            },
+                                                            "end_state": {
+                                                                "type": "string"
+                                                            },
+                                                            "end_state_description": {
+                                                                "type": "string"
+                                                            },
+                                                            "process": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "description": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "adds_new_entites": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "name",
+                                                                    "description",
+                                                                    "adds_new_entites"
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "start_state",
+                                                            "end_state",
+                                                            "process"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "class_name",
+                                                "transitions"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "entity_type",
+                                        "entity_source",
+                                        "depends_on_entity",
+                                        "entity_workflow"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "entities"
+                        ]
+                    }
+                },
+                "answer": null,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "function": null,
+                "iteration": 0,
+                "ui_config": {
+                    "format": "json"
+                },
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Ksenniya/quart-client-template/tree/88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb/entity/app_design.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": {
+                    "success": "false",
+                    "error": "JSON validation failed after retries."
+                },
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "add_design_stack"
+                },
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "iteration": 0,
+                "fills_stack": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "finish_flow"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "notification_text": "\n\ud83c\udf89 **Chat flow has been saved!** \ud83c\udf89\n\nThe chat flow has been successfully saved to `entity/chat.json`. Now you can run `app.py` to start the application. \ud83d\ude80\n\nOnce you run it, both the **workflow** and **entities** will be imported to the Cyoda environment automatically. \ud83c\udf1f\n\nAny updates or changes to the entities will trigger the workflow, so you\u2019re all set to go! \ud83d\udd04\n\nWe are available in the **Google Tech Channel** to support you. If you spot any bugs or need additional features, feel free to submit tickets at [GitHub Issues](https://github.com/Cyoda-platform/ai-assistant). You\u2019re also most welcome to contribute to the project! \ud83d\udcbb \n\nFor any direct inquiries, reach out to **ksenia.lukonina@cyoda.com**. We\u2019re here to help! \ud83d\ude0a\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ]
+    },
+    "name": "test",
+    "description": "",
+    "chat_id": "88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb",
+    "technical_id": "88b1a1c6-e4b5-11ef-92df-40c2ba0ac9eb"
+}
