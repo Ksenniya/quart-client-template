@@ -6,7 +6,7 @@
 import json
 import logging
 from app_init.app_init import entity_service
-from common.util.utils import send_post_request, ingest_data as ingest_data_func
+from common.util.utils import send_post_request
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
