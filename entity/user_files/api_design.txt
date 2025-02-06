@@ -1,1 +1,96 @@
-You're welcome! If you have any more questions or need further assistance in the future, feel free to reach out. Good luck with your project! 😊
+Thank you for the clarification! Let's revise the API outlines to reflect that there is no job entity involved in the current application structure. Here’s the updated version without any references to a job entity:
+
+### User Entity APIs
+
+**API Endpoint:** `POST /user/register`
+
+**Description:**
+- This endpoint registers a new user and generates a Bearer token for authentication.
+- **Pseudocode:**
+  ```plaintext
+  # Receive user registration data
+  user = entity_service.add(User)
+  # Generate Bearer token for user
+  token = generate_token(user)
+  return { user_details: user, token: token }
+  ```
+
+---
+
+### Environment Entity APIs
+
+**API Endpoint:** `POST /deploy/cyoda-env`
+
+**Description:**
+- This endpoint creates a new environment configuration for the user.
+- **Pseudocode:**
+  ```plaintext
+  # Receive environment data from the user
+  environment = entity_service.add(Environment)
+  # Trigger workflow for environment creation
+  trigger_workflow(environment)
+  return environment details to user
+  ```
+
+---
+
+**API Endpoint:** `PUT /deploy/cyoda-env/{environment_id}`
+
+**Description:**
+- This endpoint updates the specified environment configuration.
+- **Pseudocode:**
+  ```plaintext
+  # Receive updated environment data
+  environment = entity_service.update(Environment)
+  return environment details to user
+  ```
+
+---
+
+### Deployment Entity APIs
+
+**API Endpoint:** `POST /deploy/user_app`
+
+**Description:**
+- This endpoint initiates the deployment of the user's application through TeamCity.
+- **Pseudocode:**
+  ```plaintext
+  # Receive deployment data from the user
+  deployment = entity_service.add(Deployment)
+  # Trigger build in TeamCity
+  trigger_teamcity_build(deployment)
+  return deployment details to user
+  ```
+
+---
+
+**API Endpoint:** `GET /deploy/user_app/status/{deployment_id}`
+
+**Description:**
+- This endpoint fetches the current status of the specified deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Fetch deployment status from TeamCity
+  status = entity_service.get(DeploymentStatus)
+  return status details to user
+  ```
+
+---
+
+**API Endpoint:** `POST /deploy/cancel/user_app/{deployment_id}`
+
+**Description:**
+- This endpoint cancels a queued deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Receive cancellation request for the deployment
+  cancellation = entity_service.add(DeploymentCancellation)
+  # Trigger cancellation in TeamCity
+  cancel_teamcity_build(deployment_id)
+  return cancellation confirmation to user
+  ```
+
+---
+
+### Summary
+The revised API outlines have been adjusted to remove references to a job entity while maintaining clarity and functionality for the application. If you have any further adjustments or questions, please let me know!
