@@ -1,0 +1,20 @@
+{
+    "id": "cancel123",
+    "user_name": "test_user",
+    "request_id": "req456",
+    "application_id": "app456",
+    "status": "Requested",
+    "timestamp": "2023-10-04T12:30:00Z",
+    "comment": "User requested cancellation of the deployment due to unforeseen issues.",
+    "request_parameters": {
+        "application_name": "Web Service",
+        "environment_name": "Production Environment",
+        "build_id": "build_789"
+    },
+    "orchestration_details": {
+        "initiated_by": "test_user",
+        "initiated_at": "2023-10-04T12:30:00Z",
+        "cancellation_initiated": true,
+        "expected_response_time": "15 minutes"
+    }
+}
