@@ -1,0 +1,23 @@
+{
+    "user": {
+        "user_id": "12345",
+        "username": "test_user",
+        "email": "test_user@example.com",
+        "password": "securepassword123",
+        "token": "Bearer token...",
+        "registration_date": "2023-10-03T10:00:00Z",
+        "last_login": "2023-10-03T12:00:00Z",
+        "preferences": {
+            "notification_enabled": true,
+            "theme": "dark",
+            "language": "en"
+        },
+        "request_parameters": {
+            "register": {
+                "username": "test_user",
+                "email": "test_user@example.com",
+                "password": "securepassword123"
+            }
+        }
+    }
+}
