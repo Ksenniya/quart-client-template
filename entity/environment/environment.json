@@ -1,0 +1,46 @@
+{
+    "environment_id": "env_001",
+    "user_id": "12345",
+    "environment_name": "test_environment",
+    "config": {
+        "keyspace": "user_defined_keyspace",
+        "namespace": "user_defined_namespace",
+        "database": {
+            "type": "PostgreSQL",
+            "version": "13.2",
+            "connection_string": "postgres://user:password@localhost:5432/mydb"
+        },
+        "resources": {
+            "cpu": "2 vCPU",
+            "memory": "4GB",
+            "storage": "50GB SSD"
+        },
+        "security": {
+            "firewall_rules": [
+                {
+                    "protocol": "TCP",
+                    "port": 22,
+                    "description": "SSH access"
+                },
+                {
+                    "protocol": "TCP",
+                    "port": 80,
+                    "description": "HTTP access"
+                },
+                {
+                    "protocol": "TCP",
+                    "port": 443,
+                    "description": "HTTPS access"
+                }
+            ],
+            "ssl_enabled": true
+        }
+    },
+    "deployment_parameters": {
+        "repository_url": "http://repository.url/myapp",
+        "is_public": true,
+        "build_trigger": "automatic"
+    },
+    "status": "configured",
+    "timestamp": "2023-10-03T10:00:00Z"
+}
