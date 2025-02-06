@@ -1,11 +1,11 @@
-Here is an outline of the user APIs for each API_REQUEST type entity, specifying entity names and related APIs. This will help you confirm the endpoints and their functionalities. 
+Here’s a detailed outline of the user APIs for each API_REQUEST type entity, specifying entity names and related APIs, with pseudocode provided for clarity.
 
 ### 1. Deployment API
 
 **API Endpoint:** `POST /api/v1/environments/deploy`
 
 **Description:**
-- Initiates the deployment process for a user-defined environment configuration.
+- Initiates the deployment process for a user-defined environment configuration. This endpoint saves a new Deployment entity and triggers its corresponding workflow.
 - **Pseudocode:**
   ```plaintext
   # Validate request data
@@ -20,7 +20,7 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
 **API Endpoint:** `PUT /api/v1/environments/deploy/{id}`
 
 **Description:**
-- Updates an existing deployment configuration.
+- Updates an existing deployment configuration based on the provided ID. This will modify the existing Deployment entity.
 - **Pseudocode:**
   ```plaintext
   # Validate request data
@@ -34,7 +34,7 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
 **API Endpoint:** `GET /api/v1/environments/deploy/{id}`
 
 **Description:**
-- Fetches the details of a specified deployment.
+- Fetches the details of a specified deployment using the provided ID. This retrieves the data from Cyoda.
 - **Pseudocode:**
   ```plaintext
   # Fetch Deployment entity by ID from Cyoda
@@ -46,7 +46,7 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
 **API Endpoint:** `GET /api/v1/deployments/{id}/status`
 
 **Description:**
-- Retrieves the current status of a specified deployment.
+- Retrieves the current status of a specified deployment. This will fetch the Deployment Status entity from Cyoda.
 - **Pseudocode:**
   ```plaintext
   # Fetch Deployment Status entity by deployment ID from Cyoda
@@ -58,7 +58,7 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
 **API Endpoint:** `PUT /api/v1/deployments/{id}/status`
 
 **Description:**
-- Updates the status of a specified deployment.
+- Updates the status of a specified deployment. This modifies the Deployment Status entity.
 - **Pseudocode:**
   ```plaintext
   # Validate request data
@@ -72,7 +72,7 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
 **API Endpoint:** `DELETE /api/v1/deployments/{id}`
 
 **Description:**
-- Cancels a queued or in-progress deployment.
+- Cancels a queued or in-progress deployment. This will mark the Deployment entity as cancelled.
 - **Pseudocode:**
   ```plaintext
   # Validate request data
@@ -88,7 +88,7 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
 **API Endpoint:** `POST /api/v1/deployments/{id}/workflow`
 
 **Description:**
-- Initializes the workflow for the specified deployment.
+- Initializes the workflow for the specified deployment by creating a new Workflow entity. The workflow orchestrates the various states and actions related to the deployment.
 - **Pseudocode:**
   ```plaintext
   # Create a new Workflow entity for the deployment
@@ -97,11 +97,10 @@ Here is an outline of the user APIs for each API_REQUEST type entity, specifying
   return workflow details to user
   ```
 
----
+### Why Do We Need a Workflow Entity?
+- **Orchestration**: The Workflow entity manages the state transitions of a deployment, allowing for systematic execution of tasks and processes.
+- **State Management**: It helps in keeping track of different stages of the deployment (e.g., pending, in-progress, completed) and their associated actions.
+- **Error Handling**: In cases where a deployment fails or requires cancellation, having a Workflow entity allows for clear rollback and error management procedures.
+- **Decoupling Logic**: It isolates the deployment logic from the main application logic, enabling better maintainability and flexibility for enhancements.
 
-### Summary
-- Each API corresponds to specific entities and ensures that necessary actions (create, update, fetch) are taken based on user requests.
-- The job entities related to deployments are handled appropriately in the save and update actions, whereas the retrievals are done from Cyoda.
-- This structure ensures clarity in how each endpoint interacts with the relevant entities and the underlying workflow processes. 
-
-If you would like to refine any specific endpoints or add more details, please let me know!
+This outline provides clarity on how each API endpoint interacts with its respective entities and workflows while ensuring that necessary actions are taken based on user requests. If you need further refinement or have additional questions, feel free to ask!
