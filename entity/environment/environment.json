@@ -1,0 +1,69 @@
+{
+    "id": "env123",
+    "user_name": "test_user",
+    "name": "Production Environment",
+    "applications": [
+        {
+            "id": "app456",
+            "name": "Web Service",
+            "repository_url": "http://repository.url/app456",
+            "status": "Deploying",
+            "deployment_parameters": {
+                "version": "1.0.0",
+                "environment_variables": {
+                    "DATABASE_URL": "jdbc:mysql://db.example.com:3306/prod",
+                    "API_KEY": "secure_api_key_value"
+                },
+                "resources": {
+                    "cpu_limit": "2",
+                    "memory_limit": "4Gi"
+                }
+            }
+        },
+        {
+            "id": "app789",
+            "name": "Database Service",
+            "repository_url": "http://repository.url/app789",
+            "status": "Deploying",
+            "deployment_parameters": {
+                "version": "1.0.0",
+                "environment_variables": {
+                    "DB_USER": "admin",
+                    "DB_PASSWORD": "secure_password"
+                },
+                "resources": {
+                    "cpu_limit": "1",
+                    "memory_limit": "2Gi"
+                }
+            }
+        }
+    ],
+    "status": "Pending",
+    "orchestration_request": {
+        "request_id": "req789",
+        "timestamp": "2023-10-03T12:00:00Z",
+        "actions": [
+            {
+                "action": "start_build",
+                "parameters": {
+                    "teamcity_project_id": "env_production",
+                    "user_name": "test_user"
+                }
+            },
+            {
+                "action": "check_status",
+                "parameters": {
+                    "build_id": "build_env_123",
+                    "timeout": "30"
+                }
+            },
+            {
+                "action": "notify_user",
+                "parameters": {
+                    "user_name": "test_user",
+                    "message": "Deployment started for Production Environment."
+                }
+            }
+        ]
+    }
+}
