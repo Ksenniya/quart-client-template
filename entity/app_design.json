@@ -1,0 +1,129 @@
+{
+    "entities": [
+        {
+            "entity_name": "user",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "user_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "save_user",
+                        "description": "Save new user and generate Bearer token.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state for user registration.",
+                        "end_state": "user_saved",
+                        "end_state_description": "User has been successfully registered.",
+                        "process": {
+                            "name": "save_user",
+                            "description": "Validate and save user entity, generating a token.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "environment",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "user",
+            "entity_workflow": {
+                "name": "environment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "save_environment",
+                        "description": "Save new environment configuration.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state for environment creation.",
+                        "end_state": "environment_saved",
+                        "end_state_description": "Environment has been successfully created.",
+                        "process": {
+                            "name": "save_environment",
+                            "description": "Validate and save environment entity.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "update_environment",
+                        "description": "Update existing environment configuration.",
+                        "start_state": "environment_saved",
+                        "start_state_description": "Environment is currently configured.",
+                        "end_state": "environment_updated",
+                        "end_state_description": "Environment has been successfully updated.",
+                        "process": {
+                            "name": "update_environment",
+                            "description": "Update environment entity and save changes.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deployment",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "environment",
+            "entity_workflow": {
+                "name": "deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "save_deployment",
+                        "description": "Initiate deployment of user's application through TeamCity.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state for deployment initiation.",
+                        "end_state": "deployment_initiated",
+                        "end_state_description": "Deployment has been successfully initiated.",
+                        "process": {
+                            "name": "save_deployment",
+                            "description": "Validate and save deployment entity, trigger TeamCity build.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "fetch_deployment_status",
+                        "description": "Fetch the current status of the deployment.",
+                        "start_state": "deployment_initiated",
+                        "start_state_description": "Deployment is currently being processed.",
+                        "end_state": "deployment_status_fetched",
+                        "end_state_description": "Deployment status has been retrieved.",
+                        "process": {
+                            "name": "fetch_deployment_status",
+                            "description": "Fetch status from TeamCity based on deployment data.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "cancel_deployment",
+                        "description": "Cancel the queued deployment.",
+                        "start_state": "deployment_initiated",
+                        "start_state_description": "Deployment is queued or in progress.",
+                        "end_state": "deployment_cancelled",
+                        "end_state_description": "Deployment has been successfully cancelled.",
+                        "process": {
+                            "name": "cancel_deployment",
+                            "description": "Handle cancellation request and notify TeamCity.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deployment_cancellation",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "deployment",
+            "entity_workflow": {
+                "name": "deployment_cancellation_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}
