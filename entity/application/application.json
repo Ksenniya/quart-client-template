@@ -1,0 +1,46 @@
+{
+    "id": "app456",
+    "user_name": "test_user",
+    "name": "Web Service",
+    "repository_url": "http://repository.url/app456",
+    "status": "Pending",
+    "deployment_parameters": {
+        "environment": "Production",
+        "build_type": "KubernetesPipeline_CyodaSaasUserEnv",
+        "properties": {
+            "user_defined_keyspace": "test_user_keyspace",
+            "user_defined_namespace": "test_user_namespace"
+        },
+        "request_id": "req789"
+    },
+    "ingestion_details": {
+        "source": "API",
+        "api_endpoint": "https://api.example.com/data-ingestion",
+        "request_method": "POST",
+        "headers": {
+            "Authorization": "Bearer {token}",
+            "Content-Type": "application/json"
+        },
+        "request_body": {
+            "param1": "value1",
+            "param2": "value2"
+        }
+    },
+    "status_history": [
+        {
+            "timestamp": "2023-10-01T10:00:00Z",
+            "status": "Pending",
+            "message": "Initial status before deployment."
+        },
+        {
+            "timestamp": "2023-10-01T10:15:00Z",
+            "status": "In Progress",
+            "message": "Deployment has started."
+        },
+        {
+            "timestamp": "2023-10-01T10:45:00Z",
+            "status": "Completed",
+            "message": "Deployment has completed successfully."
+        }
+    ]
+}
