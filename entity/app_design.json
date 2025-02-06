@@ -1,0 +1,155 @@
+{
+    "entities": [
+        {
+            "entity_name": "environment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "environment_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_build_environment_deployment",
+                        "description": "Initiate the environment deployment build.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before deployment.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The environment deployment is in progress.",
+                        "process": {
+                            "name": "send_teamcity_request",
+                            "description": "Sends a request to TeamCity to start the build for the environment.",
+                            "adds_new_entites": "deployment_status"
+                        }
+                    },
+                    {
+                        "name": "check_build_status",
+                        "description": "Check the build status until successful.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The environment deployment is in progress.",
+                        "end_state": "completed",
+                        "end_state_description": "The environment deployment has completed successfully.",
+                        "process": {
+                            "name": "get_teamcity_build_status",
+                            "description": "Retrieves the current build status from TeamCity.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "notify_user",
+                        "description": "Notify the user about the deployment status.",
+                        "start_state": "completed",
+                        "start_state_description": "The deployment has completed successfully.",
+                        "end_state": "None",
+                        "end_state_description": "Notification was sent to the user.",
+                        "process": {
+                            "name": "notify_user",
+                            "description": "Notify the user of the successful deployment.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "application",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "application_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_build_application_deployment",
+                        "description": "Initiate the application deployment build.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before deployment.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The application deployment is in progress.",
+                        "process": {
+                            "name": "send_teamcity_request",
+                            "description": "Sends a request to TeamCity to start the build for the application.",
+                            "adds_new_entites": "deployment_status"
+                        }
+                    },
+                    {
+                        "name": "check_build_status",
+                        "description": "Check the build status until successful.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The application deployment is in progress.",
+                        "end_state": "completed",
+                        "end_state_description": "The application deployment has completed successfully.",
+                        "process": {
+                            "name": "get_teamcity_build_status",
+                            "description": "Retrieves the current build status from TeamCity.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "notify_user",
+                        "description": "Notify the user about the deployment status.",
+                        "start_state": "completed",
+                        "start_state_description": "The deployment has completed successfully.",
+                        "end_state": "None",
+                        "end_state_description": "Notification was sent to the user.",
+                        "process": {
+                            "name": "notify_user",
+                            "description": "Notify the user of the successful deployment.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deployment_status",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "environment",
+            "entity_workflow": {
+                "name": "deployment_status_tracking_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "cancellation_request",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "cancellation_request_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "process_cancellation_request",
+                        "description": "Process the cancellation request for the application deployment.",
+                        "start_state": "requested",
+                        "start_state_description": "The cancellation request has been made.",
+                        "end_state": "cancelled",
+                        "end_state_description": "The application deployment has been cancelled.",
+                        "process": {
+                            "name": "send_teamcity_cancellation_request",
+                            "description": "Sends a cancellation request to TeamCity for the application deployment.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "notify_user",
+                        "description": "Notify the user about the cancellation status.",
+                        "start_state": "cancelled",
+                        "start_state_description": "The application deployment has been cancelled.",
+                        "end_state": "None",
+                        "end_state_description": "Notification was sent to the user.",
+                        "process": {
+                            "name": "notify_user",
+                            "description": "Notify the user of the cancellation.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
