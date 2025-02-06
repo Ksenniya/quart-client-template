@@ -1,0 +1,107 @@
+Here is an outline of the user APIs for each API_REQUEST type entity, specifying entity names and related APIs. This will help you confirm the endpoints and their functionalities. 
+
+### 1. Deployment API
+
+**API Endpoint:** `POST /api/v1/environments/deploy`
+
+**Description:**
+- Initiates the deployment process for a user-defined environment configuration.
+- **Pseudocode:**
+  ```plaintext
+  # Validate request data
+  # Create a new Deployment entity
+  save new Deployment entity
+  # Trigger workflow for the deployment
+  return deployment details and status to user
+  ```
+
+---
+
+**API Endpoint:** `PUT /api/v1/environments/deploy/{id}`
+
+**Description:**
+- Updates an existing deployment configuration.
+- **Pseudocode:**
+  ```plaintext
+  # Validate request data
+  # Fetch existing Deployment entity by ID from Cyoda
+  update Deployment entity with new data
+  return updated deployment details to user
+  ```
+
+---
+
+**API Endpoint:** `GET /api/v1/environments/deploy/{id}`
+
+**Description:**
+- Fetches the details of a specified deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Fetch Deployment entity by ID from Cyoda
+  return entity details to user
+  ```
+
+### 2. Deployment Status API
+
+**API Endpoint:** `GET /api/v1/deployments/{id}/status`
+
+**Description:**
+- Retrieves the current status of a specified deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Fetch Deployment Status entity by deployment ID from Cyoda
+  return status details to user
+  ```
+
+---
+
+**API Endpoint:** `PUT /api/v1/deployments/{id}/status`
+
+**Description:**
+- Updates the status of a specified deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Validate request data
+  # Fetch existing Deployment Status entity by ID from Cyoda
+  update Deployment Status entity with new data
+  return updated status details to user
+  ```
+
+### 3. Deployment Cancellation API
+
+**API Endpoint:** `DELETE /api/v1/deployments/{id}`
+
+**Description:**
+- Cancels a queued or in-progress deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Validate request data
+  # Fetch Deployment entity by ID from Cyoda
+  # Mark the Deployment entity as cancelled
+  return cancellation confirmation to user
+  ```
+
+---
+
+### 4. Workflow API (Orchestration)
+
+**API Endpoint:** `POST /api/v1/deployments/{id}/workflow`
+
+**Description:**
+- Initializes the workflow for the specified deployment.
+- **Pseudocode:**
+  ```plaintext
+  # Create a new Workflow entity for the deployment
+  save new Workflow entity
+  # Trigger workflow processor to begin deployment process
+  return workflow details to user
+  ```
+
+---
+
+### Summary
+- Each API corresponds to specific entities and ensures that necessary actions (create, update, fetch) are taken based on user requests.
+- The job entities related to deployments are handled appropriately in the save and update actions, whereas the retrievals are done from Cyoda.
+- This structure ensures clarity in how each endpoint interacts with the relevant entities and the underlying workflow processes. 
+
+If you would like to refine any specific endpoints or add more details, please let me know!
