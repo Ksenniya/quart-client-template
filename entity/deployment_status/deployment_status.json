@@ -1,0 +1,28 @@
+{
+    "id": "status123",
+    "user_name": "test_user",
+    "environment_id": "env123",
+    "application_id": "app456",
+    "status": "In Progress",
+    "timestamp": "2023-10-03T10:30:00Z",
+    "request_parameters": {
+        "teamcity_request_id": "tc123456",
+        "build_type": "KubernetesPipeline_CyodaSaas",
+        "parameters": {
+            "user_defined_keyspace": "test_user_keyspace",
+            "user_defined_namespace": "test_user_namespace"
+        }
+    },
+    "comments": [
+        {
+            "author": "test_user",
+            "message": "Deployment initiated successfully.",
+            "timestamp": "2023-10-03T10:32:00Z"
+        },
+        {
+            "author": "system",
+            "message": "Polling status from TeamCity...",
+            "timestamp": "2023-10-03T10:35:00Z"
+        }
+    ]
+}
