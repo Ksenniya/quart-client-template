@@ -1,0 +1,211 @@
+Certainly! To define the functional requirements for your app, we can break down the tasks into user stories and use cases. Here’s a structured approach:
+
+### User Stories
+
+1. **User Authentication**
+   - As a **user**, I want to authenticate using a Bearer token so that I can securely access deployment resources.
+   - **API Endpoint:** N/A (Authentication is external to the app in this case)
+
+2. **Create Cyoda Environment**
+   - As a **user**, I want to create a deployment environment using my username so that I can manage separate configurations.
+   - **API Endpoint:**
+     - **Request:** `POST /deploy/cyoda-env`
+       - **Request Body:**
+         ```json
+         {
+           "user_name": "test"
+         }
+         ```
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "build_id": "12345"
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Unauthorized"
+         }
+         ```
+
+3. **Create User Application Deployment**
+   - As a **user**, I want to deploy a user application by specifying the repository URL to initiate the build process.
+   - **API Endpoint:**
+     - **Request:** `POST /deploy/user_app`
+       - **Request Body:**
+         ```json
+         {
+           "repository_url": "http://example.com/repo",
+           "is_public": "true"
+         }
+         ```
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "build_id": "67890"
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Invalid URL"
+         }
+         ```
+
+4. **Get Cyoda Environment Status**
+   - As a **user**, I want to retrieve the status of my created environment using the build ID.
+   - **API Endpoint:**
+     - **Request:** `GET /deploy/cyoda-env/status/{id}`
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "status": "in progress"
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Build not found"
+         }
+         ```
+
+5. **Get Statistics of Cyoda Environment**
+   - As a **user**, I want to retrieve statistical information associated with the build.
+   - **API Endpoint:**
+     - **Request:** `GET /deploy/cyoda-env/statistics/{id}`
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "statistics": {...}
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Build not found"
+         }
+         ```
+
+6. **Get User Application Status**
+   - As a **user**, I want to retrieve the status of my deployed application using the build ID.
+   - **API Endpoint:**
+     - **Request:** `GET /deploy/user_app/status/{id}`
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "status": "success"
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Build not found"
+         }
+         ```
+
+7. **Get Statistics of User Application**
+   - As a **user**, I want to get statistical information for my user application build using the build ID.
+   - **API Endpoint:**
+     - **Request:** `GET /deploy/user_app/statistics/{id}`
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "statistics": {...}
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Build not found"
+         }
+         ```
+
+8. **Cancel User Application Build**
+   - As a **user**, I want to cancel a queued build by providing its build ID.
+   - **API Endpoint:**
+     - **Request:** `POST /deploy/cancel/user_app/{id}`
+       - **Request Body:**
+         ```json
+         {
+           "comment": "Canceling a queued build",
+           "readdIntoQueue": false
+         }
+         ```
+     - **Response:**
+       - **Success:** 
+         ```json
+         {
+           "message": "Build canceled"
+         }
+         ```
+       - **Error:**
+         ```json
+         {
+           "error": "Build not found or already completed"
+         }
+         ```
+
+### Mermaid Diagrams
+
+#### 1. User Authentication Flow
+```mermaid
+sequenceDiagram
+    User->>App: Authenticate with Bearer token
+    App->>Auth Service: Validate token
+    Auth Service-->>App: Return user details
+    App-->>User: Access granted
+```
+
+#### 2. Create and Manage Deployment
+```mermaid
+sequenceDiagram
+    User->>App: POST /deploy/cyoda-env
+    App->>Build Service: Initiate build for env
+    Build Service-->>App: Return build_id
+    App-->>User: Build ID response
+
+    User->>App: GET /deploy/cyoda-env/status/{id}
+    App->>Build Service: Get build status
+    Build Service-->>App: Return status
+    App-->>User: Status response
+    
+    User->>App: GET /deploy/cyoda-env/statistics/{id}
+    App->>Build Service: Get build statistics
+    Build Service-->>App: Return statistics
+    App-->>User: Statistics response
+```
+
+#### 3. Deploy User Application
+```mermaid
+sequenceDiagram
+    User->>App: POST /deploy/user_app
+    App->>Build Service: Initiate build for user app
+    Build Service-->>App: Return build_id
+    App-->>User: Build ID response
+
+    User->>App: GET /deploy/user_app/status/{id}
+    App->>Build Service: Get build status
+    Build Service-->>App: Return status
+    App-->>User: Status response
+    
+    User->>App: GET /deploy/user_app/statistics/{id}
+    App->>Build Service: Get build statistics
+    Build Service-->>App: Return statistics
+    App-->>User: Statistics response
+    
+    User->>App: POST /deploy/cancel/user_app/{id}
+    App->>Build Service: Request to cancel build
+    Build Service-->>App: Cancellation confirmation
+    App-->>User: Build cancelation message
+```
+
+### Conclusion
+
+This outline covers the functional requirements, including detailed user stories, necessary API endpoints, request/response formats, and visual representations of user-app interactions. You can further refine these requirements based on additional interactions or business rules specific to your application. If you need further assistance or additional features, let me know!
