@@ -1,112 +1,136 @@
-Certainly! Below is a structured overview of the workflow functions (processors) tailored for the requirements we've discussed.
+Sure! Let's outline the workflow functions focused on the business logic for the TeamCity integration based on your previous requirements.
 
 ### Workflow Functions (Processors)
 
-**1. Deployment and Environment Configuration Workflow**
+#### Entity: Deployment Configuration
 
-This workflow manages the deployment and environment configuration for multiple users. It consists of several processors that handle the various stages of deployment, each with its own logic.
+1. **Function: CreateDeploymentConfiguration**
+   - **Input**: `user_name`
+   - **Business Logic**:
+     ```pseudocode
+     FUNCTION CreateDeploymentConfiguration(user_name):
+         // Validate the input
+         IF user_name IS NULL OR user_name IS EMPTY:
+             RETURN ERROR "Invalid user name"
+         
+         // Prepare the API request payload
+         payload = {
+             "buildType": {
+                 "id": "KubernetesPipeline_CyodaSaas"
+             },
+             "properties": {
+                 "property": [
+                     {
+                         "name": "user_defined_keyspace",
+                         "value": user_name
+                     },
+                     {
+                         "name": "user_defined_namespace",
+                         "value": user_name
+                     }
+                 ]
+             }
+         }
+         
+         // Call TeamCity API to initiate the deployment job
+         build_id = TeamCityAPI.POST("/app/rest/buildQueue", payload)
+         
+         // Return the build ID for tracking
+         RETURN build_id
+     ```
 
-#### Processor: CreateEnvironment
-**Description:** This processor creates an environment configuration for the user.
+#### Entity: User Application Deployment
 
-```plaintext
-function CreateEnvironment(user_name):
-    # Step 1: Validate the user
-    if not validate_user(user_name):
-        return "Error: Invalid user."
-    
-    # Step 2: Prepare environment configuration data
-    environment_data = {
-        "user_defined_keyspace": user_name,
-        "user_defined_namespace": user_name
-    }
-    
-    # Step 3: Call the relevant API to create the environment
-    response = POST("/deploy/cyoda-env", environment_data)
-    
-    # Step 4: Check response
-    if response.status_code == 201:
-        return response.data  # Return created environment details
-    else:
-        return "Error: Unable to create environment."
+2. **Function: DeployUserApp**
+   - **Input**: `repository_url`, `is_public`, `user_name`
+   - **Business Logic**:
+     ```pseudocode
+     FUNCTION DeployUserApp(repository_url, is_public, user_name):
+         // Validate inputs
+         IF repository_url IS NULL OR repository_url IS EMPTY:
+             RETURN ERROR "Invalid repository URL"
+         
+         // Prepare the API request payload for user application deployment
+         payload = {
+             "buildType": {
+                 "id": "KubernetesPipeline_CyodaSaasUserEnv"
+             },
+             "properties": {
+                 "property": [
+                     {
+                         "name": "user_defined_keyspace",
+                         "value": user_name
+                     },
+                     {
+                         "name": "user_defined_namespace",
+                         "value": user_name
+                     }
+                 ]
+             }
+         }
+         
+         // Call TeamCity API to initiate the user application deployment job
+         user_build_id = TeamCityAPI.POST("/app/rest/buildQueue", payload)
+         
+         // Return the user build ID for tracking
+         RETURN user_build_id
+     ```
 
-```
+#### Entity: Status and Statistics
 
-#### Processor: DeployUserApp
-**Description:** This processor deploys the user application.
+3. **Function: GetDeploymentStatus**
+   - **Input**: `build_id`
+   - **Business Logic**:
+     ```pseudocode
+     FUNCTION GetDeploymentStatus(build_id):
+         // Validate the build ID
+         IF build_id IS NULL OR build_id IS EMPTY:
+             RETURN ERROR "Invalid build ID"
+         
+         // Call TeamCity API to fetch the deployment status
+         deployment_status = TeamCityAPI.GET("/app/rest/buildQueue/id:" + build_id)
+         
+         // Return the deployment status
+         RETURN deployment_status
+     ```
 
-```plaintext
-function DeployUserApp(user_name, repository_url, is_public):
-    # Step 1: Validate the user
-    if not validate_user(user_name):
-        return "Error: Invalid user."
-    
-    # Step 2: Prepare application deployment data
-    app_data = {
-        "repository_url": repository_url,
-        "is_public": is_public
-    }
-    
-    # Step 3: Call the API to deploy the application
-    response = POST("/deploy/user_app", app_data)
-    
-    # Step 4: Check response
-    if response.status_code == 201:
-        return response.data  # Return deployed app details
-    else:
-        return "Error: Unable to deploy user app."
-```
+4. **Function: GetDeploymentStatistics**
+   - **Input**: `build_id`
+   - **Business Logic**:
+     ```pseudocode
+     FUNCTION GetDeploymentStatistics(build_id):
+         // Validate the build ID
+         IF build_id IS NULL OR build_id IS EMPTY:
+             RETURN ERROR "Invalid build ID"
+         
+         // Call TeamCity API to fetch the deployment statistics
+         deployment_statistics = TeamCityAPI.GET("/app/rest/builds/id:" + build_id + "/statistics/")
+         
+         // Return the deployment statistics
+         RETURN deployment_statistics
+     ```
 
-#### Processor: GetEnvironmentStatus
-**Description:** This processor retrieves the status of a given environment.
+5. **Function: CancelUserAppDeployment**
+   - **Input**: `build_id`
+   - **Business Logic**:
+     ```pseudocode
+     FUNCTION CancelUserAppDeployment(build_id):
+         // Validate the build ID
+         IF build_id IS NULL OR build_id IS EMPTY:
+             RETURN ERROR "Invalid build ID"
+         
+         // Prepare the payload for cancellation
+         payload = {
+             "comment": "Canceling a queued build",
+             "readdIntoQueue": false
+         }
+         
+         // Call TeamCity API to cancel the deployment job
+         TeamCityAPI.POST("/app/rest/builds/id:" + build_id, payload)
 
-```plaintext
-function GetEnvironmentStatus(environment_id):
-    # Step 1: Call the API to get environment status
-    response = GET("/deploy/cyoda-env/status/" + environment_id)
-    
-    # Step 2: Check response
-    if response.status_code == 200:
-        return response.data  # Return status details
-    else:
-        return "Error: Unable to fetch environment status."
-```
-
-#### Processor: GetApplicationStatus
-**Description:** This processor retrieves the status of the user application.
-
-```plaintext
-function GetApplicationStatus(app_id):
-    # Step 1: Call the API to get application status
-    response = GET("/deploy/user_app/status/" + app_id)
-    
-    # Step 2: Check response
-    if response.status_code == 200:
-        return response.data  # Return status details
-    else:
-        return "Error: Unable to fetch application status."
-```
-
-#### Processor: CancelUserAppDeployment
-**Description:** This processor cancels the deployment of a user application.
-
-```plaintext
-function CancelUserAppDeployment(app_id):
-    # Step 1: Call the API to cancel the application deployment
-    response = POST("/deploy/cancel/user_app/" + app_id, {
-        "comment": "Canceling a queued build",
-        "readdIntoQueue": false
-    })
-    
-    # Step 2: Check response
-    if response.status_code == 200:
-        return "Successfully canceled deployment."
-    else:
-        return "Error: Unable to cancel the deployment."
-```
+         // Return success message
+         RETURN "Build with ID " + build_id + " has been canceled successfully"
+     ```
 
 ### Summary
-
-Each function (processor) outlines the necessary steps to implement the business logic tied to the workflows, directly interacting with the specified APIs. The emphasis is on validation and API interaction, ensuring that the system functions smoothly and responds accordingly based on the status of each request.
-
-If you have any further requirements or questions, feel free to ask!
+Each of these workflow functions (processors) encapsulates the relevant business logic related to TeamCity integration for deployment configurations and user applications. The working of the respective function is aimed at providing a clear interaction with the TeamCity API while ensuring that valid input is taken into account to prevent errors. Each function is focused on one entity's operation, adhering to a clear separation of concerns.
