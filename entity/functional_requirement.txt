@@ -1,0 +1,222 @@
+Certainly! Below are the functional requirements defined in the form of user stories and use cases, along with the necessary API endpoints and their request/response formats. Additionally, I've included Mermaid diagrams to visually represent user-app interactions.
+
+### User Stories
+
+#### User Story 1: User Authentication
+**As a** user, **I want** to authenticate myself using a Bearer token, **so that** I can access the deployment features.
+
+**Use Case 1.1: Authenticate User**
+- **API Endpoint:** `POST /deploy/cyoda-env`
+  - **Request Format:**
+    ```json
+    {
+      "user_name": "test"
+    }
+    ```
+  - **Response Format:**
+    ```json
+    {
+      "token": "Bearer jwt_token_here"
+    }
+    ```
+
+#### User Story 2: Deploy Cyoda Environment
+**As a** user, **I want** to deploy a Cyoda environment, **so that** I can manage the deployment for my user-defined environment.
+
+**Use Case 2.1: Deploy Cyoda Environment**
+- **API Endpoint:** `POST /deploy/cyoda-env`
+  - **Request Format:**
+    ```json
+    {
+      "user_name": "test"
+    }
+    ```
+  - **Action:**
+    POST to `https://teamcity.cyoda.org/app/rest/buildQueue`
+    - Payload:
+    ```json
+    {
+      "buildType": {
+        "id": "KubernetesPipeline_CyodaSaas"
+      },
+      "properties": {
+        "property": [
+          {
+            "name": "user_defined_keyspace",
+            "value": "test"
+          },
+          {
+            "name": "user_defined_namespace",
+            "value": "test"
+          }
+        ]
+      }
+    }
+    ```
+  - **Response Format:**
+    ```json
+    {
+      "build_id": "12345"
+    }
+    ```
+
+#### User Story 3: Deploy User Application
+**As a** user, **I want** to deploy my application, **so that** I can have it up and running.
+
+**Use Case 3.1: Deploy User Application**
+- **API Endpoint:** `POST /deploy/user_app`
+  - **Request Format:**
+    ```json
+    {
+      "repository_url": "http://myrepository.com/myapp.git",
+      "is_public": true
+    }
+    ```
+  - **Action:**
+    POST to `https://teamcity.cyoda.org/app/rest/buildQueue`
+    - Payload:
+    ```json
+    {
+      "buildType": {
+        "id": "KubernetesPipeline_CyodaSaasUserEnv"
+      },
+      "properties": {
+        "property": [
+          {
+            "name": "user_defined_keyspace",
+            "value": "test"
+          },
+          {
+            "name": "user_defined_namespace",
+            "value": "test"
+          }
+        ]
+      }
+    }
+    ```
+  - **Response Format:**
+    ```json
+    {
+      "build_id": "67890"
+    }
+    ```
+
+#### User Story 4: Check Deployment Status
+**As a** user, **I want** to check the status of my deployment, **so that** I can monitor its progress.
+
+**Use Case 4.1: Get Deployment Status**
+- **API Endpoint:** `GET /deploy/cyoda-env/status/{id}`
+  - **Response Format:**
+    ```json
+    {
+      "status": "SUCCESS",
+      "build_id": "12345"
+    }
+    ```
+
+#### User Story 5: Get Deployment Statistics
+**As a** user, **I want** to get deployment statistics, **so that** I can review the performance.
+
+**Use Case 5.1: Get Deployment Statistics**
+- **API Endpoint:** `GET /deploy/cyoda-env/statistics/{id}`
+  - **Response Format:**
+    ```json
+    {
+      "statistics": {
+        "duration": "120s",
+        "success": true,
+        "log": "Deployment logs here"
+      }
+    }
+    ```
+
+#### User Story 6: Cancel Deployment
+**As a** user, **I want** to cancel my deployment, **so that** I can abort it if needed.
+
+**Use Case 6.1: Cancel User Application**
+- **API Endpoint:** `POST /deploy/cancel/user_app/{id}`
+  - **Request Format:**
+    ```json
+    {
+      "comment": "Canceling a queued build",
+      "readdIntoQueue": false
+    }
+    ```
+  - **Response Format:**
+    ```json
+    {
+      "status": "CANCELLED",
+      "build_id": "67890"
+    }
+    ```
+
+### Mermaid Diagrams for User-App Interaction
+
+Below are the Mermaid diagrams representing interactions between the user and the app.
+
+#### User Authentication Interaction
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant TeamCity
+
+    User->>App: POST /deploy/cyoda-env {"user_name": "test"}
+    App->>TeamCity: Authenticate user
+    TeamCity-->>App: Return token
+    App-->>User: {"token": "Bearer jwt_token_here"}
+```
+
+#### Deploy Cyoda Environment Interaction
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant TeamCity
+
+    User->>App: POST /deploy/cyoda-env {"user_name": "test"}
+    App->>TeamCity: POST /app/rest/buildQueue
+    TeamCity-->>App: {"build_id": "12345"}
+    App-->>User: {"build_id": "12345"}
+```
+
+#### Deploy User Application Interaction
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant TeamCity
+
+    User->>App: POST /deploy/user_app {"repository_url": "http://myrepository.com/myapp.git", "is_public": true}
+    App->>TeamCity: POST /app/rest/buildQueue
+    TeamCity-->>App: {"build_id": "67890"}
+    App-->>User: {"build_id": "67890"}
+```
+
+#### Get Deployment Status Interaction
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant TeamCity
+
+    User->>App: GET /deploy/cyoda-env/status/12345
+    App->>TeamCity: GET /app/rest/buildQueue/id:12345
+    TeamCity-->>App: {"status": "SUCCESS", "build_id": "12345"}
+    App-->>User: {"status": "SUCCESS", "build_id": "12345"}
+```
+
+#### Cancel Deployment Interaction
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant TeamCity
+
+    User->>App: POST /deploy/cancel/user_app/67890 {"comment": "Canceling a queued build", "readdIntoQueue": false}
+    App->>TeamCity: POST /app/rest/builds/id:67890
+    TeamCity-->>App: {"status": "CANCELLED", "build_id": "67890"}
+    App-->>User: {"status": "CANCELLED", "build_id": "67890"}
+```
+
+These user stories, use cases, and workflows give you a structured way to approach the design of your application and ensure you cover all necessary functional requirements. If you have any further questions or need additional modifications, feel free to ask!
