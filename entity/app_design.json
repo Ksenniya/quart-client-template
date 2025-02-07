@@ -1,0 +1,115 @@
+{
+    "entities": [
+        {
+            "depends_on_entity": "None",
+            "entity_name": "deploy_cyoda_env",
+            "entity_source": "API_REQUEST",
+            "entity_type": "JOB",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "deploy_cyoda_env_workflow",
+                "transitions": [
+                    {
+                        "criteria": {},
+                        "description": "Trigger deployment of Cyoda environment.",
+                        "end_state": "environment_deployed",
+                        "end_state_description": "The environment has been successfully deployed.",
+                        "name": "trigger_deployment",
+                        "process": {
+                            "adds_new_entites": "build_id_entity",
+                            "description": "Process to initiate deployment via API.",
+                            "name": "initiate_deployment"
+                        },
+                        "start_state": "None",
+                        "start_state_description": "Initial state before deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "depends_on_entity": "deploy_cyoda_env",
+            "entity_name": "build_id_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_workflow": {
+                "name": "build_id_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "depends_on_entity": "None",
+            "entity_name": "deploy_user_app",
+            "entity_source": "API_REQUEST",
+            "entity_type": "JOB",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "deploy_user_app_workflow",
+                "transitions": [
+                    {
+                        "criteria": {},
+                        "description": "Trigger deployment of user application.",
+                        "end_state": "user_app_deployed",
+                        "end_state_description": "The user application has been successfully deployed.",
+                        "name": "trigger_user_app_deployment",
+                        "process": {
+                            "adds_new_entites": "user_build_id_entity",
+                            "description": "Process to initiate user app deployment via API.",
+                            "name": "initiate_user_app_deployment"
+                        },
+                        "start_state": "None",
+                        "start_state_description": "Initial state before user app deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "depends_on_entity": "deploy_user_app",
+            "entity_name": "user_build_id_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_workflow": {
+                "name": "user_build_id_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "depends_on_entity": "None",
+            "entity_name": "cancel_user_app",
+            "entity_source": "API_REQUEST",
+            "entity_type": "JOB",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "cancel_user_app_workflow",
+                "transitions": [
+                    {
+                        "criteria": {},
+                        "description": "Cancel the deployment of user application.",
+                        "end_state": "user_app_cancelled",
+                        "end_state_description": "The user application deployment has been cancelled.",
+                        "name": "cancel_user_app_deployment",
+                        "process": {
+                            "adds_new_entites": "cancelled_build_entity",
+                            "description": "Process to cancel the ongoing deployment via API.",
+                            "name": "initiate_user_app_cancellation"
+                        },
+                        "start_state": "None",
+                        "start_state_description": "Initial state before cancelling user app deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "depends_on_entity": "cancel_user_app",
+            "entity_name": "cancelled_build_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_workflow": {
+                "name": "cancelled_build_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}
