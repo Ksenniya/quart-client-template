@@ -1,1 +1,97 @@
-You're welcome! If you have any more requests or need further assistance, feel free to ask. Whether it's about refining workflows, discussing business logic, or anything else related to your project, I'm here to help!
+Sure! Below is a pseudocode outline for the processors, focusing on the business logic specific to each entity. Each processor will define the requirements of its operations, including interactions with any dependent entities via API calls. 
+
+### 1. Processor for `data_ingestion_job` Entity
+
+```plaintext
+function start_data_ingestion(current_entity):
+    // Log start of process
+    log("Starting data ingestion process for entity: " + current_entity.id)
+    
+    // Call the external API to ingest data based on the entity configuration
+    response = callApi("POST", "https://api.example.com/ingest", {
+        "user_name": current_entity.user_name
+    })
+    
+    // Check if the API call was successful
+    if response.status == 200:
+        // Create a new raw_data_entity after successful ingestion
+        raw_data_entity = {
+            "user_name": current_entity.user_name,
+            "data": response.data,
+            "status": "ingested"
+        }
+        
+        // Add the raw_data_entity via entity_service
+        entity_service.add(raw_data_entity)
+        
+        // Update the status of the current data_ingestion_job
+        update_job_status(current_entity.id, "completed")
+    else:
+        // Log the error if ingestion failed
+        log("Data ingestion failed for entity: " + current_entity.id + " with status: " + response.status)
+        update_job_status(current_entity.id, "failed")
+```
+
+### 2. Processor for `raw_data_entity`
+
+```plaintext
+function process_raw_data(current_entity):
+    // Log processing of raw data
+    log("Processing raw data for entity: " + current_entity.id)
+
+    // Perform required data transformations or processing
+    transformed_data = transformData(current_entity.data)
+
+    // Save transformed data back into the system
+    processed_data_entity = {
+        "user_name": current_entity.user_name,
+        "transformed_data": transformed_data,
+        "status": "processed"
+    }
+
+    // Note: Here we add the processed_data_entity as a dependent entity
+    entity_service.add(processed_data_entity)
+
+    // Update the status of the raw_data_entity
+    update_raw_data_status(current_entity.id, "processed")
+```
+
+### 3. Processor for Deploying the User App
+
+```plaintext
+function deploy_user_app(current_entity):
+    // Log deployment initiation
+    log("Initiating deployment for user app with repository: " + current_entity.repository_url)
+
+    // Prepare deployment parameters
+    deployment_params = {
+        "buildType": {
+            "id": "KubernetesPipeline_CyodaSaasUserEnv"
+        },
+        "properties": {
+            "property": [
+                {"name": "user_defined_keyspace", "value": current_entity.user_name},
+                {"name": "user_defined_namespace", "value": current_entity.user_name}
+            ]
+        }
+    }
+
+    // Call TeamCity API to trigger the deployment
+    deployment_response = callApi("POST", "https://teamcity.cyoda.org/app/rest/buildQueue", deployment_params)
+
+    // Check for a successful deployment trigger
+    if deployment_response.status == 200:
+        // Log successful deployment
+        log("Deployment triggered successfully for user app with ID: " + deployment_response.build_id)
+        // Update entity status to reflect the deployment process
+        update_deployment_status(current_entity.id, "deployed", deployment_response.build_id)
+    else:
+        // Log failure for the deployment trigger
+        log("Failed to trigger deployment for user app with ID: " + current_entity.id + " Response: " + deployment_response.status)
+        update_deployment_status(current_entity.id, "deployment_failed")
+```
+
+### Summary
+Each processor is designed to encapsulate the business logic relevant to its entity. It is structured to ensure that any required interactions with dependent entities are handled through API calls, rather than using the `entity_service` for the current entity, maintaining a clear separation of responsibilities. Each function logs its progress, handles error scenarios, and updates the statuses of entities accordingly. 
+
+Feel free to let me know if you need any further modifications or additions!
