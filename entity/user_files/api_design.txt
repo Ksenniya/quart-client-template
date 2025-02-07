@@ -1,0 +1,81 @@
+Based on your requirement and the previous discussions, I will outline the APIs for each API request type related to the entities involved in downloading, analyzing, and reporting on the London Houses Data.
+
+### Entities and Their APIs
+
+#### 1. Entity: `LondonHousesData`
+- **Description**: This entity represents the raw data of houses in London that will be downloaded for analysis.
+- **Saving Method**: This entity should be saved directly via an API call.
+
+**APIs**
+- **POST /api/london_houses_data**
+  - **Request**: A JSON object containing the data details.
+  - **Action**: `entity_service.add(current_entity)`
+  
+```json
+{
+  "entity_name": "london_houses_data",
+  "data_source": "api",
+  "data": {
+    "location": "London",
+    "price": 500000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    ...
+  }
+}
+```
+
+- **GET /api/london_houses_data/{id}**
+  - **Request**: Requesting data for a specific house by ID.
+  - **Action**: `entity_service.get(current_entity)`
+
+#### 2. Entity: `DataAnalysisReport`
+- **Description**: This entity represents the report generated from analyzing the London Houses Data.
+- **Saving Method**: This entity will be created as an output of a workflow.
+
+**APIs**
+- **POST /api/data_analysis_report**
+  - **Request**: A JSON object containing analysis report details.
+  - **Action**: `entity_service.add(current_entity)`
+  
+```json
+{
+  "entity_name": "data_analysis_report",
+  "analysis_type": "mean_price",
+  "results": {
+    "average_price": 550000,
+    "max_price": 1200000,
+    "min_price": 300000,
+    ...
+  }
+}
+```
+
+- **GET /api/data_analysis_report/{id}**
+  - **Request**: Requesting a specific analysis report by ID.
+  - **Action**: `entity_service.get(current_entity)`
+
+#### 3. Entity: `DataIngestionJob`
+- **Description**: This entity represents the automation job that ingests the London Houses Data at scheduled intervals.
+- **Saving Method**: This entity should be saved via a scheduler.
+
+**APIs**
+- **POST /api/data_ingestion_job**
+  - **Request**: A JSON object to create a new ingestion job.
+  - **Action**: `entity_service.add(current_entity)`
+  
+```json
+{
+  "entity_name": "data_ingestion_job",
+  "schedule": "0 12 * * *",  // app runs daily at noon
+  "job_type": "download_london_houses_data",
+  ...
+}
+```
+
+- **GET /api/data_ingestion_job/{id}**
+  - **Request**: Requesting specific job details by ID.
+  - **Action**: `entity_service.get(current_entity)`
+
+### Summary
+These APIs allow interaction with each entity, ensuring that data can be ingested, reported on, and analyzed through Cyoda's state machine architecture. Each API is designed to enable efficient, clear communication with the backend services, maintaining clarity and coherence in the workflow execution.
