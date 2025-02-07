@@ -1,81 +1,114 @@
-Based on your requirement and the previous discussions, I will outline the APIs for each API request type related to the entities involved in downloading, analyzing, and reporting on the London Houses Data.
+### User Requirement Document: Data Analysis and Reporting for London Houses Data
 
-### Entities and Their APIs
+#### User Stories
+1. **As a user**, I want to download the London Houses Data so that I can analyze it.
+2. **As a user**, I want to analyze the data using Pandas so that I can generate insights.
+3. **As a user**, I want to save a report based on the analysis so that I can review and share it later.
 
-#### 1. Entity: `LondonHousesData`
-- **Description**: This entity represents the raw data of houses in London that will be downloaded for analysis.
-- **Saving Method**: This entity should be saved directly via an API call.
-
-**APIs**
-- **POST /api/london_houses_data**
-  - **Request**: A JSON object containing the data details.
-  - **Action**: `entity_service.add(current_entity)`
-  
-```json
-{
-  "entity_name": "london_houses_data",
-  "data_source": "api",
-  "data": {
-    "location": "London",
-    "price": 500000,
-    "bedrooms": 3,
-    "bathrooms": 2,
-    ...
-  }
-}
+#### Journey Diagram
+```mermaid
+graph TD
+    A[Start] --> B[Download London Houses Data]
+    B --> C[Analyze Data with Pandas]
+    C --> D[Generate Reports]
+    D --> E[Save Reports]
+    E --> F[End]
 ```
 
-- **GET /api/london_houses_data/{id}**
-  - **Request**: Requesting data for a specific house by ID.
-  - **Action**: `entity_service.get(current_entity)`
+#### Sequence Diagram
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as App
+    participant E as Entity
+    participant W as Workflow (Business Logic, isolated functions "processors")
+    participant C as Cyoda
+    participant G as gRPC Server
 
-#### 2. Entity: `DataAnalysisReport`
-- **Description**: This entity represents the report generated from analyzing the London Houses Data.
-- **Saving Method**: This entity will be created as an output of a workflow.
-
-**APIs**
-- **POST /api/data_analysis_report**
-  - **Request**: A JSON object containing analysis report details.
-  - **Action**: `entity_service.add(current_entity)`
-  
-```json
-{
-  "entity_name": "data_analysis_report",
-  "analysis_type": "mean_price",
-  "results": {
-    "average_price": 550000,
-    "max_price": 1200000,
-    "min_price": 300000,
-    ...
-  }
-}
+    %% User Interaction Flow
+    U->>A: Download Data Request
+    A->>C: Fetch London Houses Data
+    C-->>A: Return Data
+    A->>W: Start Processing with Pandas
+    W-->>A: Process Data Completed
+    A->>U: Download Report
 ```
 
-- **GET /api/data_analysis_report/{id}**
-  - **Request**: Requesting a specific analysis report by ID.
-  - **Action**: `entity_service.get(current_entity)`
+---
 
-#### 3. Entity: `DataIngestionJob`
-- **Description**: This entity represents the automation job that ingests the London Houses Data at scheduled intervals.
-- **Saving Method**: This entity should be saved via a scheduler.
+### Entities Outline
+1. **Entity: London Houses Data**
+   - **Description**: Represents the dataset to be analyzed and reported.
+   - **Storage**: Saved through API calls.
+   - **JSON Example**:
+    ```json
+    {
+      "entity_name": "london_houses_data",
+      "entity_type": "DATASET",
+      "data_source": "API",
+      "data_fields": ["address", "price", "bedrooms", "bathrooms", "size"],
+      "data": [...]
+    }
+    ```
 
-**APIs**
-- **POST /api/data_ingestion_job**
-  - **Request**: A JSON object to create a new ingestion job.
+    **Flowchart for London Houses Data Workflow**
+    ```mermaid
+    flowchart TD
+      A[Start State] -->|transition: fetch_data, processor: fetch_data_processor, processor attributes: sync_process=true| B[Data Fetched]
+      B -->|transition: analyze_data, processor: analyze_data_processor, processor attributes: sync_process=true| C[Data Analyzed]
+      C --> D[Report Generated]
+    ```
+
+2. **Entity: Analysis Report**
+   - **Description**: Represents the report generated from the analyzed data.
+   - **Storage**: Saved through workflow completion (ENTITY_EVENT).
+   - **JSON Example**:
+    ```json
+    {
+      "entity_name": "analysis_report",
+      "entity_type": "REPORT",
+      "related_entity": "london_houses_data",
+      "report_data": {...},
+      "report_format": "PDF",
+      "status": "saved"
+    }
+    ```
+
+    **Flowchart for Analysis Report Workflow**
+    ```mermaid
+    flowchart TD
+      A[Start State] -->|transition: generate_report, processor: generate_report_processor, processor attributes: sync_process=true| B[Report Generated]
+      B -->|transition: save_report, processor: save_report_processor, processor attributes: sync_process=true| C[Report Saved]
+    ```
+
+---
+
+### API Outline
+
+#### London Houses Data API
+- **POST /london-houses-data**
+  - **Description**: To upload the London Houses Data.
   - **Action**: `entity_service.add(current_entity)`
-  
-```json
-{
-  "entity_name": "data_ingestion_job",
-  "schedule": "0 12 * * *",  // app runs daily at noon
-  "job_type": "download_london_houses_data",
-  ...
-}
-```
 
-- **GET /api/data_ingestion_job/{id}**
-  - **Request**: Requesting specific job details by ID.
+- **GET /london-houses-data**
+  - **Description**: To fetch the existing London Houses Data.
   - **Action**: `entity_service.get(current_entity)`
+
+---
+
+#### Analysis Report API
+- **POST /analysis-report**
+  - **Description**: To upload the analysis report.
+  - **Action**: `entity_service.add(current_entity)`
+
+- **GET /analysis-report**
+  - **Description**: To fetch the generated analysis report.
+  - **Action**: `entity_service.get(current_entity)`
+
+---
 
 ### Summary
-These APIs allow interaction with each entity, ensuring that data can be ingested, reported on, and analyzed through Cyoda's state machine architecture. Each API is designed to enable efficient, clear communication with the backend services, maintaining clarity and coherence in the workflow execution.
+
+In this document, we have outlined the user requirements, including user stories, journey, and sequence diagrams to illustrate the flow of actions. We identified two main entities, provided JSON examples, and created flowcharts to visualize their workflows. Additionally, we detailed the respective APIs for these entities, ensuring that they reach the required functionalities. 
+
+If there are any further adjustments or additions needed, please let me know!
