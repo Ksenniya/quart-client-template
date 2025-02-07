@@ -1,90 +1,119 @@
-# Certainly! Let’s refactor the code to move the business logic related to creating and deploying environments into separate processor functions. This will enhance the separation of concerns and make the code easier to maintain and test. 
+# To implement the state machine using isolated lambda functions for the workflow you described, we'll define separate functions for each step in the flowchart. Below are the lambda function definitions for the state machine you provided, along with descriptions of their roles in the workflow.
 # 
-# ### Updated `api.py` Code
-# 
-# Here’s how you can restructure the `deploy_cyoda_env` function and create a separate processor for handling business logic.
+# ### 1. Create Environment Lambda Function
 # 
 # ```python
-from quart import Quart, request, jsonify
-import httpx
-
-app = Quart(__name__)
-
-TEAMCITY_URL = "https://teamcity.cyoda.org/app/rest"
-
-
-async def validate_environment_info(user_name):
+async def create_environment(data):
+    user_name = data.get('user_name')
+    
     if not user_name:
         return {"error": "user_name is required"}, 400
-    return None, None
 
+    # Here you would typically create and save the environment data in your database
+    environment_id = "some_generated_uuid"  # This should be the actual UUID you generate
 
-async def create_build_payload(user_name):
-    return {
-        'buildType': {
-            'id': 'KubernetesPipeline_CyodaSaas'
-        },
-        'properties': {
-            'property': [
-                {'name': 'user_defined_keyspace', 'value': user_name},
-                {'name': 'user_defined_namespace', 'value': user_name}
-            ]
-        }
-    }
+    return {"status": "Environment Created", "environment_id": environment_id}, 201
+# ```
+# 
+# ### 2. Validate Environment Info Lambda Function
+# 
+# ```python
+def validate_environment_info(data):
+    # Add your validation logic here: check if all needed fields are present, etc.
+    required_fields = ['user_name', 'repository_url', 'is_public']  # Example fields
 
-
-async def deploy_build(build_payload):
+    for field in required_fields:
+        if field not in data:
+            return {"error": f"{field} is required"}, 400
+            
+    return {"status": "Valid"}, 200
+# ```
+# 
+# ### 3. Initiate Environment Lambda Function
+# 
+# ```python
+async def initiate_environment(environment_id):
+    # Add your logic to initiate the environment here
+    # For example, setting up resources in an orchestration tool like Kubernetes
+    return {"status": "Environment Initiated"}, 200
+# ```
+# 
+# ### 4. Deploy to TeamCity Lambda Function
+# 
+# ```python
+async def deploy_to_teamcity(build_payload):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f'{TEAMCITY_URL}/buildQueue', json=build_payload)
+        response = await client.post(f"{TEAMCITY_URL}/buildQueue", json=build_payload)
         return response.json(), response.status_code
-
-
-@app.route('/deploy/cyoda-env', methods=['POST'])
-async def deploy_cyoda_env():
-    data = await request.json
-    user_name = data.get('user_name')
-
-    # Validate environment information
-    error_response, status_code = await validate_environment_info(user_name)
-    if error_response:
-        return jsonify(error_response), status_code
-
-    # Create build payload
-    build_payload = await create_build_payload(user_name)
-
-    # Deploy to TeamCity
-    response_json, status_code = await deploy_build(build_payload)
-    return jsonify(response_json), status_code
-
-# The other API endpoints would need similar refactoring, moving business logic out into processor functions.
-
-if __name__ == "__main__":
-    app.run()
 # ```
 # 
-# ### Flowchart Representation
+# ### 5. Check Deployment Status Lambda Function
 # 
-# To represent the steps in the deployment workflow, you can consider the following flowchart based on the Mermaid syntax you have provided. This flowchart illustrates the logical steps taken during the environment creation and deployment process.
-# 
-# ```mermaid
-# flowchart TD
-#     A[Create Environment] --> B{Environment Info Valid?}
-#     B -->|Yes| C[Initiate Environment]
-#     B -->|No| D[Return Error]
-#     C --> E[Deploy to TeamCity]
-#     E --> F{Deployment Status?}
-#     F -->|Success| G[Update Deployment Status]
-#     F -->|Failed| H[Notify User]
+# ```python
+async def check_deployment_status(deployment_id):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{TEAMCITY_URL}/builds/id:{deployment_id}")
+        return response.json(), response.status_code
 # ```
 # 
-# ### Explanation of the Code Changes
+# ### 6. Update Deployment Status Lambda Function
 # 
-# 1. **Validation Logic**: The environment validation logic has been moved to the `validate_environment_info` function. This checks for the presence of `user_name` and returns appropriate error messages if validation fails.
+# ```python
+async def update_deployment_status(deployment_id, status):
+    # Logic to update deployment based on TeamCity response
+    # This can be a call to your database to update the deployment status
+    return {"status": "Deployment status updated"}, 200
+# ```
 # 
-# 2. **Build Payload Creation**: The logic to create the build payload has been moved to the `create_build_payload` function.
+# ### 7. Notify User Lambda Function
 # 
-# 3. **Deployment Handling**: The actual deployment to TeamCity is now encapsulated in the `deploy_build` function, which takes care of sending the request.
+# ```python
+async def notify_user(deployment_id, user_id, message):
+    # Logic to send notification to the user, e.g. via email, messaging service, etc.
+    return {"status": "User notified"}, 200
+# ```
 # 
-# 4. **Main Endpoint**: The `deploy_cyoda_env` function now simply orchestrates these other functions and handles the resulting responses.
+# ### Assembling the State Machine
 # 
-# This structure will allow for easier updates and unit testing of each piece of business logic without affecting the overall API endpoints directly. Let me know if you need further changes or additional functionality!
+# You could assemble the overall state machine logic calling each of these functions in sequence based on the flow you defined. Below is a simple representation of the workflow:
+# 
+# ```python
+async def environment_workflow(data):
+    # Step 1: Create the Environment
+    create_response, create_status = await create_environment(data)
+
+    if create_status != 201:
+        return create_response, create_status
+        
+    # Step 2: Validate Environment Info
+    validation_response, validation_status = validate_environment_info(data)
+
+    if validation_status != 200:
+        return validation_response, validation_status
+        
+    # Step 3: Initiate Environment
+    initiate_response = await initiate_environment(create_response['environment_id'])
+
+    # Step 4: Deploy to TeamCity
+    build_payload = {
+        'buildType': {'id': 'KubernetesPipeline_CyodaSaas'},
+        'properties': {'property': [{'name': 'user_defined_keyspace', 'value': data['user_name']}, 
+                                     {'name': 'user_defined_namespace', 'value': data['user_name']}]}}
+    }
+    deploy_response, deploy_status = await deploy_to_teamcity(build_payload)
+
+    # Step 5: Check Deployment Status
+    check_status_response = await check_deployment_status(deploy_response['build_id'])
+
+    if check_status_response['status'] == "Success":
+        await update_deployment_status(deploy_response['build_id'], "Success")
+    else:
+        await notify_user(deploy_response['build_id'], data['user_id'], "Deployment failed")
+
+    return {"final_status": "Completed"}, 200
+# ```
+# 
+# ### Note:
+# - Each function returns a tuple of response and status code, allowing for easy validation at each step of the workflow.
+# - Error handling and logging would be important enhancements to make this robust, which can be added in each function as needed.
+# - You might want to set up an orchestrator function (like a state machine runner) to handle calling these lambda functions in order and managing the state flow in an actual deployment scenario.
