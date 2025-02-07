@@ -1,88 +1,90 @@
-# Sure! Below is a structured outline of the user APIs for each API request type entity, with emphasis on POST and GET requests. Each entity's requests are categorized and I'll include notes on how to save or retrieve each entity.
+# Here's an outline of the user APIs for each API request type entity, specifying the operations along with the corresponding service methods (e.g., `entity_service.add(current_entity)` for POST requests and `entity_service.get(current_entity)` for GET requests). 
 # 
-# ### User API Outline
+# ### User APIs for Cyoda Deployment and Environment Configuration
 # 
-# ---
+# #### 1. API for Creating a Cyoda Environment
 # 
-# #### 1. **Environment Configuration API**
-# **POST `/deploy/cyoda-env`**
-# - Description: Creates a new environment configuration for a user.
-# - Request Body:
-#   ```json
-#   {
-#     "user_name": "test"
-#   }
-#   ```
-# - Action:
-#   ```python
-  entity_service.add(current_entity)  # Adds a new environment configuration entity
-#   ```
+# - **POST /deploy/cyoda-env**
+#     - **Request Body:**
+#       ```json
+#       {
+#         "user_name": "test"
+#       }
+#       ```
+#     - **Description:** Creates a new Cyoda environment for the specific user.
+#     - **Service Call:** 
+#       ```python
+      entity_service.add(current_entity)  # where current_entity is a new Cyoda environment entity
+#       ```
 # 
-# **GET `/deploy/cyoda-env/status/{id}`**
-# - Description: Retrieves the status of a specific environment configuration by ID.
-# - Action:
-#   ```python
-  entity_service.get(current_entity)  # Gets the status of the environment configuration
-#   ```
+# #### 2. API for Deploying User Application
 # 
-# **GET `/deploy/cyoda-env/statistics/{id}`**
-# - Description: Returns statistics for the specified environment configuration.
-# - Action:
-#   ```python
-  entity_service.get(current_entity)  # Gets the statistics of the environment configuration
-#   ```
+# - **POST /deploy/user_app**
+#     - **Request Body:**
+#       ```json
+#       {
+#         "repository_url": "http://....",
+#         "is_public": "true"
+#       }
+#       ```
+#     - **Description:** Initiates the deployment of the user application by adding it to the build queue.
+#     - **Service Call:** 
+#       ```python
+      entity_service.add(current_entity)  # where current_entity is a new user application entity
+#       ```
 # 
-# ---
+# #### 3. API for Retrieving Cyoda Environment Status
 # 
-# #### 2. **User Application API**
-# **POST `/deploy/user_app`**
-# - Description: Deploys a user application.
-# - Request Body:
-#   ```json
-#   {
-#     "repository_url": "http://....",
-#     "is_public": "true"
-#   }
-#   ```
-# - Action:
-#   ```python
-  entity_service.add(current_entity)  # Adds a new user application entity
-#   ```
+# - **GET /deploy/cyoda-env/status/{id}**
+#     - **Description:** Retrieves the status of the specified Cyoda environment.
+#     - **Service Call:** 
+#       ```python
+      entity_service.get(current_entity)  # where current_entity represents the specified cyoda environment by id
+#       ```
 # 
-# **GET `/deploy/user_app/status/{id}`**
-# - Description: Retrieves the status of a specific user application by ID.
-# - Action:
-#   ```python
-  entity_service.get(current_entity)  # Gets the status of the user application
-#   ```
+# #### 4. API for Retrieving Cyoda Environment Statistics
 # 
-# **GET `/deploy/user_app/statistics/{id}`**
-# - Description: Returns statistics for the specified user application.
-# - Action:
-#   ```python
-  entity_service.get(current_entity)  # Gets the statistics of the user application
-#   ```
+# - **GET /deploy/cyoda-env/statistics/{id}**
+#     - **Description:** Fetches statistics for the specified Cyoda environment.
+#     - **Service Call:** 
+#       ```python
+      entity_service.get(current_entity)  # where current_entity represents the specified cyoda environment by id
+#       ```
 # 
-# **POST `/deploy/cancel/user_app/{id}`**
-# - Description: Cancels a queued user application deployment.
-# - Request Body:
-#   ```json
-#   {
-#     "repository_url": "http://....",
-#     "is_public": "true"
-#   }
-#   ```
-# - Action:
-#   ```python
-  # No direct add; just call the cancel operation on the entity service
-  entity_service.cancel(current_entity)  # Cancels the user application deployment
-#   ```
+# #### 5. API for Retrieving User Application Status
 # 
-# ---
+# - **GET /deploy/user_app/status/{id}**
+#     - **Description:** Retrieves the status of the specified user application deployment.
+#     - **Service Call:** 
+#       ```python
+      entity_service.get(current_entity)  # where current_entity represents the specified user application by id
+#       ```
+# 
+# #### 6. API for Retrieving User Application Statistics
+# 
+# - **GET /deploy/user_app/statistics/{id}**
+#     - **Description:** Fetches statistics for the specified user application deployment.
+#     - **Service Call:** 
+#       ```python
+      entity_service.get(current_entity)  # where current_entity represents the specified user application by id
+#       ```
+# 
+# #### 7. API for Canceling User Application Deployment
+# 
+# - **POST /deploy/cancel/user_app/{id}**
+#     - **Request Body:**
+#       ```json
+#       {
+#         "comment": "Canceling a queued build",
+#         "readdIntoQueue": false
+#       }
+#       ```
+#     - **Description:** Cancels the deployment of the specified user application.
+#     - **Service Call:** 
+#       ```python
+      entity_service.cancel(current_entity)  # where current_entity represents the specified user application by id
+#       ```
 # 
 # ### Summary
-# - Each POST request is managed by the `entity_service.add(current_entity)` to create or update entities in the system.
-# - Each GET request uses `entity_service.get(current_entity)` to retrieve data about the entities.
-# - The structure for entities remains tightly coupled with the underlying workflows that handle their life cycles, ensuring processes adhere to the state machine model of Cyoda.
 # 
-# This outline provides clear routing for API requests and aligns with the Cyoda framework, enabling efficient management of both environment configurations and user applications.
+# Each API request type is clearly defined with respective HTTP methods and the associated service calls to manage the entities effectively in your Cyoda-like application. This structured approach ensures a separation of concerns and provides clarity on how each type of API interacts with the underlying data models and workflows.
