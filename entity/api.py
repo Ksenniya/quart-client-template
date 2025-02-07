@@ -1,46 +1,36 @@
-Based on your functional requirements for the backend application that manages deployment and environment configuration for multiple users, here are the key entities that can be outlined:
+For your backend application that manages deployment and environment configuration for multiple users, the minimum number of required entities would likely include the following:
 
 1. **User**:
-   - Represents the individual utilizing the application.
-   - Attributes:
-     - `user_id`: Unique identifier for the user.
-     - `user_name`: Username of the user.
-     - `token`: Authentication token for API access.
+   - Attributes could include:
+     - `user_id`: A unique identifier for the user.
+     - `user_name`: The name of the user.
+     - `email`: The email address of the user (if needed for notifications or account management).
+     - `token`: A bearer token for authentication.
 
-2. **Deployment**:
-   - Represents the configuration and status of a build/deployment.
-   - Attributes:
-     - `deployment_id`: Unique identifier for each deployment.
-     - `user_id`: ID of the user who initiated the deployment.
-     - `build_type`: Type of build (e.g., "KubernetesPipeline_CyodaSaas", "KubernetesPipeline_CyodaSaasUserEnv").
-     - `status`: Current status of the deployment (e.g., queued, running, succeeded, failed).
-     - `properties`: Key-value pairs for user-defined properties (e.g., `user_defined_keyspace`, `user_defined_namespace`).
+2. **Build**:
+   - Attributes could include:
+     - `build_id`: A unique identifier for the build.
+     - `build_type`: The type of the build (e.g., KubernetesPipeline_CyodaSaas).
+     - `user_defined_keyspace`: A user-defined keyspace for the build.
+     - `user_defined_namespace`: A user-defined namespace for the build.
+     - `status`: The current status of the build (e.g., queued, running, completed, failed, canceled).
+     - `created_at`: Timestamp of when the build was created.
+     - `updated_at`: Timestamp of the last update to the build.
 
-3. **Build**:
-   - Represents a specific build within the build queue.
-   - Attributes:
-     - `build_id`: Identifier for the build.
-     - `deployment_id`: ID of the deployment associated with the build.
-     - `repository_url`: URL of the associated repository.
-     - `is_public`: Boolean indicating if the build is public.
-     
-4. **Build Statistics**:
-   - Represents performance and resource usage information regarding a build.
-   - Attributes:
-     - `build_id`: Identifier for the specific build.
-     - `details`: A collection of statistics related to the build.
-     
-5. **Queue**:
-   - Represents the queue of builds awaiting execution.
-   - Attributes:
-     - `builds`: List of `build` objects in the queue.
-     - `total_count`: Total number of builds in the queue.
+3. **Environment** (optional but recommended):
+   - Attributes could include:
+     - `env_id`: A unique identifier for the environment.
+     - `env_name`: A name for the environment (e.g., "Development", "Production").
+     - `repository_url`: The URL of the repository associated with the environment.
+     - `is_public`: A boolean indicating whether the environment is public.
 
-### Summary of Entities
-- **User**: Handles authentication and permissions.
-- **Deployment**: Manages deployment properties and statuses.
-- **Build**: Represents individual builds within deployment configurations.
-- **Build Statistics**: Provides insights into build performance and success metrics.
-- **Queue**: Maintains the builds that are queued for execution.
+4. **Deployment** (optional but helpful):
+   - Attributes could include:
+     - `deployment_id`: A unique identifier for the deployment.
+     - `build_id`: A reference to the associated build.
+     - `env_id`: A reference to the environment where this deployment is taking place.
+     - `status`: The status of the deployment (e.g., successful, failed, in-progress).
 
-These entities help define the structure of your application and will facilitate the implementation of the API's functionality in a cohesive manner. Each entity can also correlate with database tables or documents if you're using a database for persistence.
+### Minimum Required Entities
+
+In summary, the minimum entities you would need for your application would be User and Build. The Environment and Deployment entities can be added later based on your application’s requirements and complexity. This initial set of entities should be sufficient to manage authentication and the basic functionalities required for handling builds and their configurations for users.
