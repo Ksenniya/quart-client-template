@@ -1,74 +1,71 @@
-To structure your application with entities and workflows properly, you'll want to consider which entities have processes that require a sequence of actions to be executed automatically (state machines) and which entities are merely data holders.
+Here are the suggested workflows for the entities based on the provided classes and their relationships:
 
-### Recommended Entities for Workflow:
+1. **Environment Workflow**: This workflow focuses on the lifecycle management of an Environment. 
 
-1. **Deployment**
-   - Reason: Deployments typically require multiple steps in a process, such as queueing a build, monitoring progress, handling success or failure, and finalizing deployment. A workflow can be beneficial here to manage these steps automatically.
+2. **Deployment Workflow**: This workflow highlights the process of creating a deployment related to an Environment and its status tracking.
 
-2. **TeamCityBuild**
-   - Reason: Each build has its own lifecycle, which includes triggering the build, checking the status, retrieving logs, and handling any retries or failure sequences. Automating these through a workflow allows for better handling and observability of builds.
+3. **TeamCityBuild Workflow**: This workflow demonstrates how a build is initiated from a deployment's status.
 
-3. **BuildStatus**
-   - Reason: Since build status can change over time (queued, in progress, success, failure), having a workflow to manage status transitions and related actions (like notifications or cleanup) can be useful.
+4. **BuildStatus Workflow**: This workflow shows how the current status of a deployment is updated.
 
-### Data Entities without Workflow:
+### Mermaid Diagrams for Each Workflow
 
-1. **Environment**
-   - Reason: While environments need to be defined, they don't have complex state changes or processes associated directly with them apart from being created, updated, or deleted. They serve primarily as data holders referring to deployments.
-
-2. **User**
-   - Reason: The User entity is primarily a data entity, tracking ownership and basic attributes without the need for workflows. Users can create or manage environments or deployments but do not directly undergo workflow processes themselves.
-
-### Summary of Entity Class Relationships:
+#### 1. Environment Workflow
 
 ```mermaid
-classDiagram
-    class User {
-        +UUID id
-        +String username
-        +DateTime created_at
-        +DateTime updated_at
-    }
-
-    class Environment {
-        +UUID id
-        +UUID user_id
-        +String name
-        +String repository_url
-        +Boolean is_public
-        +DateTime created_at
-        +DateTime updated_at
-    }
-
-    class Deployment {
-        +UUID id
-        +UUID environment_id
-        +String build_id
-        +String status
-        +DateTime created_at
-        +DateTime completed_at
-    }
-
-    class TeamCityBuild {
-        +UUID id
-        +UUID deployment_id
-        +String build_type_id
-        +JSON properties
-        +DateTime created_at
-        +DateTime updated_at
-    }
-
-    class BuildStatus {
-        +UUID id
-        +UUID deployment_id
-        +String status
-        +DateTime timestamp
-    }
-
-    User "1" -- "0..*" Environment : owns >
-    Environment "1" -- "0..*" Deployment : contains >
-    Deployment "1" -- "1" TeamCityBuild : has >
-    Deployment "1" -- "0..1" BuildStatus : tracks >
+flowchart TD
+    A[Create Environment] --> B{Environment Valid?}
+    B -->|Yes| C[Save Environment]
+    B -->|No| D[Return Error]
+    C --> E[User Can Modify Environment]
+    E --> F[Delete Environment]
+    F -->|Confirm| G[Remove Environment]
+    G -->|Notify User| H[Environment Deleted]
 ```
 
-In conclusion, by defining workflows for the **Deployment**, **TeamCityBuild**, and **BuildStatus** entities, you can effectively manage states of the processes associated with deployment activities, ensuring that the necessary actions are encapsulated in a coherent sequence. The **User** and **Environment** entities will serve as data structures to support these workflows without needing intricate state management.
+#### 2. Deployment Workflow
+
+```mermaid
+flowchart TD
+    A[Create Deployment] --> B{Deployment Info Valid?}
+    B -->|Yes| C[Initiate Deployment]
+    B -->|No| D[Return Error]
+    C --> E[Deploy to TeamCity]
+    E --> F{Deployment Status?}
+    F -->|Success| G[Update Deployment Status]
+    F -->|Failed| H[Notify User]
+```
+
+#### 3. TeamCityBuild Workflow
+
+```mermaid
+flowchart TD
+    A[Create TeamCity Build] --> B{Build Properties Valid?}
+    B -->|Yes| C[Send Build Request]
+    B -->|No| D[Return Error]
+    C --> E[Get Build ID]
+    E --> F[Return Build ID to User]
+    F -->|User Can Cancel Build| G[Cancel Build]
+```
+
+#### 4. BuildStatus Workflow
+
+```mermaid
+flowchart TD
+    A[Check Build Status] --> B{Build ID Valid?}
+    B -->|Yes| C[Fetch Status from TeamCity]
+    B -->|No| D[Return Error]
+    C --> E[Update BuildStatus Entity]
+    E --> F[Notify User with Status]
+```
+
+### Summary of Workflows
+
+Each workflow is designed to manage the lifecycle of the corresponding entity, ensuring validation checks and user notifications. Here's how they interact:
+
+- The **Environment** entity can be created, modified, or deleted.
+- The **Deployment** entity links directly to the **Environment** and is responsible for raising requests to CI/CD systems (like TeamCity).
+- **TeamCityBuild** keeps track of the build details and interacts with TeamCity for operational requests.
+- **BuildStatus** provides real-time updates, ensuring users are informed of any changes in the deployment stage.
+
+These workflows will help ensure a structured approach to managing the application's functionality. If you have further requirements or modifications, let me know!
