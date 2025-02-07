@@ -1,114 +1,127 @@
-### User Requirement Document: Data Analysis and Reporting for London Houses Data
+To improve your API design for managing deployment and environment configuration, we'll adjust the endpoints and requests to adhere to RESTful principles. This means using standard HTTP methods and making sure that the endpoints clearly represent the resources being manipulated.
 
-#### User Stories
-1. **As a user**, I want to download the London Houses Data so that I can analyze it.
-2. **As a user**, I want to analyze the data using Pandas so that I can generate insights.
-3. **As a user**, I want to save a report based on the analysis so that I can review and share it later.
+Here's a revised outline of your APIs:
 
-#### Journey Diagram
-```mermaid
-graph TD
-    A[Start] --> B[Download London Houses Data]
-    B --> C[Analyze Data with Pandas]
-    C --> D[Generate Reports]
-    D --> E[Save Reports]
-    E --> F[End]
-```
+### API Overview
 
-#### Sequence Diagram
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant A as App
-    participant E as Entity
-    participant W as Workflow (Business Logic, isolated functions "processors")
-    participant C as Cyoda
-    participant G as gRPC Server
+1. **Authentication**
+   - `Authorization: Bearer <token>` for all requests
 
-    %% User Interaction Flow
-    U->>A: Download Data Request
-    A->>C: Fetch London Houses Data
-    C-->>A: Return Data
-    A->>W: Start Processing with Pandas
-    W-->>A: Process Data Completed
-    A->>U: Download Report
-```
+2. **Environment Management APIs**
+   
+   - **POST /deploy/cyoda-env**
+     - **Description:** Initiate a build for Cyoda environment configuration.
+     - **Request Body:**
+       ```json
+       {
+         "user_name": "test"
+       }
+       ```
+     - **Action:** 
+       ```http
+       POST https://teamcity.cyoda.org/app/rest/buildQueue
+       {
+         "buildType": {
+           "id": "KubernetesPipeline_CyodaSaas"
+         },
+         "properties": {
+           "property": [
+             {
+               "name": "user_defined_keyspace",
+               "value": "test"
+             },
+             {
+               "name": "user_defined_namespace",
+               "value": "test"
+             }
+           ]
+         }
+       }
+       ```
+     - **Response:** Returns build ID
 
----
+   - **GET /deploy/cyoda-env/status/{build_id}**
+     - **Description:** Retrieve the status of a specific Cyoda environment deployment.
+     - **Action:** 
+       ```http
+       GET https://teamcity.cyoda.org/app/rest/buildQueue/id:{build_id}
+       ```
+     - **Response:** Status information about the build
 
-### Entities Outline
-1. **Entity: London Houses Data**
-   - **Description**: Represents the dataset to be analyzed and reported.
-   - **Storage**: Saved through API calls.
-   - **JSON Example**:
-    ```json
-    {
-      "entity_name": "london_houses_data",
-      "entity_type": "DATASET",
-      "data_source": "API",
-      "data_fields": ["address", "price", "bedrooms", "bathrooms", "size"],
-      "data": [...]
-    }
-    ```
+   - **GET /deploy/cyoda-env/statistics/{build_id}**
+     - **Description:** Retrieve statistics for a specific Cyoda environment deployment.
+     - **Action:** 
+       ```http
+       GET https://teamcity.cyoda.org/app/rest/builds/id:{build_id}/statistics/
+       ```
+     - **Response:** Statistics related to the build
 
-    **Flowchart for London Houses Data Workflow**
-    ```mermaid
-    flowchart TD
-      A[Start State] -->|transition: fetch_data, processor: fetch_data_processor, processor attributes: sync_process=true| B[Data Fetched]
-      B -->|transition: analyze_data, processor: analyze_data_processor, processor attributes: sync_process=true| C[Data Analyzed]
-      C --> D[Report Generated]
-    ```
+3. **User Application APIs**
+   
+   - **POST /deploy/user_app**
+     - **Description:** Initiate a build for deploying a user application.
+     - **Request Body:**
+       ```json
+       {
+         "repository_url": "http://....",
+         "is_public": "true"
+       }
+       ```
+     - **Action:** 
+       ```http
+       POST https://teamcity.cyoda.org/app/rest/buildQueue
+       {
+         "buildType": {
+           "id": "KubernetesPipeline_CyodaSaasUserEnv"
+         },
+         "properties": {
+           "property": [
+             {
+               "name": "user_defined_keyspace",
+               "value": "user_name"
+             },
+             {
+               "name": "user_defined_namespace",
+               "value": "user_name"
+             }
+           ]
+         }
+       }
+       ```
+     - **Response:** Returns build ID
+     
+   - **GET /deploy/user_app/status/{build_id}**
+     - **Description:** Retrieve the status of a specific user application deployment.
+     - **Action:** 
+       ```http
+       GET https://teamcity.cyoda.org/app/rest/buildQueue/id:{build_id}
+       ```
+     - **Response:** Status information about the user app build
 
-2. **Entity: Analysis Report**
-   - **Description**: Represents the report generated from the analyzed data.
-   - **Storage**: Saved through workflow completion (ENTITY_EVENT).
-   - **JSON Example**:
-    ```json
-    {
-      "entity_name": "analysis_report",
-      "entity_type": "REPORT",
-      "related_entity": "london_houses_data",
-      "report_data": {...},
-      "report_format": "PDF",
-      "status": "saved"
-    }
-    ```
+   - **GET /deploy/user_app/statistics/{build_id}**
+     - **Description:** Retrieve statistics for a specific user application deployment.
+     - **Action:** 
+       ```http
+       GET https://teamcity.cyoda.org/app/rest/builds/id:{build_id}/statistics/
+       ```
+     - **Response:** Statistics related to the user app build
 
-    **Flowchart for Analysis Report Workflow**
-    ```mermaid
-    flowchart TD
-      A[Start State] -->|transition: generate_report, processor: generate_report_processor, processor attributes: sync_process=true| B[Report Generated]
-      B -->|transition: save_report, processor: save_report_processor, processor attributes: sync_process=true| C[Report Saved]
-    ```
+   - **POST /deploy/cancel/user_app/{build_id}**
+     - **Description:** Cancel a queued user application build.
+     - **Action:** 
+       ```http
+       POST https://teamcity.cyoda.org/app/rest/builds/id:{build_id}
+       {
+         "comment": "Canceling a queued build",
+         "readdIntoQueue": false
+       }
+       ```
+     - **Response:** Confirmation of cancellation
 
----
+### Key Improvements in RESTful Design:
+- **Resource Identification:** The endpoint names are rewritten to clearly indicate what resource is being acted upon, providing better context.
+- **Nouns vs. Verbs:** APIs should use nouns representing resources rather than verbs and actions within the path, which is better aligned with RESTful principles.
+- **Consistent Endpoint Structure:** All endpoints follow a similar structure, making it easier for users to remember and use the APIs.
+- **Use of Proper HTTP Methods:** Distinct HTTP methods (GET, POST) are used for retrieving vs. creating resources.
 
-### API Outline
-
-#### London Houses Data API
-- **POST /london-houses-data**
-  - **Description**: To upload the London Houses Data.
-  - **Action**: `entity_service.add(current_entity)`
-
-- **GET /london-houses-data**
-  - **Description**: To fetch the existing London Houses Data.
-  - **Action**: `entity_service.get(current_entity)`
-
----
-
-#### Analysis Report API
-- **POST /analysis-report**
-  - **Description**: To upload the analysis report.
-  - **Action**: `entity_service.add(current_entity)`
-
-- **GET /analysis-report**
-  - **Description**: To fetch the generated analysis report.
-  - **Action**: `entity_service.get(current_entity)`
-
----
-
-### Summary
-
-In this document, we have outlined the user requirements, including user stories, journey, and sequence diagrams to illustrate the flow of actions. We identified two main entities, provided JSON examples, and created flowcharts to visualize their workflows. Additionally, we detailed the respective APIs for these entities, ensuring that they reach the required functionalities. 
-
-If there are any further adjustments or additions needed, please let me know!
+By implementing these changes, your API will follow RESTful conventions, making it more intuitive for developers to use and maintain.
