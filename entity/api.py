@@ -1,34 +1,74 @@
-To define which entities in your application would benefit from having a workflow (using a state machine to handle a sequence of actions), we should consider their complexity, the need for state transitions, and the potential for varying behavior based on current states. Here are recommendations for entities that may have workflows versus those that would be treated as simple "data" entities:
+To structure your application with entities and workflows properly, you'll want to consider which entities have processes that require a sequence of actions to be executed automatically (state machines) and which entities are merely data holders.
 
-### Entities Recommended for Workflow
+### Recommended Entities for Workflow:
 
-1. **Build Process (Deployment)**
-   - **Workflow Use Case**: The build process can involve several states such as “Queued”, “In Progress”, “Success”, “Failed”, “Cancelled”, etc. A state machine would allow you to automatically handle transitions between these states, such as triggering notifications or starting subsequent actions based on the results of a build.
-   - **States**: Queued → In Progress → Success/Failed/Canceled
+1. **Deployment**
+   - Reason: Deployments typically require multiple steps in a process, such as queueing a build, monitoring progress, handling success or failure, and finalizing deployment. A workflow can be beneficial here to manage these steps automatically.
 
-2. **User Application Deployment**
-   - **Workflow Use Case**: Deployments may involve multiple steps like validation, build, deployment to various environments, and health checks. Each step can have different outcomes, leading to different paths in the workflow based on success or failure.
-   - **States**: Pending → Validating → Building → Deploying → Completed/Failed
+2. **TeamCityBuild**
+   - Reason: Each build has its own lifecycle, which includes triggering the build, checking the status, retrieving logs, and handling any retries or failure sequences. Automating these through a workflow allows for better handling and observability of builds.
 
-3. **Environment Configuration**
-   - **Workflow Use Case**: Configuring and validating an environment might require multiple steps (create, validate, monitor) and each step could succeed or fail, influencing the next steps.
-   - **States**: Uninitialized → Creating → Validating → Active/Failed
+3. **BuildStatus**
+   - Reason: Since build status can change over time (queued, in progress, success, failure), having a workflow to manage status transitions and related actions (like notifications or cleanup) can be useful.
 
-### Entities Considered as Simple "Data" Entities
+### Data Entities without Workflow:
 
-1. **User**
-   - **Reason**: Basic user profile information (username, email, roles) doesn’t require a workflow, as it mainly serves as configuration data for authentication and authorization.
+1. **Environment**
+   - Reason: While environments need to be defined, they don't have complex state changes or processes associated directly with them apart from being created, updated, or deleted. They serve primarily as data holders referring to deployments.
 
-2. **Repository**
-   - **Reason**: The repository URL and associated metadata can be static configurations and typically don’t require transitions or state management.
+2. **User**
+   - Reason: The User entity is primarily a data entity, tracking ownership and basic attributes without the need for workflows. Users can create or manage environments or deployments but do not directly undergo workflow processes themselves.
 
-3. **Deployment Configurations**
-   - **Reason**: Static configurations for deployments (like `is_public`, `repository_url`) do not typically involve transitions, but you may need a strategy for updating these configurations separately.
+### Summary of Entity Class Relationships:
 
-4. **Build Metrics/Statistics**
-   - **Reason**: Metrics regarding deployments/builds represent historical data, which doesn’t have active states but serves reporting and analytics purposes.
+```mermaid
+classDiagram
+    class User {
+        +UUID id
+        +String username
+        +DateTime created_at
+        +DateTime updated_at
+    }
 
-### Summary
-Entities that interact with processes and require tracking state transitions, decision-making, and potential automation of workflows are prime candidates for implementing state machines. In contrast, static entities that serve as configuration or informational data can be handled without the need for workflows.
+    class Environment {
+        +UUID id
+        +UUID user_id
+        +String name
+        +String repository_url
+        +Boolean is_public
+        +DateTime created_at
+        +DateTime updated_at
+    }
 
-This approach will help streamline your application by ensuring that it only uses state machines where necessary, contributing to maintainability and clarity in your design.
+    class Deployment {
+        +UUID id
+        +UUID environment_id
+        +String build_id
+        +String status
+        +DateTime created_at
+        +DateTime completed_at
+    }
+
+    class TeamCityBuild {
+        +UUID id
+        +UUID deployment_id
+        +String build_type_id
+        +JSON properties
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class BuildStatus {
+        +UUID id
+        +UUID deployment_id
+        +String status
+        +DateTime timestamp
+    }
+
+    User "1" -- "0..*" Environment : owns >
+    Environment "1" -- "0..*" Deployment : contains >
+    Deployment "1" -- "1" TeamCityBuild : has >
+    Deployment "1" -- "0..1" BuildStatus : tracks >
+```
+
+In conclusion, by defining workflows for the **Deployment**, **TeamCityBuild**, and **BuildStatus** entities, you can effectively manage states of the processes associated with deployment activities, ensuring that the necessary actions are encapsulated in a coherent sequence. The **User** and **Environment** entities will serve as data structures to support these workflows without needing intricate state management.
