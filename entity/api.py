@@ -1,113 +1,34 @@
-To make your application robust, it's essential to outline the entities that will form the backbone of your application. In the context of managing deployment and environment configuration, the following entities can be defined:
+To define which entities in your application would benefit from having a workflow (using a state machine to handle a sequence of actions), we should consider their complexity, the need for state transitions, and the potential for varying behavior based on current states. Here are recommendations for entities that may have workflows versus those that would be treated as simple "data" entities:
 
-1. **User**: Represents a user of the application. This entity will hold information about each user and their authentication credentials.
-   - **Attributes**:
-     - `id`: Unique identifier for the user (UUID)
-     - `username`: The user's name
-     - `email`: The user's email address
-     - `password_hash`: The hashed password for authentication
-     - `created_at`: Timestamp of when the user was created
-     - `updated_at`: Timestamp of when the user was last updated
-   - **Relationships**:
-     - Users can have multiple environments (one-to-many relationship).
+### Entities Recommended for Workflow
 
-2. **Environment**: Represents a deployment environment for a user, where configurations are defined.
-   - **Attributes**:
-     - `id`: Unique identifier for the environment (UUID)
-     - `user_id`: Foreign key linking to the User entity
-     - `name`: Descriptive name of the environment (e.g., "Production", "Staging")
-     - `repository_url`: The URL of the repository associated with this environment
-     - `is_public`: Boolean indicating if the environment is public
-     - `created_at`: Timestamp of when the environment was created
-     - `updated_at`: Timestamp of when the environment was last updated
-   - **Relationships**:
-     - Each environment may have multiple deployments (one-to-many relationship).
+1. **Build Process (Deployment)**
+   - **Workflow Use Case**: The build process can involve several states such as “Queued”, “In Progress”, “Success”, “Failed”, “Cancelled”, etc. A state machine would allow you to automatically handle transitions between these states, such as triggering notifications or starting subsequent actions based on the results of a build.
+   - **States**: Queued → In Progress → Success/Failed/Canceled
 
-3. **Deployment**: Represents a deployment action taken for a specific environment, including build details.
-   - **Attributes**:
-     - `id`: Unique identifier for the deployment (UUID)
-     - `environment_id`: Foreign key linking to the Environment entity
-     - `build_id`: The ID returned from the external build system (TeamCity)
-     - `status`: Enum for the current status of the deployment (e.g., Queued, Running, Completed, Failed)
-     - `created_at`: Timestamp of when the deployment was initiated
-     - `completed_at`: Timestamp of when the deployment was completed (nullable)
-   - **Relationships**:
-     - Each deployment is associated with a specific environment (many-to-one relationship).
+2. **User Application Deployment**
+   - **Workflow Use Case**: Deployments may involve multiple steps like validation, build, deployment to various environments, and health checks. Each step can have different outcomes, leading to different paths in the workflow based on success or failure.
+   - **States**: Pending → Validating → Building → Deploying → Completed/Failed
 
-4. **TeamCityBuild**: Represents the information about a build in TeamCity.
-   - **Attributes**:
-     - `id`: Unique identifier for the build (UUID)
-     - `deployment_id`: Foreign key linking to the Deployment entity
-     - `build_type_id`: The build type ID used by TeamCity
-     - `properties`: JSON object containing build property information
-     - `created_at`: Timestamp of when the build was created
-     - `updated_at`: Timestamp of when the build was last updated
-   - **Relationships**:
-     - Each TeamCity build is associated with a specific deployment (one-to-one relationship).
+3. **Environment Configuration**
+   - **Workflow Use Case**: Configuring and validating an environment might require multiple steps (create, validate, monitor) and each step could succeed or fail, influencing the next steps.
+   - **States**: Uninitialized → Creating → Validating → Active/Failed
 
-5. **BuildStatus**: Represents the status of a build in TeamCity.
-   - **Attributes**:
-     - `id`: Unique identifier for the build status (UUID)
-     - `deployment_id`: Foreign key linking to the Deployment entity
-     - `status`: Current build status (e.g., "Success", "Failure", "In Progress")
-     - `timestamp`: Time at which the status was last updated
+### Entities Considered as Simple "Data" Entities
 
-This set of entities will allow you to manage users, their environments, deployments, and track the status of builds effectively. Furthermore, it supports scalability, as new features can easily be added later on. 
+1. **User**
+   - **Reason**: Basic user profile information (username, email, roles) doesn’t require a workflow, as it mainly serves as configuration data for authentication and authorization.
 
-### Data Relationships Visualization
+2. **Repository**
+   - **Reason**: The repository URL and associated metadata can be static configurations and typically don’t require transitions or state management.
 
-A possible UML class diagram for these entities could look like this:
+3. **Deployment Configurations**
+   - **Reason**: Static configurations for deployments (like `is_public`, `repository_url`) do not typically involve transitions, but you may need a strategy for updating these configurations separately.
 
-```mermaid
-classDiagram
-    class User {
-        +UUID id
-        +String username
-        +String email
-        +String password_hash
-        +DateTime created_at
-        +DateTime updated_at
-    }
+4. **Build Metrics/Statistics**
+   - **Reason**: Metrics regarding deployments/builds represent historical data, which doesn’t have active states but serves reporting and analytics purposes.
 
-    class Environment {
-        +UUID id
-        +UUID user_id
-        +String name
-        +String repository_url
-        +Boolean is_public
-        +DateTime created_at
-        +DateTime updated_at
-    }
+### Summary
+Entities that interact with processes and require tracking state transitions, decision-making, and potential automation of workflows are prime candidates for implementing state machines. In contrast, static entities that serve as configuration or informational data can be handled without the need for workflows.
 
-    class Deployment {
-        +UUID id
-        +UUID environment_id
-        +String build_id
-        +String status
-        +DateTime created_at
-        +DateTime completed_at
-    }
-
-    class TeamCityBuild {
-        +UUID id
-        +UUID deployment_id
-        +String build_type_id
-        +JSON properties
-        +DateTime created_at
-        +DateTime updated_at
-    }
-
-    class BuildStatus {
-        +UUID id
-        +UUID deployment_id
-        +String status
-        +DateTime timestamp
-    }
-
-    User "1" -- "0..*" Environment : owns >
-    Environment "1" -- "0..*" Deployment : contains >
-    Deployment "1" -- "1" TeamCityBuild : has >
-    Deployment "1" -- "0..1" BuildStatus : tracks >
-```
-
-This UML diagram illustrates the relationships between the entities, which will help guide the implementation of business logic as well as the database schema.
+This approach will help streamline your application by ensuring that it only uses state machines where necessary, contributing to maintainability and clarity in your design.
