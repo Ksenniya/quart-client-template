@@ -1,0 +1,165 @@
+Sure! Below is the pseudocode outlining the business logic for each workflow function (processor). I will group the functions according to the entities and include the appropriate direct API interactions while following the requirement specifications we discussed.
+
+### Entity: Cyoda Environment
+
+#### Processor: deploy_cyoda_env
+
+```plaintext
+function deploy_cyoda_env(user_name):
+    // Validate user authentication through Bearer token
+    if not validate_user_authentication(user_name):
+        return "Unauthorized"
+
+    // Prepare the request payload for building the environment
+    payload = {
+        "buildType": {
+            "id": "KubernetesPipeline_CyodaSaas"
+        },
+        "properties": {
+            "property": [
+                { "name": "user_defined_keyspace", "value": user_name },
+                { "name": "user_defined_namespace", "value": user_name }
+            ]
+        }
+    }
+
+    // Send request to the external service to create the environment
+    response = send_post_request("https://teamcity.cyoda.org/app/rest/buildQueue", payload)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to deploy environment: " + response.error_message
+    
+    // Extract build ID from the response
+    build_id = response.build_id
+    return build_id
+```
+
+#### Processor: get_cyoda_env_status
+
+```plaintext
+function get_cyoda_env_status(build_id):
+    // Construct the API endpoint to fetch status
+    url = "https://teamcity.cyoda.org/app/rest/buildQueue/id:" + build_id
+    
+    // Send GET request to fetch the environment status
+    response = send_get_request(url)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to fetch status: " + response.error_message
+
+    // Return the build status details
+    return response.status_details
+```
+
+#### Processor: get_cyoda_env_statistics
+
+```plaintext
+function get_cyoda_env_statistics(build_id):
+    // Construct the API endpoint to fetch build statistics
+    url = "https://teamcity.cyoda.org/app/rest/builds/id:" + build_id + "/statistics/"
+    
+    // Send GET request to fetch build statistics
+    response = send_get_request(url)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to fetch statistics: " + response.error_message
+
+    // Return the statistics details
+    return response.statistics
+```
+
+### Entity: User Application
+
+#### Processor: deploy_user_app
+
+```plaintext
+function deploy_user_app(repository_url, user_name):
+    // Prepare the request payload for deploying the user app
+    payload = {
+        "buildType": {
+            "id": "KubernetesPipeline_CyodaSaasUserEnv"
+        },
+        "properties": {
+            "property": [
+                { "name": "user_defined_keyspace", "value": user_name },
+                { "name": "user_defined_namespace", "value": user_name }
+            ]
+        }
+    }
+
+    // Send request to the external service to deploy the user app
+    response = send_post_request("https://teamcity.cyoda.org/app/rest/buildQueue", payload)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to deploy user app: " + response.error_message
+
+    // Extract build ID from the response
+    build_id = response.build_id
+    return build_id
+```
+
+#### Processor: get_user_app_status
+
+```plaintext
+function get_user_app_status(build_id):
+    // Construct the API endpoint to fetch user app status
+    url = "https://teamcity.cyoda.org/app/rest/buildQueue/id:" + build_id
+    
+    // Send GET request to fetch user app status
+    response = send_get_request(url)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to fetch user app status: " + response.error_message
+
+    // Return the status details
+    return response.status_details
+```
+
+#### Processor: get_user_app_statistics
+
+```plaintext
+function get_user_app_statistics(build_id):
+    // Construct the API endpoint to fetch user app statistics
+    url = "https://teamcity.cyoda.org/app/rest/builds/id:" + build_id + "/statistics/"
+    
+    // Send GET request to fetch user app statistics
+    response = send_get_request(url)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to fetch user app statistics: " + response.error_message
+
+    // Return the statistics details
+    return response.statistics
+```
+
+#### Processor: cancel_user_app_deployment
+
+```plaintext
+function cancel_user_app_deployment(build_id):
+    // Construct the API endpoint to cancel the user app deployment
+    url = "https://teamcity.cyoda.org/app/rest/builds/id:" + build_id
+    payload = {
+        "comment": "Canceling a queued build",
+        "readdIntoQueue": false
+    }
+
+    // Send POST request to cancel the build
+    response = send_post_request(url, payload)
+
+    // Check response status
+    if response.status_code != 200:
+        return "Failed to cancel user app deployment: " + response.error_message
+
+    // Return success message
+    return "Deployment successfully canceled"
+```
+
+### Summary
+
+This pseudocode captures the business logic needed to manage the deployment and environment configuration for multiple users in your application. It contains functions to build environments, deploy user applications, retrieve statuses, fetch statistics, and cancel deployments. Each function adheres to making direct API interactions and avoids using `entity_service` to manipulate the current entity, focusing instead on dependent entity interactions.
