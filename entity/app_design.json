@@ -1,0 +1,80 @@
+{
+    "entities": [
+        {
+            "entity_name": "Cyoda Environment Deployment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "User Application Deployment",
+            "entity_workflow": {
+                "name": "DeployCyodaEnvWorkflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "Start Deployment",
+                        "description": "Initiate the deployment of the Cyoda environment.",
+                        "start_state": "Pending",
+                        "start_state_description": "The deployment request is pending.",
+                        "end_state": "In Progress",
+                        "end_state_description": "The deployment is currently underway.",
+                        "process": {
+                            "name": "DeployCyodaEnv",
+                            "description": "Process to deploy the Cyoda environment.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "Complete Deployment",
+                        "description": "Finalization of the deployment process.",
+                        "start_state": "In Progress",
+                        "start_state_description": "The deployment process is in progress.",
+                        "end_state": "Completed",
+                        "end_state_description": "Deployment has been completed successfully.",
+                        "process": {
+                            "name": "FinalizeCyodaEnvDeployment",
+                            "description": "Process to complete the deployment of Cyoda environment.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "User Application Deployment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "DeployUserAppWorkflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "Start User App Deployment",
+                        "description": "Begin the deployment of user application.",
+                        "start_state": "Pending",
+                        "start_state_description": "The user application deployment request is pending.",
+                        "end_state": "In Progress",
+                        "end_state_description": "The user application deployment is currently underway.",
+                        "process": {
+                            "name": "DeployUserApp",
+                            "description": "Process to deploy the user application.",
+                            "adds_new_entites": "true"
+                        }
+                    },
+                    {
+                        "name": "Complete User App Deployment",
+                        "description": "Finalization of the user application deployment process.",
+                        "start_state": "In Progress",
+                        "start_state_description": "User application deployment process is in progress.",
+                        "end_state": "Completed",
+                        "end_state_description": "User application has been deployed successfully.",
+                        "process": {
+                            "name": "FinalizeUserAppDeployment",
+                            "description": "Process to complete the deployment of user application.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
