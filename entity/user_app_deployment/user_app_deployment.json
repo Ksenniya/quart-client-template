@@ -1,0 +1,46 @@
+{
+    "user_app_deployment": {
+        "deployment_id": "DEP-123456",
+        "user_id": "USER-987654",
+        "application_id": "APP-54321",
+        "deployment_status": "In Progress",
+        "deployment_timestamp": "2023-10-12T14:30:00Z",
+        "environment": "production",
+        "requested_parameters": {
+            "version": "1.0.0",
+            "settings": {
+                "feature_flag": true,
+                "timeout": 30,
+                "retry_attempts": 3
+            },
+            "resources": {
+                "cpu": "2",
+                "memory": "4GB",
+                "disk": "50GB"
+            }
+        },
+        "user_details": {
+            "username": "john_doe",
+            "email": "john.doe@example.com",
+            "role": "admin"
+        },
+        "application_details": {
+            "name": "Sales Dashboard",
+            "description": "A web application for managing sales data.",
+            "owner": "Sales Team"
+        },
+        "deployment_history": [
+            {
+                "timestamp": "2023-10-10T12:00:00Z",
+                "status": "Completed",
+                "version": "0.9.0"
+            },
+            {
+                "timestamp": "2023-10-11T10:00:00Z",
+                "status": "Failed",
+                "version": "0.9.1",
+                "error_message": "Deployment timeout"
+            }
+        ]
+    }
+}
