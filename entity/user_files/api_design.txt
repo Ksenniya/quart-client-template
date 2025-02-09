@@ -1,0 +1,128 @@
+# Below is the outline of the user APIs for each entity, organized by API request type (POST and GET). For POST requests, I will include the call to `entity_service.add(current_entity)`, and for GET requests, I will include `entity_service.get(current_entity)`.
+# 
+# ### User APIs Outline
+# 
+# #### 1. User Entity APIs
+# 
+# - **POST /auth/user**
+#   - **Description**: Authenticate a user and retrieve a Bearer token.
+#   - **Request Format:**
+#     ```json
+#     {
+#       "user_name": "test_user"
+#     }
+#     ```
+#   - **Action**: 
+#     ```python
+    entity_service.add(user_entity)
+#     ```
+# 
+# - **GET /auth/user/{user_id}**
+#   - **Description**: Retrieve details of a specific user.
+#   - **Response Format:**
+#     ```json
+#     {
+#       "user_id": "user_123",
+#       "user_name": "test_user",
+#       "token": "your_jwt_token"
+#     }
+#     ```
+#   - **Action**:
+#     ```python
+    entity_service.get(user_entity)
+#     ```
+# 
+# #### 2. Deployment Environment Entity APIs
+# 
+# - **POST /deploy/cyoda-env**
+#   - **Description**: Submit a deployment request for an environment.
+#   - **Request Format:**
+#     ```json
+#     {
+#       "user_id": "user_123",
+#       "deployment_config": {
+#         "repository_url": "http://example.com/repo.git",
+#         "is_public": true
+#       }
+#     }
+#     ```
+#   - **Action**:
+#     ```python
+    entity_service.add(deployment_environment_entity)
+#     ```
+# 
+# - **GET /deploy/cyoda-env/{env_id}**
+#   - **Description**: Retrieve details of a specific deployment environment.
+#   - **Response Format:**
+#     ```json
+#     {
+#       "env_id": "env_456",
+#       "user_id": "user_123",
+#       "deployment_config": {
+#         "repository_url": "http://example.com/repo.git",
+#         "is_public": true
+#       },
+#       "build_id": "build_789"
+#     }
+#     ```
+#   - **Action**:
+#     ```python
+    entity_service.get(deployment_environment_entity)
+#     ```
+# 
+# #### 3. User Application Entity APIs
+# 
+# - **POST /deploy/user_app**
+#   - **Description**: Submit a deployment request for a user application.
+#   - **Request Format:**
+#     ```json
+#     {
+#       "user_id": "user_123",
+#       "repository_url": "http://example.com/repo.git",
+#       "is_public": true
+#     }
+#     ```
+#   - **Action**:
+#     ```python
+    entity_service.add(user_application_entity)
+#     ```
+# 
+# - **GET /deploy/user_app/{app_id}**
+#   - **Description**: Retrieve details of a specific user application.
+#   - **Response Format:**
+#     ```json
+#     {
+#       "app_id": "app_101",
+#       "user_id": "user_123",
+#       "repository_url": "http://example.com/repo.git",
+#       "is_public": true,
+#       "env_id": "env_456"
+#     }
+#     ```
+#   - **Action**:
+#     ```python
+    entity_service.get(user_application_entity)
+#     ```
+# 
+# #### 4. Build Entity APIs
+# 
+# - **GET /deploy/build/{build_id}**
+#   - **Description**: Retrieve details of a specific build.
+#   - **Response Format:**
+#     ```json
+#     {
+#       "build_id": "build_789",
+#       "env_id": "env_456",
+#       "app_id": "app_101",
+#       "status": "successful",
+#       "build_time": "5min",
+#       "success_rate": "95%"
+#     }
+#     ```
+#   - **Action**:
+#     ```python
+    entity_service.get(build_entity)
+#     ```
+# 
+# ### Summary
+# This outline encapsulates the necessary user APIs for each entity, specifying the request type, description, format, and the corresponding actions that will be executed using the entity service. Each API endpoint is aligned with the user requirements and reflects the operations that need to be performed on the respective entities.
