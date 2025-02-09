@@ -1,37 +1,37 @@
 {
     "entities": [
         {
-            "entity_name": "Cyoda Environment Deployment",
+            "entity_name": "cyoda_environment_deployment",
             "entity_type": "JOB",
             "entity_source": "API_REQUEST",
-            "depends_on_entity": "User Application Deployment",
+            "depends_on_entity": "none",
             "entity_workflow": {
-                "name": "DeployCyodaEnvWorkflow",
+                "name": "cyoda_environment_deployment_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": [
                     {
-                        "name": "Start Deployment",
-                        "description": "Initiate the deployment of the Cyoda environment.",
-                        "start_state": "Pending",
-                        "start_state_description": "The deployment request is pending.",
-                        "end_state": "In Progress",
-                        "end_state_description": "The deployment is currently underway.",
+                        "name": "initiate_environment_deployment",
+                        "description": "Starts the deployment of the Cyoda environment.",
+                        "start_state": "pending",
+                        "start_state_description": "The deployment request has been received.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The environment deployment is currently in progress.",
                         "process": {
-                            "name": "DeployCyodaEnv",
-                            "description": "Process to deploy the Cyoda environment.",
-                            "adds_new_entites": "false"
+                            "name": "initiate_environment_process",
+                            "description": "Initiates the deployment process for the environment.",
+                            "adds_new_entites": "true"
                         }
                     },
                     {
-                        "name": "Complete Deployment",
-                        "description": "Finalization of the deployment process.",
-                        "start_state": "In Progress",
-                        "start_state_description": "The deployment process is in progress.",
-                        "end_state": "Completed",
-                        "end_state_description": "Deployment has been completed successfully.",
+                        "name": "finalize_environment_deployment",
+                        "description": "Completes and finalizes the environment deployment.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The environment deployment is currently in progress.",
+                        "end_state": "completed",
+                        "end_state_description": "The environment deployment has been successfully completed.",
                         "process": {
-                            "name": "FinalizeCyodaEnvDeployment",
-                            "description": "Process to complete the deployment of Cyoda environment.",
+                            "name": "finalize_environment_process",
+                            "description": "Finalizes the deployment process for the environment.",
                             "adds_new_entites": "false"
                         }
                     }
@@ -39,37 +39,37 @@
             }
         },
         {
-            "entity_name": "User Application Deployment",
+            "entity_name": "user_application_deployment",
             "entity_type": "JOB",
             "entity_source": "API_REQUEST",
-            "depends_on_entity": "None",
+            "depends_on_entity": "none",
             "entity_workflow": {
-                "name": "DeployUserAppWorkflow",
+                "name": "user_application_deployment_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": [
                     {
-                        "name": "Start User App Deployment",
-                        "description": "Begin the deployment of user application.",
-                        "start_state": "Pending",
-                        "start_state_description": "The user application deployment request is pending.",
-                        "end_state": "In Progress",
-                        "end_state_description": "The user application deployment is currently underway.",
+                        "name": "initiate_user_application_deployment",
+                        "description": "Starts the deployment of the user application.",
+                        "start_state": "pending",
+                        "start_state_description": "The deployment request for the user application has been received.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The user application deployment is currently in progress.",
                         "process": {
-                            "name": "DeployUserApp",
-                            "description": "Process to deploy the user application.",
+                            "name": "initiate_user_application_process",
+                            "description": "Initiates the deployment process for the user application.",
                             "adds_new_entites": "true"
                         }
                     },
                     {
-                        "name": "Complete User App Deployment",
-                        "description": "Finalization of the user application deployment process.",
-                        "start_state": "In Progress",
-                        "start_state_description": "User application deployment process is in progress.",
-                        "end_state": "Completed",
-                        "end_state_description": "User application has been deployed successfully.",
+                        "name": "finalize_user_application_deployment",
+                        "description": "Completes and finalizes the user application deployment.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The user application deployment is currently in progress.",
+                        "end_state": "completed",
+                        "end_state_description": "The user application deployment has been successfully completed.",
                         "process": {
-                            "name": "FinalizeUserAppDeployment",
-                            "description": "Process to complete the deployment of user application.",
+                            "name": "finalize_user_application_process",
+                            "description": "Finalizes the deployment process for the user application.",
                             "adds_new_entites": "false"
                         }
                     }
