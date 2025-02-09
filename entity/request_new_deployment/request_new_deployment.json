@@ -1,0 +1,37 @@
+{
+    "request_new_deployment": {
+        "deployment_id": "deployment-12345",
+        "application_name": "MyWebApp",
+        "version": "1.0.0",
+        "environment": "production",
+        "requested_by": {
+            "user_id": "user-67890",
+            "user_name": "john.doe@example.com"
+        },
+        "request_parameters": {
+            "rollback_strategy": "automatic",
+            "notification_email": "devops-team@example.com",
+            "dependencies": [
+                {
+                    "service_name": "DatabaseService",
+                    "version": "2.3.1"
+                },
+                {
+                    "service_name": "CacheService",
+                    "version": "1.0.0"
+                }
+            ],
+            "resources": {
+                "cpu_units": 4,
+                "memory_gb": 16,
+                "disk_space_gb": 100
+            },
+            "scaling": {
+                "min_instances": 1,
+                "max_instances": 5
+            }
+        },
+        "timestamp": "2023-10-12T14:30:00Z",
+        "status": "pending"
+    }
+}
