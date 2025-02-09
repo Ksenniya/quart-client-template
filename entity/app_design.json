@@ -1,0 +1,106 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_deploy_environment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "",
+            "entity_workflow": {
+                "name": "cyoda_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "request_deployment",
+                        "description": "Initiating deployment request for the environment.",
+                        "start_state": "pending",
+                        "start_state_description": "The deployment is requested and pending processing.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The deployment is currently in progress.",
+                        "process": {
+                            "name": "process_deployment_request",
+                            "description": "Processes the deployment request and starts the deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "deployment_success",
+                        "description": "Deployment completed successfully.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The deployment is ongoing.",
+                        "end_state": "successful",
+                        "end_state_description": "The deployment has been completed successfully.",
+                        "process": {
+                            "name": "handle_success",
+                            "description": "Handles actions to perform on successful deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "deployment_failure",
+                        "description": "Deployment failed.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The deployment is ongoing.",
+                        "end_state": "failed",
+                        "end_state_description": "The deployment has failed.",
+                        "process": {
+                            "name": "handle_failure",
+                            "description": "Handles actions to perform on failed deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_application_deployment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "",
+            "entity_workflow": {
+                "name": "user_app_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "request_user_app_deployment",
+                        "description": "Initiating deployment request for user application.",
+                        "start_state": "pending",
+                        "start_state_description": "The user application deployment is requested and pending processing.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The user application deployment is currently in progress.",
+                        "process": {
+                            "name": "process_user_app_deployment_request",
+                            "description": "Processes the user application deployment request and starts the deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "user_app_deployment_success",
+                        "description": "User application deployment completed successfully.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The user application deployment is ongoing.",
+                        "end_state": "successful",
+                        "end_state_description": "The user application deployment has been completed successfully.",
+                        "process": {
+                            "name": "handle_user_app_success",
+                            "description": "Handles actions to perform on successful user application deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "user_app_deployment_failure",
+                        "description": "User application deployment failed.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The user application deployment is ongoing.",
+                        "end_state": "failed",
+                        "end_state_description": "The user application deployment has failed.",
+                        "process": {
+                            "name": "handle_user_app_failure",
+                            "description": "Handles actions to perform on failed user application deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
