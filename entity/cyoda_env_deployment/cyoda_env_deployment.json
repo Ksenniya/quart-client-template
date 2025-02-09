@@ -1,0 +1,66 @@
+{
+    "cyoda_env_deployment": {
+        "deployment_id": "12345",
+        "environment": "production",
+        "application": {
+            "name": "ecommerce-platform",
+            "version": "1.2.3",
+            "release_date": "2023-10-01"
+        },
+        "status": "successful",
+        "deployed_by": {
+            "user_id": "admin_user",
+            "name": "John Doe",
+            "timestamp": "2023-10-01T10:00:00Z"
+        },
+        "resources": {
+            "instances": [
+                {
+                    "instance_id": "i-1234567890abcdef0",
+                    "type": "t2.large",
+                    "status": "running"
+                },
+                {
+                    "instance_id": "i-0987654321fedcba0",
+                    "type": "t2.medium",
+                    "status": "stopped"
+                }
+            ],
+            "storage": {
+                "volume_id": "vol-abcde123",
+                "size_gb": 100,
+                "type": "gp2"
+            },
+            "network": {
+                "vpc_id": "vpc-abcde123",
+                "subnet_id": "subnet-abcde123"
+            }
+        },
+        "ingestion": {
+            "request_parameters": {
+                "source": "s3://data-bucket/deployment-data.csv",
+                "destination": "database-deployment",
+                "format": "csv",
+                "timestamp": "2023-10-01T09:00:00Z"
+            },
+            "status": "completed",
+            "ingestion_timestamp": "2023-10-01T09:30:00Z"
+        },
+        "rollback_info": {
+            "rollback_required": false,
+            "rollback_timestamp": null
+        },
+        "logs": [
+            {
+                "timestamp": "2023-10-01T10:00:00Z",
+                "message": "Deployment started",
+                "level": "info"
+            },
+            {
+                "timestamp": "2023-10-01T10:05:00Z",
+                "message": "Application successfully deployed",
+                "level": "info"
+            }
+        ]
+    }
+}
