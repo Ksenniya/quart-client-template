@@ -1,0 +1,35 @@
+{
+    "app_id": "app_101",
+    "user_id": "user_123",
+    "repository_url": "http://example.com/repo.git",
+    "is_public": true,
+    "env_id": "env_456",
+    "deployment_request": {
+        "request_id": "req_001",
+        "submission_time": "2023-10-01T12:00:00Z",
+        "status": "pending",
+        "parameters": {
+            "version": "1.0.0",
+            "branch": "main",
+            "docker_image": "example/docker-image:latest"
+        }
+    },
+    "build_info": {
+        "build_id": "build_789",
+        "status": "successful",
+        "build_time": "5min",
+        "success_rate": "95%",
+        "logs": [
+            {
+                "log_id": "log_001",
+                "timestamp": "2023-10-01T12:05:00Z",
+                "message": "Build initiated."
+            },
+            {
+                "log_id": "log_002",
+                "timestamp": "2023-10-01T12:10:00Z",
+                "message": "Build completed successfully."
+            }
+        ]
+    }
+}
