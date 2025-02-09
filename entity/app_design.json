@@ -1,0 +1,106 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env_deployment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "",
+            "entity_workflow": {
+                "name": "cyoda_env_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "trigger_build",
+                        "description": "Trigger the build on TeamCity for environment deployment.",
+                        "start_state": "pending",
+                        "start_state_description": "The deployment build is pending.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The deployment build is currently in progress.",
+                        "process": {
+                            "name": "trigger_build_process",
+                            "description": "Process to trigger build in TeamCity.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "deployment_complete",
+                        "description": "Complete the deployment once finished.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The deployment build is currently in progress.",
+                        "end_state": "success",
+                        "end_state_description": "The deployment has been completed successfully.",
+                        "process": {
+                            "name": "complete_deployment_process",
+                            "description": "Process to mark deployment as complete.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "deployment_failed",
+                        "description": "Handle deployment failure.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The deployment build is currently in progress.",
+                        "end_state": "failure",
+                        "end_state_description": "The deployment has failed.",
+                        "process": {
+                            "name": "handle_failure_process",
+                            "description": "Process to handle deployment failure.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app_deployment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "",
+            "entity_workflow": {
+                "name": "user_app_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "trigger_user_app_build",
+                        "description": "Trigger the build for the user application on TeamCity.",
+                        "start_state": "pending",
+                        "start_state_description": "The user app build is pending.",
+                        "end_state": "in_progress",
+                        "end_state_description": "The user app build is currently in progress.",
+                        "process": {
+                            "name": "trigger_user_app_build_process",
+                            "description": "Process to trigger user app build.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "user_app_deployment_complete",
+                        "description": "Complete the user app deployment once finished.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The user app build is currently in progress.",
+                        "end_state": "success",
+                        "end_state_description": "The user app deployment has been completed successfully.",
+                        "process": {
+                            "name": "complete_user_app_deployment_process",
+                            "description": "Process to mark user app deployment as complete.",
+                            "adds_new_entites": "false"
+                        }
+                    },
+                    {
+                        "name": "user_app_deployment_failed",
+                        "description": "Handle user app deployment failure.",
+                        "start_state": "in_progress",
+                        "start_state_description": "The user app build is currently in progress.",
+                        "end_state": "failure",
+                        "end_state_description": "The user app deployment has failed.",
+                        "process": {
+                            "name": "handle_user_app_failure_process",
+                            "description": "Process to handle user app deployment failure.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
