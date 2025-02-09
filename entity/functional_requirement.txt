@@ -1,0 +1,164 @@
+Sure! Below is a well-structured set of functional requirements for your application, presented as user stories and use cases, alongside the necessary API endpoints and their request/response formats. I've also included visual representations of user-app interactions using Mermaid diagrams.
+
+### Functional Requirements
+
+#### User Stories
+
+1. **User Authentication**
+   - **As a** user,
+   - **I want** to authenticate using a Bearer token,
+   - **So that** I can access deployment features securely.
+
+   **API Endpoint:**
+   - **POST** `/deploy/cyoda-env`
+     - **Request:**
+       ```json
+       {
+         "user_name": "test"
+       }
+       ```
+     - **Response:** (Assuming successful authentication)
+       ```json
+       {
+         "token": "your_auth_token_here"
+       }
+       ```
+
+2. **Create Deployment for Env Configuration**
+   - **As a** user,
+   - **I want** to create an environment with user-defined configurations,
+   - **So that** I can manage my deployments.
+
+   **API Endpoint:**
+   - **POST** `/deploy/cyoda-env`
+     - **Request:**
+       ```json
+       {
+         "user_name": "test"
+       }
+       ```
+     - **Response:**
+       ```json
+       {
+         "build_id": "id_of_the_created_build"
+       }
+       ```
+
+3. **Deploy User Application**
+   - **As a** user,
+   - **I want** to deploy a user application with specific repository details,
+   - **So that** I can manage my applications.
+
+   **API Endpoint:**
+   - **POST** `/deploy/user_app`
+     - **Request:**
+       ```json
+       {
+         "repository_url": "http://...",
+         "is_public": "true"
+       }
+       ```
+     - **Response:**
+       ```json
+       {
+         "build_id": "id_of_the_created_user_app_build"
+       }
+       ```
+
+4. **Get Status of Deployment**
+   - **As a** user,
+   - **I want** to check the status of an existing deployment,
+   - **So that** I can know the current state of my application.
+
+   **API Endpoint:**
+   - **GET** `/deploy/cyoda-env/status/{id}`
+     - **Response:**
+       ```json
+       {
+         "status": "Building",
+         "repository_url": "http://...",
+         "is_public": "true"
+       }
+       ```
+
+5. **Get Statistics of a Deployment**
+   - **As a** user,
+   - **I want** to retrieve deployment statistics,
+   - **So that** I can analyze the performance of my application.
+
+   **API Endpoint:**
+   - **GET** `/deploy/cyoda-env/statistics/{id}`
+     - **Response:**
+       ```json
+       {
+         "repository_url": "http://...",
+         "is_public": "true",
+         "statistics": {
+           "buildDuration": "5 minutes",
+           "successRate": "95%"
+         }
+       }
+       ```
+
+6. **Cancel User Application Deployment**
+   - **As a** user,
+   - **I want** to cancel an ongoing deployment,
+   - **So that** I can manage my build queue effectively.
+
+   **API Endpoint:**
+   - **POST** `/deploy/cancel/user_app/{id}`
+     - **Request:**
+       ```json
+       {
+         "comment": "Canceling a queued build",
+         "readdIntoQueue": false
+       }
+       ```
+     - **Response:**
+       ```json
+       {
+         "message": "Build cancelled successfully."
+       }
+       ```
+
+### Mermaid Diagrams
+
+#### User Authentication Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    User->>API: POST /deploy/cyoda-env with user_name
+    API->>User: Return auth token
+```
+
+#### Deploying Application Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    User->>API: POST /deploy/user_app with repository_url
+    API->>User: Return build_id
+```
+
+#### Checking Deployment Status
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    User->>API: GET /deploy/cyoda-env/status/{id}
+    API->>User: Return deployment status
+```
+
+#### Cancelling Deployment
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    User->>API: POST /deploy/cancel/user_app/{id}
+    API->>User: Return cancellation message
+```
+
+### Summary
+
+These user stories and use cases provide a clear outline of the functional requirements for your application, capturing each interaction a user might have with the deployed API. Each endpoint's request and response format is also defined to help you build your application effectively. The diagrams visualize the interactions, simplifying the understanding of flow processes within the application.
