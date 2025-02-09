@@ -1,0 +1,42 @@
+{
+    "deployment_status_check": {
+        "deployment_id": "12345",
+        "environment": "production",
+        "status": "in_progress",
+        "last_checked": "2023-10-10T10:00:00Z",
+        "error_message": null,
+        "request_parameters": {
+            "user_id": "user_67890",
+            "request_id": "req_98765",
+            "timeout": 30,
+            "include_logs": true
+        },
+        "deployment_details": {
+            "application_name": "MyApp",
+            "version": "1.0.2",
+            "initiated_by": "admin_user",
+            "start_time": "2023-10-10T09:00:00Z",
+            "expected_completion_time": "2023-10-10T11:00:00Z"
+        },
+        "progress": {
+            "percentage_complete": 70,
+            "steps": [
+                {
+                    "step_name": "Download Packages",
+                    "step_status": "completed",
+                    "completion_time": "2023-10-10T09:30:00Z"
+                },
+                {
+                    "step_name": "Validate Configuration",
+                    "step_status": "in_progress",
+                    "completion_time": null
+                },
+                {
+                    "step_name": "Deploy to Servers",
+                    "step_status": "pending",
+                    "completion_time": null
+                }
+            ]
+        }
+    }
+}
