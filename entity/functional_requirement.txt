@@ -1,0 +1,181 @@
+Here are the functional requirements for your application, organized as user stories and use cases. Each user story outlines the necessary API endpoints along with request/response formats. Additionally, I've included Mermaid diagrams for visual representation of the user-app interaction.
+
+---
+
+## Functional Requirements
+
+### User Story 1: Deploy a Configuration for a User
+
+**As a** user,  
+**I want to** deploy a configuration for my environment using a username,  
+**So that** I can manage my application deployment effectively.
+
+#### Use Case 1.1: Create Cyoda Environment
+
+- **API Endpoint**: `POST /deploy/cyoda-env`
+- **Request Format**:
+    ```json
+    {
+        "user_name": "test"
+    }
+    ```
+- **Action**: 
+    - Forward to `POST https://teamcity.cyoda.org/app/rest/buildQueue` with:
+        ```json
+        {
+            "buildType": {
+                "id": "KubernetesPipeline_CyodaSaas"
+            },
+            "properties": {
+                "property": [
+                    {
+                        "name": "user_defined_keyspace",
+                        "value": "test"
+                    },
+                    {
+                        "name": "user_defined_namespace",
+                        "value": "test"
+                    }
+                ]
+            }
+        }
+        ```
+- **Response Format**:
+    ```json
+    {
+        "build_id": "123456"
+    }
+    ```
+
+#### Use Case 1.2: Check Status of Cyoda Environment
+
+- **API Endpoint**: `GET /deploy/cyoda-env/status/{id}`
+- **Response Format**:
+    - Forward to `GET https://teamcity.cyoda.org/app/rest/buildQueue/id:123456`
+
+---
+
+### User Story 2: Deploy a User-specific Application
+
+**As a** user,  
+**I want to** deploy a user-specific application,  
+**So that** I can manage my application separately from others.
+
+#### Use Case 2.1: Create User App
+
+- **API Endpoint**: `POST /deploy/user_app`
+- **Request Format**:
+    ```json
+    {
+        "repository_url": "http://...",
+        "is_public": "true"
+    }
+    ```
+- **Action**:
+    - Forward to `POST https://teamcity.cyoda.org/app/rest/buildQueue` with:
+        ```json
+        {
+            "buildType": {
+                "id": "KubernetesPipeline_CyodaSaasUserEnv"
+            },
+            "properties": {
+                "property": [
+                    {
+                        "name": "user_defined_keyspace",
+                        "value": "test"
+                    },
+                    {
+                        "name": "user_defined_namespace",
+                        "value": "test"
+                    }
+                ]
+            }
+        }
+        ```
+- **Response Format**:
+    ```json
+    {
+        "build_id": "654321"
+    }
+    ```
+
+#### Use Case 2.2: Check Status of User App
+
+- **API Endpoint**: `GET /deploy/user_app/status/{id}`
+- **Response Format**:
+    - Forward to `GET https://teamcity.cyoda.org/app/rest/buildQueue/id:654321`
+
+---
+
+### User Story 3: Cancel a Deployment
+
+**As a** user,  
+**I want to** cancel a queued deployment,  
+**So that** I can avoid unnecessary deployments and manage my resources more efficiently.
+
+#### Use Case 3.1: Cancel User App Deployment
+
+- **API Endpoint**: `POST /deploy/cancel/user_app/{id}`
+- **Request Format**:
+    ```json
+    {
+        "comment": "Canceling a queued build",
+        "readdIntoQueue": false
+    }
+    ```
+- **Action**:
+    - Forward to `POST https://teamcity.cyoda.org/app/rest/builds/id:654321`
+  
+---
+
+### User Story 4: Retrieve build statistics
+
+**As a** user,  
+**I want to** retrieve build statistics for my deployments,  
+**So that** I can analyze the performance of my application.
+
+#### Use Case 4.1: Get Build Statistics for Cyoda Environment
+
+- **API Endpoint**: `GET /deploy/cyoda-env/statistics/{id}`
+- **Response Format**:
+    - Forward to `GET https://teamcity.cyoda.org/app/rest/builds/id:123456/statistics/`
+
+#### Use Case 4.2: Get Build Statistics for User App
+
+- **API Endpoint**: `GET /deploy/user_app/statistics/{id}`
+- **Response Format**:
+    - Forward to `GET https://teamcity.cyoda.org/app/rest/builds/id:654321/statistics/`
+
+---
+
+### Mermaid Diagrams
+
+```mermaid
+graph TD;
+    A[User] -->|Create Cyoda Environment| B[POST /deploy/cyoda-env]
+    B --> C[TeamCity Build Queue]
+    C -->|Returns build_id| D[Response with build_id]
+
+    A -->|Check Status of Cyoda Environment| E[GET /deploy/cyoda-env/status/{id}]
+    E --> F[TeamCity Build Status]
+
+    A -->|Create User App| G[POST /deploy/user_app]
+    G --> H[TeamCity Build Queue]
+    H -->|Returns build_id| I[Response with build_id]
+
+    A -->|Check Status of User App| J[GET /deploy/user_app/status/{id}]
+    J --> K[TeamCity Build Status]
+
+    A -->|Cancel User App Deployment| L[POST /deploy/cancel/user_app/{id}]
+    L --> M[TeamCity Cancel Build]
+
+    A -->|Get Statistics for Cyoda Environment| N[GET /deploy/cyoda-env/statistics/{id}]
+    N --> O[TeamCity Build Statistics]
+
+    A -->|Get Statistics for User App| P[GET /deploy/user_app/statistics/{id}]
+    P --> Q[TeamCity Build Statistics]
+```
+
+---
+
+This document outlines the required functional requirements based on your application's needs. If you have any modifications or additional features in mind, please let me know!
