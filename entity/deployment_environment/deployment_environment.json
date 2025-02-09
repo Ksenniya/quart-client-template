@@ -1,0 +1,30 @@
+{
+    "env_id": "env_456",
+    "deployment_config": {
+        "repository_url": "http://example.com/repo.git",
+        "is_public": true,
+        "branch": "main",
+        "commit_hash": "abc123xyz",
+        "deployment_parameters": {
+            "cpu_limit": "2",
+            "memory_limit": "4Gi",
+            "replica_count": 3
+        },
+        "environment_variables": {
+            "DB_HOST": "db.example.com",
+            "DB_USER": "user123",
+            "DB_PASS": "securepassword",
+            "API_KEY": "your_api_key_here"
+        }
+    },
+    "build_id": "build_789",
+    "status": "pending",
+    "creation_timestamp": "2023-10-12T10:00:00Z",
+    "last_updated_timestamp": "2023-10-12T10:00:00Z",
+    "request_parameters": {
+        "user_id": "user_123",
+        "request_time": "2023-10-12T09:55:00Z",
+        "deployment_strategy": "Blue-Green",
+        "rollback_enabled": true
+    }
+}
