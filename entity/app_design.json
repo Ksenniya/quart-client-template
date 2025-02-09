@@ -1,0 +1,118 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment_environment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "deployment_request_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "submit_deployment_request",
+                        "description": "Submit a deployment request for an environment.",
+                        "start_state": "none",
+                        "start_state_description": "Initial state before submitting deployment request.",
+                        "end_state": "deployment_request_submitted",
+                        "end_state_description": "Deployment request has been successfully submitted.",
+                        "process": {
+                            "name": "submit_deployment_process",
+                            "description": "Process to submit deployment request.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "trigger_build",
+                        "description": "Trigger a build for the deployment environment.",
+                        "start_state": "deployment_request_submitted",
+                        "start_state_description": "Deployment request has been submitted.",
+                        "end_state": "build_triggered",
+                        "end_state_description": "Build has been successfully triggered.",
+                        "process": {
+                            "name": "trigger_build_process",
+                            "description": "Process to trigger build.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_application",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "deployment_environment",
+            "entity_workflow": {
+                "name": "user_application_deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "submit_user_app_deployment",
+                        "description": "Submit a deployment request for a user application.",
+                        "start_state": "none",
+                        "start_state_description": "Initial state before submitting user application deployment request.",
+                        "end_state": "user_application_deployment_submitted",
+                        "end_state_description": "User application deployment request has been successfully submitted.",
+                        "process": {
+                            "name": "submit_user_app_process",
+                            "description": "Process to submit user application deployment.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "trigger_build",
+                        "description": "Trigger a build for the user application.",
+                        "start_state": "user_application_deployment_submitted",
+                        "start_state_description": "User application deployment request has been submitted.",
+                        "end_state": "build_triggered",
+                        "end_state_description": "Build for user application has been successfully triggered.",
+                        "process": {
+                            "name": "trigger_user_app_build_process",
+                            "description": "Process to trigger user application build.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "build",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "deployment_environment",
+            "entity_workflow": {
+                "name": "build_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_build",
+                        "description": "Start the build process.",
+                        "start_state": "none",
+                        "start_state_description": "Initial state before starting build.",
+                        "end_state": "build_in_progress",
+                        "end_state_description": "Build is currently in progress.",
+                        "process": {
+                            "name": "start_build_process",
+                            "description": "Process to start the build.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "update_status",
+                        "description": "Update the build status.",
+                        "start_state": "build_in_progress",
+                        "start_state_description": "Build is currently in progress.",
+                        "end_state": "build_completed",
+                        "end_state_description": "Build has been successfully completed.",
+                        "process": {
+                            "name": "update_build_status_process",
+                            "description": "Process to update build status.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
