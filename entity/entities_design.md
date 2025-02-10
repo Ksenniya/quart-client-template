@@ -1,87 +1,80 @@
-Based on the provided information, we can outline several entities for your application prototype. The core functionality seems centered around deploying applications using TeamCity with user interactions. Below, I've detailed potential entities, their properties, and a diagram to visualize the relationships.
+Certainly! Below is a full markdown document outlining the entities for your application prototype, excluding the user diagram.
 
-### Entities and Properties
+```markdown
+# Application Prototype Entities Outline
 
-1. **User**
-   - `user_id`: String (Unique identifier for the user)
-   - `username`: String (User's chosen username)
-   - `email`: String (User's email for notifications)
-   - `auth_token`: String (Bearer token for authentication)
-   
-2. **Deployment**
-   - `deployment_id`: String (Unique identifier for the deployment)
-   - `user_id`: String (Foreign key linked to User)
-   - `repository_url`: String (URL of the user's repository)
-   - `namespace`: String (Namespace for Kubernetes)
-   - `keyspace`: String (Keyspace for the application deployment)
-   - `status`: String (Current status of the deployment: e.g., 'in_progress', 'completed', 'failed')
-   - `created_at`: DateTime (Timestamp of when the deployment was created)
-   - `updated_at`: DateTime (Timestamp of when the deployment status was last updated)
+## Entity Overview
 
-3. **Build**
-   - `build_id`: String (Unique identifier for the build in TeamCity)
-   - `deployment_id`: String (Foreign key linked to Deployment)
-   - `status`: String (Current status of the build: e.g., 'waiting', 'running', 'canceled', 'finished')
-   - `start_time`: DateTime (When the build started)
-   - `end_time`: DateTime (When the build ended)
-   - `log_url`: String (Link to the build logs in TeamCity)
-  
-4. **CancelRequest**
-   - `request_id`: String (Unique identifier for the cancel request)
-   - `build_id`: String (Foreign key linked to Build)
-   - `comment`: String (Reason for cancellation)
-   - `requested_at`: DateTime (Timestamp of the cancellation request)
-   - `status`: String (Current status of the cancel request: e.g., 'requested', 'completed')
+This document outlines the entities associated with the application prototype that interacts with TeamCity for deployment management. Each entity includes its attributes and relationships.
 
-### Diagram Representation (ER Diagram)
+### Entity: Deployment
 
-Here is a Mermaid ER Diagram to visualize the relationships between these entities:
+- **Properties:**
+  - `id`: Unique identifier for the deployment (e.g., UUID)
+  - `user_name`: Name of the user who triggered the deployment
+  - `repository_url`: URL of the repository for the application being deployed
+  - `is_public`: Boolean indicating if the deployment is public
+  - `build_id`: ID received from TeamCity for the triggered build
+  - `status`: Current status of the deployment (e.g., in_progress, completed, failed)
+  - `created_at`: Timestamp when the deployment was initiated
+  - `updated_at`: Timestamp for the last update on the deployment status
+
+### Entity: Build
+
+- **Properties:**
+  - `id`: Unique identifier for the build (e.g., UUID)
+  - `deployment_id`: Foreign key referencing the Deployment entity
+  - `status`: Status of the build from TeamCity's response (e.g., queued, running, finished)
+  - `start_time`: Timestamp when the build started
+  - `end_time`: Timestamp when the build finished
+  - `success`: Boolean indicating whether the build was successful
+
+### Entity: User (Optional)
+
+- **Properties:**
+  - `id`: Unique identifier for the user (e.g., UUID)
+  - `name`: Name of the user
+  - `email`: Email address of the user
+  - `token`: Authentication token used for API requests to TeamCity
+  - `created_at`: Timestamp of when the user was created
+  - `updated_at`: Timestamp of the last update to the user's information
+
+### Relationships
+- **Deployment** has a one-to-many relationship with **Build**:
+  - A single deployment can trigger multiple builds (e.g., for different environments or configurations).
+- **User** (if applicable) has a one-to-many relationship with **Deployment**:
+  - A user can initiate multiple deployments.
+
+## ER Diagram
 
 ```mermaid
 erDiagram
-    USER {
-        string user_id PK
-        string username
-        string email
-        string auth_token
-    }
-
     DEPLOYMENT {
-        string deployment_id PK
-        string user_id FK
-        string repository_url
-        string namespace
-        string keyspace
-        string status
-        datetime created_at
-        datetime updated_at
+        string id PK "Unique identifier for the deployment"
+        string user_name "Name of the user who triggered the deployment"
+        string repository_url "URL of the repository"
+        boolean is_public "Indicates if the deployment is public"
+        string build_id "ID received from TeamCity"
+        string status "Current status of the deployment"
+        datetime created_at "Timestamp when initiated"
+        datetime updated_at "Timestamp of last update"
     }
-
+    
     BUILD {
-        string build_id PK
-        string deployment_id FK
-        string status
-        datetime start_time
-        datetime end_time
-        string log_url
+        string id PK "Unique identifier for the build"
+        string deployment_id FK "Reference to Deployment"
+        string status "Status of the build"
+        datetime start_time "Timestamp when the build started"
+        datetime end_time "Timestamp when the build finished"
+        boolean success "Indicates if the build was successful"
     }
 
-    CANCELREQUEST {
-        string request_id PK
-        string build_id FK
-        string comment
-        datetime requested_at
-        string status
-    }
-
-    USER ||--o{ DEPLOYMENT : has
-    DEPLOYMENT ||--o{ BUILD : initiates
-    BUILD ||--o{ CANCELREQUEST : generates
+    DEPLOYMENT ||--o{ BUILD : triggers
 ```
 
-### Explanation of Relationships
-- **User to Deployment**: A User can have multiple Deployments, each linked to a unique identifier (user_id).
-- **Deployment to Build**: Each Deployment can trigger multiple Builds, handled by the TeamCity system.
-- **Build to CancelRequest**: Each Build can result in multiple cancellation requests, tracking the status and reason for any cancellations.
+## Conclusion
 
-This structured approach provides a clear overview of the data model your application will use while allowing for expansion in future development. Feel free to modify the properties and relationships as necessary based on your application's needs!
+The outlined entities provide a structure for the data flows within the application prototype. It covers the core attributes and relationships necessary for managing deployments and builds effectively, ensuring that the application can monitor and control its operations regarding deployments.
+```
+
+Feel free to modify any parts of this document as necessary for your specific use case!
