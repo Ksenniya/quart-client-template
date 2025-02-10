@@ -1,0 +1,81 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploys a Cyoda environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Deployed",
+                                "action": "trigger_build(KubernetesPipeline_CyodaSaas, properties)",
+                                "complete_code_for_action_derived_from_the_prototype": "build_response = await trigger_build(\"KubernetesPipeline_CyodaSaas\", properties)",
+                                "description": "Triggers a Kubernetes pipeline build for Cyoda environment.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<string:build_id>",
+                        "description": "Fetches the build status for Cyoda environment."
+                    },
+                    {
+                        "endpoint": "/deploy/cyoda-env/statistics/<string:build_id>",
+                        "description": "Fetches the build statistics for Cyoda environment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploys a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Deployed",
+                                "action": "trigger_build(KubernetesPipeline_CyodaSaasUserEnv, properties)",
+                                "complete_code_for_action_derived_from_the_prototype": "build_response = await trigger_build(\"KubernetesPipeline_CyodaSaasUserEnv\", properties)",
+                                "description": "Triggers a Kubernetes pipeline build for User application.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<string:build_id>",
+                        "description": "Cancels the deployment of a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Deployed",
+                                "end_state": "Cancelled",
+                                "action": "cancel_build(build_id)",
+                                "complete_code_for_action_derived_from_the_prototype": "cancel_response = await cancel_build(build_id)",
+                                "description": "Cancels an ongoing Kubernetes pipeline build for User application.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<string:build_id>",
+                        "description": "Fetches the build status for user application."
+                    },
+                    {
+                        "endpoint": "/deploy/user_app/statistics/<string:build_id>",
+                        "description": "Fetches the build statistics for user application."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
