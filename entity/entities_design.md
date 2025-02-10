@@ -1,27 +1,55 @@
-Based on the provided prototype implementation in the `api.py` file, we can analyze the resources and associated entities that need to be created according to your specifications. Below is a breakdown of the necessary entities:
+Based on the provided code prototype and the criteria you established for identifying entities, we can categorize them as follows:
 
-### Entities
+### Entities Overview
 
-1. **Primary Entities (POST requests)**:
-   - **deploy_cyoda_env**: This endpoint saves a new deployment environment for Cyoda. It is associated with the `KubernetesPipeline_CyodaSaas` build type ID.
-   - **deploy_user_app**: This endpoint saves a new deployment for a user application. It is associated with the `KubernetesPipeline_CyodaSaasUserEnv` build type ID.
+1. **POST endpoints** (Primary Entities):
+   - `cyoda_env` (Create or trigger a deployment for the Cyoda environment)
+   - `user_app` (Create or trigger a deployment for a user application)
 
-2. **Secondary Entities (GET requests)**:
-   - **get_cyoda_env_status**: This endpoint retrieves the deployment status of the Cyoda environment based on the provided `id`. It depends on the `deploy_cyoda_env` primary entity.
-   - **get_cyoda_env_statistics**: This endpoint retrieves deployment statistics for the Cyoda environment based on the provided `id`. It also depends on the `deploy_cyoda_env` primary entity.
-   - **get_user_app_status**: This endpoint retrieves the deployment status of the user application based on the provided `id`. It depends on the `deploy_user_app` primary entity.
-   - **get_user_app_statistics**: This endpoint retrieves deployment statistics for the user application based on the provided `id`. It also depends on the `deploy_user_app` primary entity.
+2. **GET endpoints** (Secondary Entities):
+   - `cyoda_env_status` (Fetch the status of a Cyoda environment deployment)
+   - `cyoda_env_statistics` (Fetch the statistics of a Cyoda environment deployment)
+   - `user_app_status` (Fetch the status of a user application deployment)
+   - `user_app_statistics` (Fetch the statistics of a user application deployment)
 
-### Summary of Entities:
+3. **Cancel endpoint** (Considered an action rather than a distinct entity, but can relate to user_app):
+   - `cancel_user_app` (Cancel a queued user application deployment)
 
-- **Primary Entities**:
-  - `deploy_cyoda_env`
-  - `deploy_user_app`
+### Entity Definitions
 
-- **Secondary Entities**:
-  - `get_cyoda_env_status` (depends on `deploy_cyoda_env`)
-  - `get_cyoda_env_statistics` (depends on `deploy_cyoda_env`)
-  - `get_user_app_status` (depends on `deploy_user_app`)
-  - `get_user_app_statistics` (depends on `deploy_user_app`)
+Here’s a detailed breakdown:
 
-This structure meets the requirements outlined, where each POST resource corresponds to a primary entity and GET resources correspond to secondary entities depending on the respective primary entities.
+#### Primary Entities (Save and require workflow):
+1. **Entity Name**: `cyoda_env`
+   - **Resource**: `/deploy/cyoda-env` (POST)
+   - **Workflow**: Yes
+
+2. **Entity Name**: `user_app`
+   - **Resource**: `/deploy/user_app` (POST)
+   - **Workflow**: Yes
+
+#### Secondary Entities (Get and have dependency on primary entities):
+1. **Entity Name**: `cyoda_env_status`
+   - **Resource**: `/deploy/cyoda-env/status/<id>` (GET)
+   - **Depends on**: `cyoda_env`
+
+2. **Entity Name**: `cyoda_env_statistics`
+   - **Resource**: `/deploy/cyoda-env/statistics/<id>` (GET)
+   - **Depends on**: `cyoda_env`
+
+3. **Entity Name**: `user_app_status`
+   - **Resource**: `/deploy/user_app/status/<id>` (GET)
+   - **Depends on**: `user_app`
+
+4. **Entity Name**: `user_app_statistics`
+   - **Resource**: `/deploy/user_app/statistics/<id>` (GET)
+   - **Depends on**: `user_app`
+
+### Cancel Operation:
+- The `cancel_user_app` action does not define a new entity but relates to the `user_app` entity with a POST request.
+
+### Summary
+In summary, we have identified the following entities based on the code provided:
+- **Primary Entities**: `cyoda_env`, `user_app`
+- **Secondary Entities**: `cyoda_env_status`, `cyoda_env_statistics`, `user_app_status`, `user_app_statistics`
+- **Relationships**: Each secondary entity depends on its respective primary entity defined above.
