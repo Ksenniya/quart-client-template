@@ -9,7 +9,7 @@ from app_init.app_init import cyoda_token
 #please update this line to your entity
 from entity.deploy_cyoda_env.api import api_bp_deploy_cyoda_env
 from entity.deploy_user_app.api import api_bp_deploy_user_app
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +17,7 @@ app = Quart(__name__)
 QuartSchema(app)
 app.register_blueprint(api_bp_deploy_cyoda_env, url_prefix='/api/deploy_cyoda_env')
 app.register_blueprint(api_bp_deploy_user_app, url_prefix='/api/deploy_user_app')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():
