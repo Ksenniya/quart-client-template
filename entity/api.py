@@ -1,82 +1,83 @@
-# Here is a prototype implementation for the `api.py` file using Quart, including the API endpoints as discussed, along with mock implementations where necessary. This will allow us to verify the user experience and identify gaps in the requirements.
+# Here is a prototype implementation of the `api.py` file using Quart and aiohttp for the specified functionality. This code includes the necessary routes and utilizes external API calls to fetch data about activities, aggregate the results, and handle report generation. 
 # 
 # ```python
 from quart import Quart, Blueprint, jsonify
 import aiohttp
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = Quart(__name__)
 api = Blueprint('api', __name__)
 
 # Constants
-DATA_SOURCE_URL = "https://fakerestapi.azurewebsites.net/api/v1/Activities"
-DAILY_REPORT_CACHE = 'reports_cache.json'
-
-
-async def fetch_data():
-    """Fetch data from the external API"""
-    async with aiohttp.ClientSession() as session:
-        async with session.get(DATA_SOURCE_URL, headers={"accept": "text/plain; v=1.0"}) as response:
-            if response.status == 200:
-                return await response.json()
-            else:
-                return None
-
-def generate_report(data):
-    """Aggregate the data to create a report"""
-    # TODO: Implement actual aggregation logic as per requirement
-    aggregated_data = data  # Placeholder for actual data aggregation
-    report = {
-        "data": aggregated_data,
-        "generatedAt": datetime.utcnow().isoformat()
-    }
-    return report
-
-def save_report(report):
-    """Save the generated report to cache"""
-    with open(DAILY_REPORT_CACHE, 'w') as f:
-        json.dump(report, f)
+ACTIVITIES_API_URL = "https://fakerestapi.azurewebsites.net/api/v1/Activities"
+REPORT_CACHE_FILE = 'report_cache.json'
 
 @api.route('/report', methods=['POST'])
-async def generate_daily_report():
-    """Generate the daily report"""
+async def generate_report():
+    # TODO: Implement scheduled job for daily report generation
     try:
-        data = await fetch_data()
-        if data is None:
-            return jsonify({"status": "error", "message": "Error fetching data from the source."}), 500
-
-        report = generate_report(data)
-        save_report(report)
+        activities = await fetch_activities()
+        aggregated_report = aggregate_data(activities)
+        save_report_to_cache(aggregated_report)
         return jsonify({"status": "success", "message": "Report generated successfully."}), 200
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Error generating report."}), 500
 
 @api.route('/report', methods=['GET'])
 async def fetch_latest_report():
-    """Retrieve the latest aggregated report"""
     try:
-        with open(DAILY_REPORT_CACHE, 'r') as f:
-            report = json.load(f)
+        report = load_report_from_cache()
+        if report:
             return jsonify(report), 200
-    except FileNotFoundError:
-        return jsonify({"status": "error", "message": "No report available."}), 404
-    except json.JSONDecodeError:
-        return jsonify({"status": "error", "message": "Error reading report from cache."}), 500
+        else:
+            return jsonify({"status": "error", "message": "No report available."}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": "Failed to load report."}), 500
 
-app.register_blueprint(api, url_prefix='/api/v1')
+async def fetch_activities():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(ACTIVITIES_API_URL) as response:
+            response.raise_for_status()
+            return await response.json()
+
+def aggregate_data(activities):
+    # TODO: Define the aggregation logic as needed
+    return {
+        "data": activities,
+        "generatedAt": datetime.utcnow().isoformat()
+    }
+
+def save_report_to_cache(report):
+    with open(REPORT_CACHE_FILE, 'w') as f:
+        json.dump(report, f)
+
+def load_report_from_cache():
+    try:
+        with open(REPORT_CACHE_FILE, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+app.register_blueprint(api)
 
 if __name__ == '__main__':
     app.run(debug=True)
 # ```
 # 
-# ### Key Points:
-# 1. **Fetching Data**: The `fetch_data` function uses `aiohttp` to fetch data from the specified external API.
-# 2. **Generating Report**: The `generate_report` function aggregates the data. Currently, it is just returning the fetched data as a placeholder. Implement actual aggregation logic where noted with TODO.
-# 3. **Saving Report**: The generated report is saved to a local JSON file, `reports_cache.json`. For a production solution, consider using a database or a more suitable storage mechanism.
-# 4. **Endpoints**:
-#    - POST `/api/v1/report`: Generates a daily report. It will fetch data, generate the report, and save it.
-#    - GET `/api/v1/report`: Returns the latest aggregated report or indicates if no report is available.
+# ### Explanation:
+# 1. **Endpoints**:
+#    - **POST /report**: Triggers the generation of a daily report by fetching activities, aggregating the data, and saving it to a local JSON file.
+#    - **GET /report**: Retrieves the latest report from the local cache.
 # 
-# This code serves as a working prototype, and you may need further implementation for thorough error handling, input validation, and actual aggregation logic.
+# 2. **Data Fetching**: Utilizing `aiohttp` to make HTTP requests to the external API for fetching activities.
+# 
+# 3. **Aggregation Logic**: You need to define what "aggregation" entails based on your specific requirements in the `aggregate_data` function. Currently, it simply returns the fetched activities.
+# 
+# 4. **Cache Handling**: The report is saved in a local JSON file and can be loaded when required. Error handling is implemented to manage cases where the cache file does not exist.
+# 
+# 5. **TODO Comments**: Comments indicate where you might still need to provide more detail on certain functionalities, such as aggregation logic and how to manage scheduled jobs.
+# 
+# ### Usage:
+# To run the API, ensure you have Quart and aiohttp installed. You can run the script, and the API will be accessible locally for testing.
