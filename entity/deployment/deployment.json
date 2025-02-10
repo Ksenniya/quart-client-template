@@ -1,0 +1,1 @@
+{"id": "UUID", "user_name": "String", "repository_url": "String", "is_public": "Boolean", "status": "Enum", "created_at": "DateTime", "updated_at": "DateTime"}
