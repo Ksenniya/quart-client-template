@@ -24,15 +24,10 @@ async def add_ENTITY_NAME_VAR():
 
 
 @api_bp_ENTITY_NAME_VAR.route('/ENTITY_NAME_VAR/<entity_id>', methods=['GET'])
-async def get_ENTITY_NAME_VAR():
+async def get_ENTITY_NAME_VAR(entity_id):
     """API endpoint to create a new order entity."""
-    data = await request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
     try:
         # Add the ENTITY_NAME_VAR entity using the entity service
-        entity_id = data.get("entity_id")
         ENTITY_NAME_VAR_id = await entity_service.get_item(
             cyoda_token, ENTITY_NAME_VAR, ENTITY_VERSION, entity_id
         )
