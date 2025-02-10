@@ -1,0 +1,73 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploy a Cyoda environment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "not_deployed",
+                                "end_state": "deployed",
+                                "action": "deploy",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\n    async with session.post(TEAMCITY_URL, json=build_payload) as response:\n        build_response = await response.json()\n        return jsonify(build_response)",
+                                "description": "Initiates the deployment of a Cyoda environment.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Get the status of a Cyoda environment deployment"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploy a user application",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "not_deployed",
+                                "end_state": "deployed",
+                                "action": "deploy",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\n    async with session.post(TEAMCITY_URL, json=build_payload) as response:\n        build_response = await response.json()\n        return jsonify(build_response)",
+                                "description": "Initiates the deployment of a user application.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<int:id>",
+                        "description": "Cancel a queued user application deployment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "queued",
+                                "end_state": "canceled",
+                                "action": "cancel",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\n    async with session.post(f\"{BUILD_STATISTICS_URL}/id:{id}\", json=cancel_payload) as response:\n        cancel_response = await response.json()\n        return jsonify(cancel_response)",
+                                "description": "Cancels a queued build for user application deployment.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Get the status of a user application deployment"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
