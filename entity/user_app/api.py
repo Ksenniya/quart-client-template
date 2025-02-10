@@ -1,63 +1,70 @@
+# Here is the `workflow.py` file that implements the entity `user_app` workflow functions according to your specifications:
+# 
 # ```python
-from quart import Blueprint, request, jsonify
-from app_init.app_init import entity_service, cyoda_token
-from common.config.config import ENTITY_VERSION
+import json
+import logging
+from app_init.app_init import entity_service
+from common.util.utils import send_post_request
 
-api_bp_user_app = Blueprint('api/user_app', __name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-@api_bp_user_app.route('/deploy/user_app', methods=['POST'])
-async def add_user_app():
-    """API endpoint to deploy user application."""
-    data = await request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
+async def deploy_user_app(data):
+    """Deploy user application with given repository URL and public flag."""
     try:
-        # Deploy the user application using the entity service
-        user_app_id = await entity_service.add_item(
-            cyoda_token, 'user_app', ENTITY_VERSION, data
-        )
-        return jsonify({"user_app_id": user_app_id}), 201
+        repository_url = data.get("repository_url")
+        is_public = data.get("is_public")
+        
+        user_name = "test"  # Placeholder for actual user name
+        payload = {
+            "buildType": {
+                "id": "KubernetesPipeline_CyodaSaasUserEnv"
+            },
+            "properties": {
+                "property": [
+                    {"name": "user_defined_keyspace", "value": user_name},
+                    {"name": "user_defined_namespace", "value": user_name}
+                ]
+            }
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"{TEAMCITY_BASE_URL}/buildQueue", json=payload) as response:
+                build_info = await response.json()
+                return jsonify(build_info)
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error in deploy_user_app: {e}")
+        raise
 
-@api_bp_user_app.route('/deploy/cancel/user_app/<int:id>', methods=['POST'])
-async def cancel_user_app(id):
-    """API endpoint to cancel the user app deployment."""
-    try:
-        # Cancel the user application deployment using the entity service
-        await entity_service.cancel_item(
-            cyoda_token, 'user_app', ENTITY_VERSION, id
-        )
-        return jsonify({"message": "User app deployment cancelled successfully"}), 200
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+# Tests for the functions
+import unittest
+from unittest.mock import patch, AsyncMock
 
-@api_bp_user_app.route('/deploy/user_app/status/<int:id>', methods=['GET'])
-async def get_user_app_status(id):
-    """API endpoint to get the deployment status of user app."""
-    try:
-        # Get the status of the user application deployment using the entity service
-        status = await entity_service.get_item_status(
-            cyoda_token, 'user_app', ENTITY_VERSION, id
-        )
-        return jsonify({"status": status}), 200
+class TestApplicationProcessors(unittest.TestCase):
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    @patch("app_init.app_init.entity_service.add_item")
+    def test_deploy_user_app(self, mock_add_item):
+        data = {
+            "repository_url": "https://example.com/repo.git",
+            "is_public": True
+        }
+        
+        mock_response = AsyncMock()
+        mock_response.json.return_value = {"build_id": 12345}
 
-@api_bp_user_app.route('/deploy/user_app/statistics/<int:id>', methods=['GET'])
-async def get_user_app_statistics(id):
-    """API endpoint to get the deployment statistics of user app."""
-    try:
-        # Get the statistics of the user application deployment using the entity service
-        statistics = await entity_service.get_item_statistics(
-            cyoda_token, 'user_app', ENTITY_VERSION, id
-        )
-        return jsonify({"statistics": statistics}), 200
+        with patch('aiohttp.ClientSession.post', return_value=mock_response):
+            result = asyncio.run(deploy_user_app(data))
+            self.assertEqual(result, {"build_id": 12345})
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+if __name__ == "__main__":
+    unittest.main()
 # ```
+# 
+# ### Key Points:
+# - The `deploy_user_app` function is designed to handle the deployment of a user application using provided data.
+# - It constructs a payload and makes an asynchronous HTTP POST request to the TeamCity build queue with error handling in place.
+# - The `TestApplicationProcessors` class includes a unit test for the `deploy_user_app` function, using mocks to simulate the asynchronous behavior of HTTP requests and responses. 
+# 
+# Make sure to integrate proper error handling and logging before deploying the code in a production environment. Also, replace placeholder values (such as `user_name`) with actual implementation logic as necessary.
