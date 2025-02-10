@@ -1,0 +1,12 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_data_example": "{\"id\": \"string\", \"repository_url\": \"string\", \"is_public\": true, \"build_id\": \"string\", \"status\": \"string\", \"created_at\": \"2023-10-01T00:00:00Z\", \"updated_at\": \"2023-10-01T00:00:00Z\"}"
+        },
+        {
+            "entity_name": "environment",
+            "entity_data_example": "{\"id\": \"string\", \"name\": \"string\", \"type\": \"string\", \"deployment_id\": \"string\", \"configuration\": \"string\", \"status\": \"string\", \"created_at\": \"2023-10-01T00:00:00Z\", \"updated_at\": \"2023-10-01T00:00:00Z\"}"
+        }
+    ]
+}
