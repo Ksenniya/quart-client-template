@@ -1,0 +1,39 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Deploys the Cyoda environment with user-defined properties."
+                },
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Deploys a user application using provided repository URL and user details."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of the deployed user application."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<id>",
+                    "method": "POST",
+                    "description": "Cancels the queued build for the user application."
+                }
+            ]
+        },
+        {
+            "entity_name": "environment",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of the Cyoda environment deployment."
+                }
+            ]
+        }
+    ]
+}
