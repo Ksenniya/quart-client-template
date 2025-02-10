@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_name": "user",
+            "entity_data_example": "{\"user_id\": \"uuid\", \"user_name\": \"John Doe\", \"token\": \"abc123xyz\"}"
+        },
+        {
+            "entity_name": "deployment",
+            "entity_data_example": "{\"deployment_id\": \"uuid\", \"user_id\": \"uuid\", \"environment\": \"Cyoda\", \"status\": \"In Progress\", \"statistics\": {\"key\": \"value\"}, \"created_at\": \"2023-10-25T15:30:00Z\"}"
+        },
+        {
+            "entity_name": "build",
+            "entity_data_example": "{\"build_id\": \"string\", \"deployment_id\": \"uuid\", \"properties\": {\"key\": \"value\"}, \"queue_position\": 1}"
+        }
+    ]
+}
