@@ -1,0 +1,146 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env",
+            "entity_data_example": {
+                "endpoints": {
+                    "POST": [
+                        {
+                            "endpoint": "/deploy/cyoda-env",
+                            "description": "Deploy a Cyoda environment.",
+                            "suggested_workflow": [
+                                {
+                                    "start_state": "Pending",
+                                    "end_state": "Deployed",
+                                    "action": "Submit deployment request to TeamCity",
+                                    "complete_code_for_action_derived_from_the_prototype": "build_info = await post_to_teamcity(TEAMCITY_URL, payload)",
+                                    "description": "Post deployment information to TeamCity and return the build ID.",
+                                    "secondary_entities": [
+                                        {
+                                            "entity_name": "cyoda_env_status",
+                                            "description": "The status of the Cyoda environment deployment"
+                                        },
+                                        {
+                                            "entity_name": "cyoda_env_statistics",
+                                            "description": "Statistics related to the Cyoda environment deployment"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "GET": []
+                }
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "entity_data_example": {
+                "endpoints": {
+                    "POST": [
+                        {
+                            "endpoint": "/deploy/user_app",
+                            "description": "Deploy a user application.",
+                            "suggested_workflow": [
+                                {
+                                    "start_state": "Pending",
+                                    "end_state": "Deployed",
+                                    "action": "Submit deployment request to TeamCity",
+                                    "complete_code_for_action_derived_from_the_prototype": "build_info = await post_to_teamcity(TEAMCITY_URL, payload)",
+                                    "description": "Post deployment information to TeamCity and return the build ID.",
+                                    "secondary_entities": [
+                                        {
+                                            "entity_name": "user_app_status",
+                                            "description": "The status of the user application deployment"
+                                        },
+                                        {
+                                            "entity_name": "user_app_statistics",
+                                            "description": "Statistics related to the user application deployment"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "GET": []
+                }
+            }
+        },
+        {
+            "entity_name": "cancel_user_app",
+            "entity_data_example": {
+                "endpoints": {
+                    "POST": [
+                        {
+                            "endpoint": "/deploy/cancel/user_app/<int:id>",
+                            "description": "Cancel a user application deployment.",
+                            "suggested_workflow": [
+                                {
+                                    "start_state": "Pending",
+                                    "end_state": "Cancelled",
+                                    "action": "Submit cancel request to TeamCity",
+                                    "complete_code_for_action_derived_from_the_prototype": "cancel_info = await post_to_teamcity(url, request_data)",
+                                    "description": "Cancel the queued build for the user application.",
+                                    "secondary_entities": []
+                                }
+                            ]
+                        }
+                    ],
+                    "GET": []
+                }
+            }
+        },
+        {
+            "entity_name": "cyoda_env_status",
+            "entity_data_example": {
+                "endpoints": {
+                    "GET": [
+                        {
+                            "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                            "description": "Retrieve the status of a Cyoda environment deployment."
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "entity_name": "cyoda_env_statistics",
+            "entity_data_example": {
+                "endpoints": {
+                    "GET": [
+                        {
+                            "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
+                            "description": "Retrieve the statistics of a Cyoda environment deployment."
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "entity_name": "user_app_status",
+            "entity_data_example": {
+                "endpoints": {
+                    "GET": [
+                        {
+                            "endpoint": "/deploy/user_app/status/<int:id>",
+                            "description": "Retrieve the status of a user application deployment."
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "entity_name": "user_app_statistics",
+            "entity_data_example": {
+                "endpoints": {
+                    "GET": [
+                        {
+                            "endpoint": "/deploy/user_app/statistics/<int:id>",
+                            "description": "Retrieve the statistics of a user application deployment."
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
