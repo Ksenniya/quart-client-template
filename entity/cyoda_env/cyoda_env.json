@@ -1,0 +1,12 @@
+{
+    "user_name": "test",
+    "build_id": "12345",
+    "status": "in_progress",
+    "statistics": {
+        "duration": "10min",
+        "success": true,
+        "logs": "Logs here"
+    },
+    "comment": "Canceling a queued build",
+    "readdIntoQueue": false
+}
