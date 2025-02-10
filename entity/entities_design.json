@@ -1,0 +1,73 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "deploy_cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploy a Cyoda environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Deployed",
+                                "action": "Trigger build for Cyoda environment",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.post(TEAMCITY_URL, json=payload) as response: if response.status != 200: return jsonify({\"error\": \"Failed to trigger build\"}), response.status build_info = await response.json() return jsonify({\"build_id\": build_info.get('id')})",
+                                "description": "Validate input, create payload, send POST request to trigger the build.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Get status of a deployed Cyoda environment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deploy_user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploy a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Deployed",
+                                "action": "Trigger build for user application",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.post(TEAMCITY_URL, json=payload) as response: if response.status != 200: return jsonify({\"error\": \"Failed to trigger user app build\"}), response.status build_info = await response.json() return jsonify({\"build_id\": build_info.get('id')})",
+                                "description": "Validate input, create payload, send POST request to trigger user app build.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<int:id>",
+                        "description": "Cancel a pending user application deployment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Pending",
+                                "end_state": "Cancelled",
+                                "action": "Cancel build",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.post(f\"{TEAMCITY_URL}/id:{id}\", json=payload) as response: if response.status != 200: return jsonify({\"error\": \"Failed to cancel build\"}), response.status return jsonify({\"message\": \"Build canceled successfully\"})",
+                                "description": "Send POST request to cancel the user app build.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Get status of a user application deployment."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
