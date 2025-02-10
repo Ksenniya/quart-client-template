@@ -9,7 +9,7 @@ from app_init.app_init import cyoda_token
 #please update this line to your entity
 from entity.generate_report.api import api_bp_generate_report
 from entity.get_report.api import api_bp_get_report
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +17,7 @@ app = Quart(__name__)
 QuartSchema(app)
 app.register_blueprint(api_bp_generate_report, url_prefix='/api/generate_report')
 app.register_blueprint(api_bp_get_report, url_prefix='/api/get_report')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():
