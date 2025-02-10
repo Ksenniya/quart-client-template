@@ -1,0 +1,39 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Creates a new cyber environment with the provided user name."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the build status for the specified cyoda environment by build ID."
+                }
+            ]
+        },
+        {
+            "entity_name": "user_app",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Creates a new user application with the provided repository URL and user name."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the build status for the specified user application by build ID."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<int:id>",
+                    "method": "POST",
+                    "description": "Cancels the user application build specified by the build ID."
+                }
+            ]
+        }
+    ]
+}
