@@ -1,0 +1,19 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_data_example": "{\"id\": \"UUID\", \"user_name\": \"String\", \"repository_url\": \"String\", \"is_public\": \"Boolean\", \"status\": \"Enum\", \"created_at\": \"DateTime\", \"updated_at\": \"DateTime\"}",
+            "source": "entity/entities_design.md"
+        },
+        {
+            "entity_name": "build",
+            "entity_data_example": "{\"id\": \"UUID\", \"deployment_id\": \"UUID\", \"build_type\": \"String\", \"build_status\": \"Enum\", \"start_time\": \"DateTime\", \"end_time\": \"DateTime\", \"log_url\": \"String\"}",
+            "source": "entity/entities_design.md"
+        },
+        {
+            "entity_name": "cancel_request",
+            "entity_data_example": "{\"id\": \"UUID\", \"build_id\": \"UUID\", \"comment\": \"String\", \"readd_into_queue\": \"Boolean\", \"request_time\": \"DateTime\"}",
+            "source": "entity/entities_design.md"
+        }
+    ]
+}
