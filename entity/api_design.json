@@ -1,0 +1,49 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/api/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Deploys the Cyoda environment using the provided user name."
+                },
+                {
+                    "endpoint": "/api/deploy/user_app",
+                    "method": "POST",
+                    "description": "Deploys a user application using the provided repository URL and user details."
+                },
+                {
+                    "endpoint": "/api/deploy/cyoda-env/status/<int:build_id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of the Cyoda environment deployment for the given build ID."
+                },
+                {
+                    "endpoint": "/api/deploy/user_app/status/<int:build_id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of the user application deployment for the given build ID."
+                },
+                {
+                    "endpoint": "/api/deploy/cancel/user_app/<int:build_id>",
+                    "method": "POST",
+                    "description": "Cancels a queued user application deployment for the given build ID."
+                }
+            ]
+        },
+        {
+            "entity_name": "status",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/api/deploy/cyoda-env/status/<int:build_id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of the Cyoda environment deployment for the given build ID."
+                },
+                {
+                    "endpoint": "/api/deploy/user_app/status/<int:build_id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of the user application deployment for the given build ID."
+                }
+            ]
+        }
+    ]
+}
