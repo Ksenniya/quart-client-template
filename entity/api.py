@@ -1,7 +1,7 @@
-# Based on your request to simplify the implementation to only include the two endpoints (`GET /report` and `POST /report`), here’s the revised `api.py` code. This version focuses on generating and retrieving the report, along with the necessary data ingestion and aggregation processes as part of the `POST /report` endpoint.
+# Here’s an updated version of the `api.py` code that fetches all activities first and then retrieves the details for each activity, appending the details to the report. The code implements both the `POST /report` and `GET /report` endpoints as specified:
 # 
 # ```python
-from quart import Quart, Blueprint, jsonify, request
+from quart import Quart, Blueprint, jsonify
 import aiohttp
 import asyncio
 from datetime import datetime
@@ -15,24 +15,36 @@ EXTERNAL_API_URL = "https://fakerestapi.azurewebsites.net/api/v1/Activities"
 # Placeholder for the cached report
 cached_report = None
 
+async def fetch_activity_details(session, activity_id):
+    """Fetch details for a specific activity."""
+    url = f"{EXTERNAL_API_URL}/{activity_id}"
+    async with session.get(url) as resp:
+        if resp.status == 200:
+            return await resp.json()
+        else:
+            return None
+
 @api.route('/report', methods=['POST'])
 async def generate_report():
     global cached_report
     async with aiohttp.ClientSession() as session:
+        # Fetch all activities
         async with session.get(EXTERNAL_API_URL) as resp:
             if resp.status == 200:
-                data = await resp.json()
+                activities = await resp.json()
 
-                # Aggregation logic (example)
-                total_activities = len(data)
-                completed_activities = sum(1 for activity in data if activity.get("completed"))
+                # Fetch details for each activity
+                detailed_activities = []
+                for activity in activities:
+                    details = await fetch_activity_details(session, activity["id"])
+                    if details:
+                        detailed_activities.append(details)
 
                 # Generate the report
                 report = {
                     "generated_at": datetime.now().isoformat(),
-                    "total_activities": total_activities,
-                    "completed_activities": completed_activities,
-                    "activities": data
+                    "total_activities": len(detailed_activities),
+                    "activities": detailed_activities
                 }
 
                 cached_report = report  # Cache the report for later retrieval
@@ -55,13 +67,12 @@ if __name__ == "__main__":
 # ```
 # 
 # ### Key Features of the Code:
+# - **Fetching Activities**: The `POST /report` endpoint first fetches all activities from the external API.
+# - **Fetching Activity Details**: For each activity, the code then retrieves detailed information using the `fetch_activity_details` function.
+# - **Caching the Report**: The detailed report is cached for later retrieval.
 # - **Endpoints**:
-#   - `POST /report`: This endpoint ingests data from the external API, aggregates it, generates a report, and caches it for later retrieval. It returns the report in the response.
-#   - `GET /report`: This endpoint retrieves the cached report. If no report is available, it returns an error message.
-#   
-# - **Aggregation Logic**: Basic aggregation logic is included to count total activities and completed activities.
-# 
-# - **Error Handling**: Basic error handling is implemented for the data ingestion process.
+#   - `POST /report`: Ingests data, fetches details for each activity, and generates a report.
+#   - `GET /report`: Retrieves the cached report.
 # 
 # ### Next Steps:
-# This code provides a simplified and focused implementation of your requirements. You can run this prototype to verify the user experience and functionality. Let me know if you need further adjustments or additional features!
+# You can run this prototype to verify the user experience and ensure it meets your requirements. If you need any further modifications or additional features, please let me know!
