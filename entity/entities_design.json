@@ -1,0 +1,12 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_data_example": "{\"deployment_id\": 1, \"user_name\": \"john_doe\", \"repository_url\": \"https://github.com/example/repo\", \"is_public\": true, \"build_type\": \"User Application\", \"created_at\": \"2023-10-01T10:00:00Z\", \"updated_at\": \"2023-10-01T11:00:00Z\", \"status_id\": 2}"
+        },
+        {
+            "entity_name": "status",
+            "entity_data_example": "{\"status_id\": 2, \"status\": \"In Progress\", \"details\": \"Deployment is currently being processed.\", \"timestamp\": \"2023-10-01T12:00:00Z\"}"
+        }
+    ]
+}
