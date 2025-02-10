@@ -1,0 +1,54 @@
+{
+    "entities": [
+        {
+            "entity_name": "environment",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Triggers deployment for the Cyoda environment."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                    "method": "GET",
+                    "description": "Fetches the status of the Cyoda environment deployment using the build ID."
+                }
+            ]
+        },
+        {
+            "entity_name": "application",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Triggers deployment for the user application."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<int:id>",
+                    "method": "GET",
+                    "description": "Fetches the status of the user application deployment using the build ID."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<int:id>",
+                    "method": "POST",
+                    "description": "Cancels the ongoing deployment for the user application using the build ID."
+                }
+            ]
+        },
+        {
+            "entity_name": "deployment_status",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the build status corresponding to a deployment for the Cyoda environment."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the build status corresponding to a deployment for the user application."
+                }
+            ]
+        }
+    ]
+}
