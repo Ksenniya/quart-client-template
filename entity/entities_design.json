@@ -1,0 +1,71 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda-env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploy the Cyoda environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Pending",
+                                "end_state": "Deployed",
+                                "action": "deploy_cyoda_env",
+                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_cyoda_env():\n    data = await request.json\n    user_name = data.get('user_name')\n    # Placeholder for missing authorization handling\n    if not user_name:\n        return jsonify({\"error\": \"user_name is required\"}), 400\n\n    build_payload = { ... }",
+                                "description": "Handles the deployment of the Cyoda environment with the specified parameters.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<id>",
+                        "description": "Get the status of the Cyoda environment deployment by build ID."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploy a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Pending",
+                                "end_state": "Deployed",
+                                "action": "deploy_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_user_app():\n    data = await request.json\n    repository_url = data.get(\"repository_url\")\n    is_public = data.get(\"is_public\")\n    # TODO: Implement necessary validation checks\n    if not repository_url or is_public is None:\n        return jsonify({\"error\": \"Missing repository_url or is_public\"}), 400\n\n    build_payload = { ... }",
+                                "description": "Handles the deployment of a user application with the specified parameters.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<id>",
+                        "description": "Get the status of the user application deployment by build ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<id>",
+                        "description": "Get the status of the user application deployment by build ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
