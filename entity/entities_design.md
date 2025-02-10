@@ -1,80 +1,109 @@
-Certainly! Below is a full markdown document outlining the entities for your application prototype, excluding the user diagram.
+Sure! Below is a comprehensive markdown document outlining the entities for your application prototype. I've focused on the relevant entities: Deployment, Build, and Cancel Request based on your requirements.
 
 ```markdown
-# Application Prototype Entities Outline
+# Application Prototype Entity Outline
 
-## Entity Overview
+## Entities Overview 
 
-This document outlines the entities associated with the application prototype that interacts with TeamCity for deployment management. Each entity includes its attributes and relationships.
+This document outlines the primary entities for the application prototype. The focus is on three main entities: **Deployment**, **Build**, and **Cancel Request**. Each entity includes its properties and relationships to other entities, forming a foundation for the application's database structure.
 
-### Entity: Deployment
+---
 
-- **Properties:**
-  - `id`: Unique identifier for the deployment (e.g., UUID)
-  - `user_name`: Name of the user who triggered the deployment
-  - `repository_url`: URL of the repository for the application being deployed
-  - `is_public`: Boolean indicating if the deployment is public
-  - `build_id`: ID received from TeamCity for the triggered build
-  - `status`: Current status of the deployment (e.g., in_progress, completed, failed)
-  - `created_at`: Timestamp when the deployment was initiated
-  - `updated_at`: Timestamp for the last update on the deployment status
+## Entity Definitions
 
-### Entity: Build
+### 1. Deployment
 
-- **Properties:**
-  - `id`: Unique identifier for the build (e.g., UUID)
-  - `deployment_id`: Foreign key referencing the Deployment entity
-  - `status`: Status of the build from TeamCity's response (e.g., queued, running, finished)
-  - `start_time`: Timestamp when the build started
-  - `end_time`: Timestamp when the build finished
-  - `success`: Boolean indicating whether the build was successful
+**Description:** Represents the deployment of an application environment.
 
-### Entity: User (Optional)
+| Property                    | Type           | Description                                           |
+|-----------------------------|----------------|-------------------------------------------------------|
+| `id`                        | UUID           | Unique identifier for the deployment.                 |
+| `user_name`                | String         | Name of the user who initiated the deployment.        |
+| `repository_url`           | String         | URL of the repository containing the application code.|
+| `is_public`                | Boolean        | Indicates whether the application is public or private. |
+| `status`                   | Enum           | Current status of the deployment (e.g., "In Progress", "Completed", "Failed"). |
+| `created_at`               | DateTime       | Timestamp indicating when the deployment was created. |
+| `updated_at`               | DateTime       | Timestamp indicating when the deployment was last updated. |
 
-- **Properties:**
-  - `id`: Unique identifier for the user (e.g., UUID)
-  - `name`: Name of the user
-  - `email`: Email address of the user
-  - `token`: Authentication token used for API requests to TeamCity
-  - `created_at`: Timestamp of when the user was created
-  - `updated_at`: Timestamp of the last update to the user's information
+### 2. Build
 
-### Relationships
-- **Deployment** has a one-to-many relationship with **Build**:
-  - A single deployment can trigger multiple builds (e.g., for different environments or configurations).
-- **User** (if applicable) has a one-to-many relationship with **Deployment**:
-  - A user can initiate multiple deployments.
+**Description:** Represents a specific build associated with a deployment.
 
-## ER Diagram
+| Property                    | Type           | Description                                           |
+|-----------------------------|----------------|-------------------------------------------------------|
+| `id`                        | UUID           | Unique identifier for the build.                      |
+| `deployment_id`            | UUID           | Foreign key referencing the associated deployment.     |
+| `build_type`               | String         | Type of build (e.g., "KubernetesPipeline_CyodaSaas").|
+| `build_status`             | Enum           | Current status of the build (e.g., "Pending", "Running", "Success", "Failure"). |
+| `start_time`               | DateTime       | Timestamp indicating when the build started.         |
+| `end_time`                 | DateTime       | Timestamp indicating when the build ended.           |
+| `log_url`                  | String         | URL to access the build logs for debugging.          |
+
+### 3. Cancel Request
+
+**Description:** Represents a request to cancel a specific build.
+
+| Property                    | Type           | Description                                           |
+|-----------------------------|----------------|-------------------------------------------------------|
+| `id`                        | UUID           | Unique identifier for the cancel request.            |
+| `build_id`                 | UUID           | Foreign key referencing the build to be canceled.    |
+| `comment`                  | String         | Optional comment provided by the user for cancellation. |
+| `readd_into_queue`         | Boolean        | Indicates whether the canceled build should be re-added to the queue. |
+| `request_time`             | DateTime       | Timestamp indicating when the cancellation request was made. |
+
+---
+
+## Relationships
+
+- **Deployment to Build:** 
+  - A **Deployment** can have multiple **Builds** associated with it. Each **Build** pertains specifically to a deployment instance.
+  
+- **Build to Cancel Request:** 
+  - Each **Build** can have one or more **Cancel Requests** associated with it; however, a **Cancel Request** pertains to a single **Build**.
+
+---
+
+## Entity-Relationship Diagram (ERD)
 
 ```mermaid
 erDiagram
     DEPLOYMENT {
-        string id PK "Unique identifier for the deployment"
-        string user_name "Name of the user who triggered the deployment"
-        string repository_url "URL of the repository"
-        boolean is_public "Indicates if the deployment is public"
-        string build_id "ID received from TeamCity"
-        string status "Current status of the deployment"
-        datetime created_at "Timestamp when initiated"
-        datetime updated_at "Timestamp of last update"
+        UUID id PK
+        String user_name
+        String repository_url
+        Boolean is_public
+        StatusEnum status
+        DateTime created_at
+        DateTime updated_at
     }
     
     BUILD {
-        string id PK "Unique identifier for the build"
-        string deployment_id FK "Reference to Deployment"
-        string status "Status of the build"
-        datetime start_time "Timestamp when the build started"
-        datetime end_time "Timestamp when the build finished"
-        boolean success "Indicates if the build was successful"
+        UUID id PK
+        UUID deployment_id FK
+        String build_type
+        StatusEnum build_status
+        DateTime start_time
+        DateTime end_time
+        String log_url
     }
 
-    DEPLOYMENT ||--o{ BUILD : triggers
+    CANCEL_REQUEST {
+        UUID id PK
+        UUID build_id FK
+        String comment
+        Boolean readd_into_queue
+        DateTime request_time
+    }
+    
+    DEPLOYMENT ||--|{ BUILD : has
+    BUILD ||--|{ CANCEL_REQUEST : can have
 ```
+
+---
 
 ## Conclusion
 
-The outlined entities provide a structure for the data flows within the application prototype. It covers the core attributes and relationships necessary for managing deployments and builds effectively, ensuring that the application can monitor and control its operations regarding deployments.
+This document serves as a structured outline of the primary entities related to your application prototype. Each entity is described with relevant properties, and relationships between the entities are defined to facilitate a deeper understanding of how they interact within the system.
 ```
 
-Feel free to modify any parts of this document as necessary for your specific use case!
+Feel free to modify any part or request further details as needed!
