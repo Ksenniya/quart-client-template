@@ -1,0 +1,48 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Generates a report by fetching all activities, retrieving details for each, aggregating data, and saving it.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "No report generated",
+                                "end_state": "Report generated",
+                                "action": "Generate report",
+                                "complete_code_for_action_derived_from_the_prototype": "async def generate_report():\n    try:\n        activities = await fetch_activities()\n        if not activities:\n            return jsonify({\"status\": \"error\", \"message\": \"No activities fetched.\"}), 500\n        \n        detailed_activities = await asyncio.gather(*(fetch_activity_by_id(activity['id']) for activity in activities))\n        detailed_activities = [activity for activity in detailed_activities if activity is not None]\n        \n        aggregated_report = aggregate_data(detailed_activities)\n        \n        save_report_to_cache(aggregated_report)\n        \n        return jsonify({\"status\": \"success\", \"message\": \"Report generated successfully.\"}), 200\n    except Exception as e:\n        return jsonify({\"status\": \"error\", \"message\": f\"Error generating report: {str(e)}\"}), 500",
+                                "description": "This workflow handles the report generation process.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves the latest aggregated report from the cache."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "activity",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "https://fakerestapi.azurewebsites.net/api/v1/Activities",
+                        "description": "Fetches a list of activities from an external API."
+                    },
+                    {
+                        "endpoint": "https://fakerestapi.azurewebsites.net/api/v1/Activities/{id}",
+                        "description": "Fetches detailed activity data by activity ID from an external API."
+                    }
+                ]
+            }
+        }
+    ]
+}
