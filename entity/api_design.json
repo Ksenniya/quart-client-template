@@ -1,0 +1,89 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Initiates deployment in cyoda environment."
+                },
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Initiates deployment of user application."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of a deployment in cyoda environment."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves statistics of a deployment in cyoda environment."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the status of a user application deployment."
+                },
+                {
+                    "endpoint": "/deploy/user_app/statistics/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves statistics of a user application deployment."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<int:id>",
+                    "method": "POST",
+                    "description": "Cancel a queued user application deployment."
+                }
+            ]
+        },
+        {
+            "entity_name": "build",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves the build status for a specific deployment."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves build statistics for a specific deployment."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves build status for a user app."
+                },
+                {
+                    "endpoint": "/deploy/user_app/statistics/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieves build statistics for a user app."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<int:id>",
+                    "method": "POST",
+                    "description": "Cancels the build for a user application."
+                }
+            ]
+        },
+        {
+            "entity_name": "user",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Initiates deployment in cyoda environment with user details."
+                },
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Initiates deployment of a user application with user details."
+                }
+            ]
+        }
+    ]
+}
