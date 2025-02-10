@@ -1,0 +1,46 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "generate_report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/generate-report",
+                        "description": "This endpoint generates a report by downloading data, analyzing it, and storing the report.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "data_not_generated",
+                                "end_state": "data_generated",
+                                "action": "GenerateReport",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.get(url) as response: if response.status != 200: return jsonify({\"error\": \"Failed to download data.\"}), 500 data = await response.text() df = pd.read_csv(io.StringIO(data)) report = {\"average_price\": df[\"Price (\u00a3)\"].mean(), \"total_properties\": df.shape[0], \"details\": df.to_dict(orient=\"records\") } global generated_report generated_report = report return jsonify({\"message\": \"Report generated successfully!\", \"report\": report}), 200",
+                                "description": "Downloads data, analyzes it to generate a report, and stores it in memory.",
+                                "secondary_entities": [
+                                    "get_report"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/generate-report",
+                        "description": "This endpoint provides the ability to verify if the report generation functionality is available."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "get_report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/get-report",
+                        "description": "This endpoint retrieves the generated report from memory."
+                    }
+                ]
+            }
+        }
+    ]
+}
