@@ -10,7 +10,7 @@ from app_init.app_init import cyoda_token
 from entity.deployment.api import api_bp_deployment
 from entity.build.api import api_bp_build
 from entity.user.api import api_bp_user
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +19,7 @@ QuartSchema(app)
 app.register_blueprint(api_bp_deployment, url_prefix='/api/deployment')
 app.register_blueprint(api_bp_build, url_prefix='/api/build')
 app.register_blueprint(api_bp_user, url_prefix='/api/user')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():
