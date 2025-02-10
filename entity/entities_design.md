@@ -1,89 +1,77 @@
-Based on the information provided about your application prototype, we can outline several key entities along with their properties. Here is a breakdown of the entities and their essential attributes that can be derived from your API and functional requirements.
+Certainly! Based on the provided API structure and functional requirements, we can outline the following entities for your application prototype. Since you mentioned to remove the user entity, I've structured the other relevant entities accordingly:
 
 ### Entities and Their Properties
 
-1. **User**
-   - **user_id**: (string) Unique identifier for the user.
-   - **user_name**: (string) Name of the user.
-   - **token**: (string) Bearer token for authentication.
+1. **Deployment**
+   - **Properties:**
+     - `id`: Integer (Unique identifier for the deployment)
+     - `type`: String (Type of deployment, e.g., "cyoda-env" or "user_app")
+     - `repository_url`: String (URL of the repository for the user app)
+     - `is_public`: Boolean (Indicates if the user app is public or private)
+     - `status`: String (Current status of the deployment, e.g., "in_progress", "completed", "canceled")
+     - `build_id`: String (Build identifier returned from the TeamCity)
+     - `created_at`: Timestamp (Time the deployment was created)
+     - `updated_at`: Timestamp (Time the deployment status was last updated)
 
-2. **DeploymentEnvironment**
-   - **env_id**: (string) Unique identifier for the environment.
-   - **user_id**: (string) Reference to the User entity.
-   - **build_id**: (string) Identifier for the build in TeamCity.
-   - **status**: (string) Current status of the deployment (e.g., `in_progress`, `completed`, `failed`).
-   - **created_at**: (datetime) Timestamp when the environment was created.
-   - **updated_at**: (datetime) Timestamp when the environment was last updated.
+2. **Build**
+   - **Properties:**
+     - `id`: Integer (Unique identifier for the build)
+     - `deployment_id`: Integer (ID of the associated deployment)
+     - `start_time`: Timestamp (Time the build started)
+     - `end_time`: Timestamp (Time the build finished)
+     - `duration`: Integer (Duration of the build in seconds)
+     - `success_rate`: Float (Success rate percentage of the build)
 
-3. **UserApplication**
-   - **app_id**: (string) Unique identifier for the application.
-   - **user_id**: (string) Reference to the User entity.
-   - **repository_url**: (string) URL of the repository for the user application.
-   - **is_public**: (boolean) Flag indicating if the application is public.
-   - **build_id**: (string) Identifier for the build in TeamCity.
-   - **status**: (string) Current status of the application (e.g., `building`, `completed`, `failed`).
-   - **created_at**: (datetime) Timestamp when the application was deployed.
-   - **updated_at**: (datetime) Timestamp when the application was last updated.
+3. **Statistics**
+   - **Properties:**
+     - `id`: Integer (Unique identifier for the statistics record)
+     - `deployment_id`: Integer (ID of the associated deployment)
+     - `duration`: Integer (Duration of the deployment in seconds)
+     - `success_rate`: Float (Success rate percentage of the deployment)
+     - `timestamp`: Timestamp (Time when the statistics were recorded)
 
-4. **Build**
-   - **build_id**: (string) Unique identifier for the build.
-   - **type**: (string) Type of build (e.g., `Environment`, `User Application`).
-   - **status**: (string) Current status of the build (e.g., `in_progress`, `completed`, `canceled`).
-   - **duration**: (string) Time taken for the build to complete.
-   - **success_rate**: (percentage) Success rate of the build.
-   - **created_at**: (datetime) Timestamp when the build started.
-
-### Mermaid Entity Relationship Diagram
-
-Here’s a Mermaid diagram representing the entities and their relationships:
+### Mermaid Entity-Relationship Diagram
 
 ```mermaid
-classDiagram
-    class User {
-        +string user_id
-        +string user_name
-        +string token
-    }
-    
-    class DeploymentEnvironment {
-        +string env_id
-        +string user_id
-        +string build_id
-        +string status
-        +datetime created_at
-        +datetime updated_at
-    }
-    
-    class UserApplication {
-        +string app_id
-        +string user_id
-        +string repository_url
-        +boolean is_public
-        +string build_id
-        +string status
-        +datetime created_at
-        +datetime updated_at
-    }
-    
-    class Build {
-        +string build_id
-        +string type
-        +string status
-        +string duration
-        +percentage success_rate
-        +datetime created_at
+erDiagram
+    DEPLOYMENT {
+        integer id PK
+        string type
+        string repository_url
+        boolean is_public
+        string status
+        string build_id
+        timestamp created_at
+        timestamp updated_at
     }
 
-    User "1" --> "*" DeploymentEnvironment : creates >
-    User "1" --> "*" UserApplication : deploys >
+    BUILD {
+        integer id PK
+        integer deployment_id FK
+        timestamp start_time
+        timestamp end_time
+        integer duration
+        float success_rate
+    }
 
-    DeploymentEnvironment "1" --> "1" Build : corresponds to >
-    UserApplication "1" --> "1" Build : corresponds to >
+    STATISTICS {
+        integer id PK
+        integer deployment_id FK
+        integer duration
+        float success_rate
+        timestamp timestamp
+    }
+
+    DEPLOYMENT ||--o{ BUILD : has
+    DEPLOYMENT ||--o{ STATISTICS : has
 ```
 
-### Additional Considerations
-- **Authentication**: The relationships indicate that a User can create multiple deployment environments and user applications.
-- **Error Handling & Logs**: You might want to consider adding logging or error handling entities if needed.
-- **Non-Functional Requirements**: Such as security, scalability, and performance metrics, while not laid out here, are essential aspects to consider based on your functional requirements.
+### Summary
 
-This outline and diagram provide a structured approach to understanding your application prototype's architecture and can guide you in refining the application further. If there are more specific requirements or areas you want to delve deeper into, please let me know!
+In this structure:
+
+- The **Deployment** entity represents a request to deploy an environment or user application and keeps track of the necessary properties.
+- The **Build** entity stores information about each build initiated for those deployments, including its status and timing.
+- The **Statistics** entity provides insights into the performance and success of the deployments, linked by the deployment ID.
+
+Feel free to adapt or further customize these entities and their properties based on your application's specific needs!
