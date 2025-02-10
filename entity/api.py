@@ -1,11 +1,10 @@
-# Here’s a prototype implementation of the `api.py` file using Quart and aiohttp for asynchronous HTTP requests. This code incorporates the requirements and specifications you've provided, including placeholders and TODO comments where necessary.
+# Based on your request to simplify the implementation to only include the two endpoints (`GET /report` and `POST /report`), here’s the revised `api.py` code. This version focuses on generating and retrieving the report, along with the necessary data ingestion and aggregation processes as part of the `POST /report` endpoint.
 # 
 # ```python
 from quart import Quart, Blueprint, jsonify, request
 import aiohttp
 import asyncio
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = Quart(__name__)
 api = Blueprint('api', __name__)
@@ -13,50 +12,33 @@ api = Blueprint('api', __name__)
 # Configuration for the external API
 EXTERNAL_API_URL = "https://fakerestapi.azurewebsites.net/api/v1/Activities"
 
-# Placeholder for the cached reports
+# Placeholder for the cached report
 cached_report = None
 
-@api.route('/data/ingest', methods=['GET'])
-async def ingest_data():
+@api.route('/report', methods=['POST'])
+async def generate_report():
+    global cached_report
     async with aiohttp.ClientSession() as session:
         async with session.get(EXTERNAL_API_URL) as resp:
             if resp.status == 200:
                 data = await resp.json()
-                # TODO: Process the data as needed (e.g., store it in a database)
-                return jsonify({"status": "success", "message": "Data ingested successfully."})
+
+                # Aggregation logic (example)
+                total_activities = len(data)
+                completed_activities = sum(1 for activity in data if activity.get("completed"))
+
+                # Generate the report
+                report = {
+                    "generated_at": datetime.now().isoformat(),
+                    "total_activities": total_activities,
+                    "completed_activities": completed_activities,
+                    "activities": data
+                }
+
+                cached_report = report  # Cache the report for later retrieval
+                return jsonify({"status": "success", "reportId": "1", "report": report})
             else:
                 return jsonify({"status": "error", "message": "Failed to ingest data."}), 500
-
-@api.route('/data/aggregate', methods=['POST'])
-async def aggregate_data():
-    # TODO: Implement data aggregation logic
-    # This is a placeholder for the aggregated data structure
-    aggregated_data = {
-        "total_activities": 0,  # Example field
-        "completed_activities": 0  # Example field
-    }
-    
-    # Perform aggregation logic here
-    # For now, we'll just return the placeholder
-    return jsonify({"status": "success", "aggregatedData": aggregated_data})
-
-@api.route('/report/generate', methods=['POST'])
-async def generate_report():
-    global cached_report
-    # TODO: Replace with actual logic for generating a report
-    report = {
-        "generated_at": datetime.now().isoformat(),
-        "data": cached_report  # This should be the aggregated data
-    }
-    
-    cached_report = report  # Cache the report for later retrieval
-    return jsonify({"status": "success", "reportId": "1", "reportUrl": "/report"})
-
-@api.route('/report/send-email', methods=['POST'])
-async def send_email():
-    # TODO: Implement email sending logic
-    # This is a placeholder
-    return jsonify({"status": "success", "message": "Report sent to admin's email."})
 
 @api.route('/report', methods=['GET'])
 async def get_report():
@@ -68,26 +50,18 @@ async def get_report():
 # Register the blueprint
 app.register_blueprint(api, url_prefix='/api/v1')
 
-# Schedule daily data ingestion (for testing purposes)
-async def scheduled_ingestion():
-    while True:
-        await ingest_data()
-        await asyncio.sleep(86400)  # Sleep for 1 day
-
-# Start the scheduled ingestion in the background
-@app.before_serving
-async def startup():
-    asyncio.create_task(scheduled_ingestion())
-
 if __name__ == "__main__":
     app.run(debug=True)
 # ```
 # 
 # ### Key Features of the Code:
-# - **Endpoints**: All the specified endpoints (`/data/ingest`, `/data/aggregate`, `/report/generate`, `/report/send-email`, `/report`) are implemented.
-# - **Asynchronous HTTP Requests**: The `aiohttp.ClientSession` is used for making asynchronous requests to the external API.
-# - **Placeholders and TODOs**: Where logic is not fully defined or requires further specification, placeholders and TODO comments are included to indicate where further implementation is needed.
-# - **Daily Ingestion**: A simple scheduled ingestion function that runs every 24 hours is included, though you may want to refine this for production use.
+# - **Endpoints**:
+#   - `POST /report`: This endpoint ingests data from the external API, aggregates it, generates a report, and caches it for later retrieval. It returns the report in the response.
+#   - `GET /report`: This endpoint retrieves the cached report. If no report is available, it returns an error message.
+#   
+# - **Aggregation Logic**: Basic aggregation logic is included to count total activities and completed activities.
+# 
+# - **Error Handling**: Basic error handling is implemented for the data ingestion process.
 # 
 # ### Next Steps:
-# You can run this prototype to verify the user experience and identify any gaps in the requirements. Please let me know if you need any modifications or additional features!
+# This code provides a simplified and focused implementation of your requirements. You can run this prototype to verify the user experience and functionality. Let me know if you need further adjustments or additional features!
