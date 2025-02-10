@@ -1,0 +1,100 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda-env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploys a Cyoda environment with specified user parameters.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Deployed",
+                                "action": "Deploy Cyoda Environment",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.post(f\"{TEAMCITY_URL}/buildQueue\", json=build_payload) as resp: result = await resp.json()",
+                                "description": "This action deploys a new Cyoda environment using the specified user parameters.",
+                                "secondary_entities": [
+                                    "cyoda-env-status"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Retrieves the deployment status of a Cyoda environment by ID."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploys a user application with specified repository details.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Deployed",
+                                "action": "Deploy User Application",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.post(f\"{TEAMCITY_URL}/buildQueue\", json=build_payload) as resp: result = await resp.json()",
+                                "description": "This action deploys a user application using the specified repository details.",
+                                "secondary_entities": [
+                                    "user_app_status"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<int:id>",
+                        "description": "Cancels a queued or running user application build by ID.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Queued/Running",
+                                "end_state": "Cancelled",
+                                "action": "Cancel User Application Build",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.post(f\"{TEAMCITY_URL}/builds/id:{id}\", json=cancel_payload) as resp: cancel_response = await resp.json()",
+                                "description": "This action cancels a user application build using its ID.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Retrieves the deployment status of a user application by ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "cyoda-env-status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Returns the status of the Cyoda environment deployment specified by ID."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app_status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Returns the status of the user application deployment specified by ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
