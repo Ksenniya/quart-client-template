@@ -1,0 +1,35 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env",
+            "entity_data_example": {
+                "user_name": "test",
+                "build_id": "12345",
+                "status": "in_progress",
+                "statistics": {
+                    "duration": "10min",
+                    "success": true,
+                    "logs": "Logs here"
+                },
+                "comment": "Canceling a queued build",
+                "readdIntoQueue": false
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "entity_data_example": {
+                "repository_url": "http://....",
+                "is_public": "true",
+                "build_id": "67890",
+                "status": "in_progress",
+                "statistics": {
+                    "duration": "10min",
+                    "success": true,
+                    "logs": "Logs here"
+                },
+                "comment": "Canceling a queued build",
+                "readdIntoQueue": false
+            }
+        }
+    ]
+}
