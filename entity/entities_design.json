@@ -1,80 +1,20 @@
 {
-    "primary_entities": [
+    "entities": [
         {
-            "entity_name": "cyoda-env",
-            "endpoints": {
-                "POST": [
-                    {
-                        "endpoint": "/deploy/cyoda-env",
-                        "description": "Deploys the Cyoda environment",
-                        "suggested_workflow": [
-                            {
-                                "start_state": "Idle",
-                                "end_state": "Deployed",
-                                "action": "deploy_cyoda_env",
-                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_cyoda_env():\n    data = await request.json\n    user_name = data.get('user_name')\n    payload = {\n        \"buildType\": {\n            \"id\": \"KubernetesPipeline_CyodaSaas\"\n        },\n        \"properties\": {\n            \"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": user_name},\n                {\"name\": \"user_defined_namespace\", \"value\": user_name}\n            ]\n        }\n    }",
-                                "description": "Deploys the environment using the provided parameters, initiating a build in TeamCity.",
-                                "secondary_entities": []
-                            }
-                        ]
-                    }
-                ],
-                "GET": []
-            }
+            "entity_name": "cyoda_env",
+            "entity_data_example": "{\"endpoint\": \"string\", \"description\": \"string\"}"
         },
         {
             "entity_name": "user_app",
-            "endpoints": {
-                "POST": [
-                    {
-                        "endpoint": "/deploy/user_app",
-                        "description": "Deploys the User App",
-                        "suggested_workflow": [
-                            {
-                                "start_state": "Idle",
-                                "end_state": "Deployed",
-                                "action": "deploy_user_app",
-                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_user_app():\n    data = await request.json\n    repository_url = data.get('repository_url')\n    payload = {\n        \"buildType\": {\n            \"id\": \"KubernetesPipeline_CyodaSaasUserEnv\"\n        },\n        \"properties\": {\n            \"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": user_name},\n                {\"name\": \"user_defined_namespace\", \"value\": user_name}\n            ]\n        }\n    }",
-                                "description": "Initiates the deployment of a user application, specifying the repository details.",
-                                "secondary_entities": []
-                            }
-                        ]
-                    }
-                ],
-                "GET": []
-            }
-        }
-    ],
-    "secondary_entities": [
-        {
-            "entity_name": "cyoda-env-status",
-            "endpoints": {
-                "GET": [
-                    {
-                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
-                        "description": "Retrieves the status of a deployed Cyoda environment by ID."
-                    },
-                    {
-                        "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
-                        "description": "Fetches statistics for a deployed Cyoda environment."
-                    }
-                ]
-            }
+            "entity_data_example": "{\"endpoint\": \"string\", \"description\": \"string\"}"
         },
         {
-            "entity_name": "user_app-status",
-            "endpoints": {
-                "GET": [
-                    {
-                        "endpoint": "/deploy/user_app/status/<int:id>",
-                        "description": "Retrieves the status of a deployed user application by ID."
-                    },
-                    {
-                        "endpoint": "/deploy/user_app/statistics/<int:id>",
-                        "description": "Fetches statistics for a deployed user application."
-                    }
-                ]
-            }
+            "entity_name": "cyoda_env_status",
+            "entity_data_example": "{\"endpoint\": \"string\", \"description\": \"string\"}"
+        },
+        {
+            "entity_name": "user_app_status",
+            "entity_data_example": "{\"endpoint\": \"string\", \"description\": \"string\"}"
         }
     ]
 }
