@@ -1,0 +1,48 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/v1/report",
+                        "description": "Generate a report by ingesting data, fetching details for each activity, and caching the report.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "No report available",
+                                "end_state": "Report generated and cached",
+                                "action": "Generate report",
+                                "complete_code_for_action_derived_from_the_prototype": "async def generate_report():\n    global cached_report\n    async with aiohttp.ClientSession() as session:\n        async with session.get(EXTERNAL_API_URL) as resp:\n            if resp.status == 200:\n                activities = await resp.json()\n                detailed_activities = []\n                for activity in activities:\n                    details = await fetch_activity_details(session, activity[\"id\"])\n                    if details:\n                        detailed_activities.append(details)\n                report = {\n                    \"generated_at\": datetime.now().isoformat(),\n                    \"total_activities\": len(detailed_activities),\n                    \"activities\": detailed_activities\n                }\n                cached_report = report\n                return jsonify({\"status\": \"success\", \"reportId\": \"1\", \"report\": report})\n            else:\n                return jsonify({\"status\": \"error\", \"message\": \"Failed to ingest data.\"}), 500",
+                                "description": "This action involves fetching all activities, retrieving details for each, and generating a comprehensive report.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/v1/report",
+                        "description": "Retrieve the cached report if available."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "activity",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/v1/Activities",
+                        "description": "Fetch all activities from the external API."
+                    },
+                    {
+                        "endpoint": "/api/v1/Activities/{id}",
+                        "description": "Fetch details for a specific activity from the external API."
+                    }
+                ]
+            }
+        }
+    ]
+}
