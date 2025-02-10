@@ -1,7 +1,7 @@
 {
     "entities": [
         {
-            "entity_name": "build",
+            "entity_name": "e_build",
             "entity_data_example": "{\"build_id\": \"string\", \"build_type\": \"KubernetesPipeline_CyodaSaas\", \"user_name\": \"example_user\", \"repository_url\": \"https://github.com/example/repo\", \"is_public\": true, \"created_at\": \"2023-10-03T12:00:00Z\"}"
         },
         {
