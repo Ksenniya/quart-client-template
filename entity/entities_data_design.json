@@ -1,0 +1,20 @@
+{
+    "entities": [
+        {
+            "entity_name": "report_request",
+            "entity_data_example": {
+                "data": "<CSV data as string>",
+                "analysisType": "summary"
+            }
+        },
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "reportId": "12345",
+                "status": "completed",
+                "reportUrl": "https://example.com/reports/12345.pdf",
+                "summary": "Summary of the London Houses data analysis"
+            }
+        }
+    ]
+}
