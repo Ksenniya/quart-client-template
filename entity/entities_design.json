@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_name": "user",
+            "entity_data_example": "{\"user_id\": \"123e4567-e89b-12d3-a456-426614174000\", \"user_name\": \"John Doe\", \"email\": \"john.doe@example.com\", \"is_authenticated\": true}"
+        },
+        {
+            "entity_name": "deployment",
+            "entity_data_example": "{\"deployment_id\": \"456e4567-e89b-12d3-a456-426614174000\", \"user_id\": \"123e4567-e89b-12d3-a456-426614174000\", \"repository_url\": \"https://github.com/user/repo.git\", \"is_public\": true, \"deployment_type\": \"user_application\", \"status\": \"successful\", \"created_at\": \"2023-10-01T10:00:00Z\", \"updated_at\": \"2023-10-01T12:00:00Z\"}"
+        },
+        {
+            "entity_name": "build",
+            "entity_data_example": "{\"build_id\": \"789e4567-e89b-12d3-a456-426614174000\", \"deployment_id\": \"456e4567-e89b-12d3-a456-426614174000\", \"build_type\": \"KubernetesPipeline_CyodaSaas\", \"properties\": {\"key1\": \"value1\", \"key2\": \"value2\"}, \"statistics\": {\"runtime\": 120, \"failures\": 0, \"success_rate\": 100}, \"created_at\": \"2023-10-01T12:10:00Z\"}"
+        }
+    ]
+}
