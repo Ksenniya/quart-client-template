@@ -1,0 +1,100 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "deploy/cyoda-env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Triggers the deployment of the Cyoda environment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Queued",
+                                "action": "Trigger build for Cyoda environment",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\n    async with session.post(TEAMCITY_API_URL, json=build_params, headers=HEADERS) as response:\n        if response.status == 200:\n            build_data = await response.json()\n            return jsonify({\"build_id\": build_data.get(\"id\")}), 201\n        else:\n            return jsonify({\"error\": \"Failed to trigger build\"}), response.status",
+                                "description": "Initiates a TeamCity build process for the Cyoda environment.",
+                                "secondary_entities": [
+                                    "deploy/cyoda-env/status"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<id>",
+                        "description": "Get the status of a Cyoda environment deployment"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deploy/user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Triggers the deployment of the user application",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Initial",
+                                "end_state": "Queued",
+                                "action": "Trigger build for user application",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\n    async with session.post(TEAMCITY_API_URL, json=build_params, headers=HEADERS) as response:\n        if response.status == 200:\n            build_data = await response.json()\n            return jsonify({\"build_id\": build_data.get(\"id\")}), 201\n        else:\n            return jsonify({\"error\": \"Failed to trigger build\"}), response.status",
+                                "description": "Initiates a TeamCity build process for the user application.",
+                                "secondary_entities": [
+                                    "deploy/user_app/status"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<id>",
+                        "description": "Cancels a queued user application deployment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Queued",
+                                "end_state": "Cancelled",
+                                "action": "Cancel queued build",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\n    async with session.post(cancellation_url, json=cancel_data, headers=HEADERS) as response:\n        if response.status == 200:\n            return jsonify({\"message\": \"Build cancelled successfully\"}), 200\n        else:\n            return jsonify({\"error\": \"Failed to cancel build\"}), response.status",
+                                "description": "Issues a request to cancel a queued TeamCity build for the user application.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<id>",
+                        "description": "Get the status of a user application deployment"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "deploy/cyoda-env/status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<id>",
+                        "description": "Fetches the status of a deployed Cyoda environment using the build ID."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deploy/user_app/status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<id>",
+                        "description": "Fetches the status of a deployed user application using the build ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
