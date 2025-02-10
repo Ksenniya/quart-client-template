@@ -1,0 +1,6 @@
+{
+    "reportId": "12345",
+    "status": "completed",
+    "reportUrl": "https://example.com/reports/12345.pdf",
+    "summary": "Summary of the London Houses data analysis"
+}
