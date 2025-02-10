@@ -1,0 +1,63 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "analyze_data",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/analyze-data",
+                        "description": "Analyze CSV data and perform basic analysis.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Data Received",
+                                "end_state": "Data Analyzed",
+                                "action": "Analyze Data",
+                                "complete_code_for_action_derived_from_the_prototype": "df = pd.read_csv(io.StringIO(data)); report = { 'average_price': df['Price (\u00a3)'].mean(), 'total_properties': df.shape[0] }",
+                                "description": "Performs data analysis on the received CSV data.",
+                                "secondary_entities": [
+                                    "download_data"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        },
+        {
+            "entity_name": "save_report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/save-report",
+                        "description": "Receive and save the report data.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Report Generated",
+                                "end_state": "Report Saved",
+                                "action": "Save Report",
+                                "complete_code_for_action_derived_from_the_prototype": "# Placeholder for saving logic",
+                                "description": "Saves the report received from the analyze data process.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "download_data",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/download-data",
+                        "description": "Download London Houses CSV data."
+                    }
+                ]
+            }
+        }
+    ]
+}
