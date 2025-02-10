@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "status": "success",
+                "message": "Report generated successfully."
+            }
+        },
+        {
+            "entity_name": "activity",
+            "entity_data_example": {
+                "data": [
+                    {
+                        "id": 1,
+                        "title": "Sample Activity 1",
+                        "description": "Description for activity 1",
+                        "startDate": "2023-10-01T12:00:00Z",
+                        "endDate": "2023-10-01T13:00:00Z"
+                    },
+                    {
+                        "id": 2,
+                        "title": "Sample Activity 2",
+                        "description": "Description for activity 2",
+                        "startDate": "2023-10-01T14:00:00Z",
+                        "endDate": "2023-10-01T15:00:00Z"
+                    }
+                ],
+                "generatedAt": "2023-10-01T12:00:00Z"
+            }
+        }
+    ]
+}
