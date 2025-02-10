@@ -1,0 +1,1 @@
+{"id": 1, "type": "cyoda-env", "repository_url": "https://repo.example.com/user_app", "is_public": true, "status": "in_progress", "build_id": "build123", "created_at": "2023-10-01T10:00:00Z", "updated_at": "2023-10-01T10:30:00Z"}
