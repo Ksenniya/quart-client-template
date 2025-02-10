@@ -1,0 +1,46 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report_request",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report-request",
+                        "description": "Create or generate a report based on fetched data.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "report_generated",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await fetch_data()\nif data is None:\n    return jsonify({\"error\": \"Failed to fetch data.\"}), 500\n\nreport = data.describe()\nreport.to_csv(REPORT_PATH)\n\nreturn jsonify({\"message\": \"Report generated successfully.\"}), 201",
+                                "description": "Fetches data, performs analysis, and saves the report.",
+                                "secondary_entities": [
+                                    "report"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report-request",
+                        "description": "Endpoint placeholder for potential future GET requests for report request entity."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieve the generated report if available."
+                    }
+                ]
+            }
+        }
+    ]
+}
