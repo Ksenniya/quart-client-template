@@ -1,0 +1,54 @@
+{
+    "entities": [
+        {
+            "entity_name": "environment",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "application",
+            "entity_workflow": {
+                "name": "Environment Workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "Create Environment",
+                        "description": "Transition to create a new environment.",
+                        "start_state": "initial",
+                        "start_state_description": "In the initial state.",
+                        "end_state": "created",
+                        "end_state_description": "Environment has been created.",
+                        "process": {
+                            "name": "Create Environment Process",
+                            "description": "This process creates a new environment.",
+                            "adds_new_entites": "true"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "application",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "transaction",
+            "entity_workflow": {
+                "name": "Application Workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "Deploy Application",
+                        "description": "Transition to deploy the application.",
+                        "start_state": "pending",
+                        "start_state_description": "Waiting to be deployed.",
+                        "end_state": "deployed",
+                        "end_state_description": "Application has been successfully deployed.",
+                        "process": {
+                            "name": "Deploy Application Process",
+                            "description": "This process handles the deployment of applications.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
