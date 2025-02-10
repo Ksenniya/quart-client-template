@@ -1,0 +1,17 @@
+{
+    "entities": [
+        {
+            "entity_name": "deploy_cyoda_env",
+            "entity_data_example": {
+                "user_name": "test"
+            }
+        },
+        {
+            "entity_name": "deploy_user_app",
+            "entity_data_example": {
+                "repository_url": "http://.../",
+                "is_public": "true"
+            }
+        }
+    ]
+}
