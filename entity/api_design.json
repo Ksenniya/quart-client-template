@@ -1,0 +1,49 @@
+{
+    "entities": [
+        {
+            "entity_name": "env_deployment",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Initiates deployment for the Cyoda environment with user-defined parameters."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<string:build_id>",
+                    "method": "GET",
+                    "description": "Retrieves the current status of the Cyoda environment deployment using the build ID."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/statistics/<string:build_id>",
+                    "method": "GET",
+                    "description": "Fetches the statistics related to the Cyoda environment deployment using the build ID."
+                }
+            ]
+        },
+        {
+            "entity_name": "user_app_deploy",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Initiates deployment for a user application with specific parameters."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<string:build_id>",
+                    "method": "GET",
+                    "description": "Retrieves the current status of the user application deployment using the build ID."
+                },
+                {
+                    "endpoint": "/deploy/user_app/statistics/<string:build_id>",
+                    "method": "GET",
+                    "description": "Fetches the statistics related to the user application deployment using the build ID."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<string:build_id>",
+                    "method": "POST",
+                    "description": "Cancels a queued user application deployment using the build ID."
+                }
+            ]
+        }
+    ]
+}
