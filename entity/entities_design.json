@@ -1,0 +1,81 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploys Cyoda environment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "not_deployed",
+                                "end_state": "deployed",
+                                "action": "deploy_cyoda_env",
+                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_cyoda_env():\n    data = await request.get_json()\n    user_name = data.get(\"user_name\")\n    \n    payload = {\n        \"buildType\": {\n            \"id\": \"KubernetesPipeline_CyodaSaas\"\n        },\n        \"properties\": {\n            \"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": user_name},\n                {\"name\": \"user_defined_namespace\", \"value\": user_name}\n            ]\n        }\n    }\n    \n    async with aiohttp.ClientSession() as session:\n        async with session.post(f\"{TEAMCITY_BASE_URL}/buildQueue\", json=payload) as response:\n            build_info = await response.json()\n            return jsonify(build_info)",
+                                "description": "Deploy Cyoda environment using specified details",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Gets the deployment status of Cyoda environment"
+                    },
+                    {
+                        "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
+                        "description": "Gets the deployment statistics of Cyoda environment"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploys user application",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "not_deployed",
+                                "end_state": "deployed",
+                                "action": "deploy_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_user_app():\n    data = await request.get_json()\n    repository_url = data.get(\"repository_url\")\n    is_public = data.get(\"is_public\")\n    \n    user_name = \"test\"\n    payload = {\n        \"buildType\": {\n            \"id\": \"KubernetesPipeline_CyodaSaasUserEnv\"\n        },\n        \"properties\": {\n            \"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": user_name},\n                {\"name\": \"user_defined_namespace\", \"value\": user_name}\n            ]\n        }\n    }\n    \n    async with aiohttp.ClientSession() as session:\n        async with session.post(f\"{TEAMCITY_BASE_URL}/buildQueue\", json=payload) as response:\n            build_info = await response.json()\n            return jsonify(build_info)",
+                                "description": "Deploy user application with given repository URL and public flag",
+                                "secondary_entities": []
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<int:id>",
+                        "description": "Cancel the user app deployment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "in_queue",
+                                "end_state": "cancelled",
+                                "action": "cancel_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "async def cancel_user_app(id):\n    payload = {\n        \"comment\": \"Canceling a queued build\",\n        \"readdIntoQueue\": False\n    }\n    \n    async with aiohttp.ClientSession() as session:\n        async with session.post(f\"{TEAMCITY_BASE_URL}/builds/id:{id}\", json=payload) as response:\n            cancel_info = await response.json()\n            return jsonify(cancel_info)",
+                                "description": "Cancel the deployment of user application",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Gets the deployment status of user app"
+                    },
+                    {
+                        "endpoint": "/deploy/user_app/statistics/<int:id>",
+                        "description": "Gets the deployment statistics of user app"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
