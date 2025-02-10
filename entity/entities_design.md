@@ -1,108 +1,61 @@
-Based on the provided information, it looks like you're developing a deployment management application that interacts with a CI/CD system (TeamCity) to handle deployments of user applications and manage their statuses. To help you outline the entities for your application, I will summarize the key entities along with their properties and relationships. I will also provide a Mermaid ER diagram and class diagram to visualize the design.
+Sure! Let's outline the entities `env_deployment` and `user_app_deploy` based on your application prototype functionality. We’ll define the properties of each entity and provide a Mermaid diagram to visualize the relationships.
 
-### Entity Outline
+### Entities and Their Properties
 
-1. **User**
+1. **Entity: env_deployment**
    - **Properties**:
-     - `user_id`: Unique identifier for the user (Primary Key)
-     - `user_name`: Name of the user
-     - `email`: Email address (optional)
-     - `token`: Bearer authentication token (optional)
-   
-2. **Deployment**
-   - **Properties**:
-     - `deployment_id`: Unique identifier for the deployment (Primary Key)
-     - `user_id`: Reference to the `User` entity (Foreign Key)
-     - `repository_url`: URL of the repository being deployed
-     - `is_public`: Boolean indicating if the deployment is public
-     - `status`: Current status of the deployment (e.g., queued, running, completed, canceled)
-     - `created_at`: Timestamp of when the deployment was created
-     - `updated_at`: Timestamp of when the deployment was last updated
-   
-3. **Build**
-   - **Properties**:
-     - `build_id`: Unique identifier for the build (Primary Key)
-     - `deployment_id`: Reference to the `Deployment` entity (Foreign Key)
-     - `teamcity_id`: Identifier from TeamCity
-     - `statistics`: JSON data containing build statistics (e.g., performance metrics)
-     - `status`: Status of the build (e.g., running, success, failure)
-     - `created_at`: Timestamp for when the build was initiated
-     - `updated_at`: Timestamp for the last update of the build
+     - `id` (string): Unique identifier for the deployment (e.g., build ID).
+     - `user_name` (string): Name of the user who initiated the deployment.
+     - `status` (string): Current status of the deployment (e.g., "Running", "Completed", "Failed").
+     - `repository_url` (string): URL of the repository for the environment code.
+     - `created_at` (datetime): Timestamp when the deployment was initiated.
+     - `updated_at` (datetime): Timestamp when the status was last updated.
+     - `build_type` (string): Type of build (e.g., "KubernetesPipeline_CyodaSaas").
 
-### Entity Relationship Diagram (ERD)
+2. **Entity: user_app_deploy**
+   - **Properties**:
+     - `id` (string): Unique identifier for the user application deployment (e.g., build ID).
+     - `user_name` (string): Name of the user who initiated the application deployment.
+     - `repository_url` (string): URL of the user's application repository.
+     - `is_public` (boolean): Indicator if the application deployment is public or private.
+     - `status` (string): Current status of the deployment (e.g., "Running", "Completed", "Failed").
+     - `created_at` (datetime): Timestamp when the application deployment was initiated.
+     - `updated_at` (datetime): Timestamp when the status was last updated.
+     - `build_type` (string): Type of build (e.g., "KubernetesPipeline_CyodaSaasUserEnv").
+     - `comment` (string): Optional comment regarding the deployment (e.g., reason for deployment or cancellation).
 
-Here's a Mermaid ER diagram to represent the relationships:
+### Mermaid Entity Relationship Diagram
+
+Here's a simple MerMaind ER diagram to visualize these entities and their relationships:
 
 ```mermaid
 erDiagram
-    User {
-        string user_id PK "User Identifier"
-        string user_name "Name of the user"
-        string email "User's email address"
-        string token "Bearer authentication token"
+    env_deployment {
+        string id PK "Primary Key - Unique identifier for the environment deployment"
+        string user_name "Name of the user who initiated the deployment"
+        string status "Current status of the deployment"
+        string repository_url "URL of the repository for the environment code"
+        datetime created_at "Timestamp when the deployment was initiated"
+        datetime updated_at "Timestamp when the status was last updated"
+        string build_type "Type of build for the environment deployment"
     }
     
-    Deployment {
-        string deployment_id PK "Deployment Identifier"
-        string user_id FK "Reference to User"
-        string repository_url "URL of the repository"
-        boolean is_public "Public deployment flag"
-        string status "Current status of deployment"
-        datetime created_at "Timestamp of creation"
-        datetime updated_at "Timestamp of last update"
-    }
-    
-    Build {
-        string build_id PK "Build Identifier"
-        string deployment_id FK "Reference to Deployment"
-        string teamcity_id "TeamCity Identifier"
-        json statistics "Build statistics"
-        string status "Current status of the build"
-        datetime created_at "Timestamp of initiation"
-        datetime updated_at "Timestamp of last update"
+    user_app_deploy {
+        string id PK "Primary Key - Unique identifier for the user application deployment"
+        string user_name "Name of the user who initiated the application deployment"
+        string repository_url "URL of the user's application repository"
+        boolean is_public "Indicator if the application deployment is public or private"
+        string status "Current status of the application deployment"
+        datetime created_at "Timestamp when the application deployment was initiated"
+        datetime updated_at "Timestamp when the status was last updated"
+        string build_type "Type of build for the application deployment"
+        string comment "Optional comment regarding the deployment"
     }
 
-    User ||--o{ Deployment : "has"
-    Deployment ||--o{ Build : "initiates"
+    env_deployment ||--o{ user_app_deploy : has_deployment
 ```
 
-### Class Diagram
+### Explanation of the Relationships
+- **`env_deployment` to `user_app_deploy`**: The relationship indicates that one environment deployment can have zero or more user application deployments associated with it. This can be useful if the environment is shared across multiple applications. 
 
-Below is a class diagram expressed in Mermaid syntax to highlight the structure of these entities and their properties:
-
-```mermaid
-classDiagram
-    class User {
-        +string user_id
-        +string user_name
-        +string email
-        +string token
-    }
-
-    class Deployment {
-        +string deployment_id
-        +string user_id
-        +string repository_url
-        +boolean is_public
-        +string status
-        +datetime created_at
-        +datetime updated_at
-    }
-
-    class Build {
-        +string build_id
-        +string deployment_id
-        +string teamcity_id
-        +json statistics
-        +string status
-        +datetime created_at
-        +datetime updated_at
-    }
-
-    User "1" --o "0..*" Deployment : "has"
-    Deployment "1" --o "0..*" Build : "initiates"
-```
-
-### Conclusion
-
-This outline of entities and their properties, alongside the corresponding ER and class diagrams, provides a structured approach for modeling your deployment management application. You can further build on this design as new requirements arise or as you develop additional features in the application.
+This structure should fit well with the functionalities you've outlined in your prototype. Ensure to modify and expand upon these properties as needed based on more specific requirements in your application.
