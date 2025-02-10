@@ -1,0 +1,7 @@
+{
+    "message": "Data analyzed successfully!",
+    "report": {
+        "average_price": 450000,
+        "total_properties": 100
+    }
+}
