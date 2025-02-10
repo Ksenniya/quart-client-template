@@ -1,0 +1,100 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploy Cyoda environment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployed",
+                                "action": "deploy_cyoda_env",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nuser_name = data.get(\"user_name\")\nproperties = [\n{\"name\": \"user_defined_keyspace\", \"value\": user_name},\n{\"name\": \"user_defined_namespace\", \"value\": user_name}\n]\nresult = await trigger_build(BUILD_TYPE_CYODA_ENV, properties)\nreturn jsonify(result), 201",
+                                "description": "Deploys the Cyoda environment for a specific user",
+                                "secondary_entities": [
+                                    "cyoda_env_status"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Get status of Cyoda environment deployment"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploy user application",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployed",
+                                "action": "deploy_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nrepository_url = data.get(\"repository_url\")\nis_public = data.get(\"is_public\")\nuser_name = \"test\"\nproperties = [\n{\"name\": \"user_defined_keyspace\", \"value\": user_name},\n{\"name\": \"user_defined_namespace\", \"value\": user_name}\n]\nresult = await trigger_build(BUILD_TYPE_USER_APP, properties)\nreturn jsonify(result), 201",
+                                "description": "Deploys the user application based on repository URL and visibility",
+                                "secondary_entities": [
+                                    "user_app_status"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<int:id>",
+                        "description": "Cancel a user app build in the queue",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "queued",
+                                "end_state": "canceled",
+                                "action": "cancel_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session:\ncancel_url = f\"{TEAMCITY_BASE_URL}/builds/id:{id}\"\npayload = {\n\"comment\": \"Canceling a queued build\",\n\"readdIntoQueue\": False\n}\nasync with session.post(cancel_url, json=payload) as response:\nif response.status == 200:\nreturn {'success': 'Build canceled successfully'}, 200\nelse:\nreturn {'error': 'Failed to cancel build'}, 404",
+                                "description": "Cancels the queued user application build",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Get status of user application deployment"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "cyoda_env_status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Get status of Cyoda environment deployment"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app_status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Get status of user application deployment"
+                    }
+                ]
+            }
+        }
+    ]
+}
