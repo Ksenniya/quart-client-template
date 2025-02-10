@@ -1,0 +1,12 @@
+{
+    "entities": [
+        {
+            "entity_name": "env_deployment",
+            "entity_data_example": "{\"id\": \"unique_deployment_id\", \"user_name\": \"John Doe\", \"status\": \"Running\", \"repository_url\": \"https://github.com/user/env_repo\", \"created_at\": \"2023-10-01T12:00:00Z\", \"updated_at\": \"2023-10-01T12:30:00Z\", \"build_type\": \"KubernetesPipeline_CyodaSaas\"}"
+        },
+        {
+            "entity_name": "user_app_deploy",
+            "entity_data_example": "{\"id\": \"unique_user_app_build_id\", \"user_name\": \"Jane Smith\", \"repository_url\": \"https://github.com/user/app_repo\", \"is_public\": true, \"status\": \"Completed\", \"created_at\": \"2023-10-01T13:00:00Z\", \"updated_at\": \"2023-10-01T13:15:00Z\", \"build_type\": \"KubernetesPipeline_CyodaSaasUserEnv\", \"comment\": \"Initial deployment of the application\"}"
+        }
+    ]
+}
