@@ -1,0 +1,49 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/cyoda-env",
+                    "method": "POST",
+                    "description": "Deploy the Cyoda environment."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                    "method": "GET",
+                    "description": "Get the status of the Cyoda environment deployment by ID."
+                },
+                {
+                    "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieve the statistics for the Cyoda environment deployment by ID."
+                }
+            ]
+        },
+        {
+            "entity_name": "user_app",
+            "entity_endpoints": [
+                {
+                    "endpoint": "/deploy/user_app",
+                    "method": "POST",
+                    "description": "Deploy a user application."
+                },
+                {
+                    "endpoint": "/deploy/user_app/status/<int:id>",
+                    "method": "GET",
+                    "description": "Get the status of the user application deployment by ID."
+                },
+                {
+                    "endpoint": "/deploy/user_app/statistics/<int:id>",
+                    "method": "GET",
+                    "description": "Retrieve statistics for the user application deployment by ID."
+                },
+                {
+                    "endpoint": "/deploy/cancel/user_app/<int:id>",
+                    "method": "POST",
+                    "description": "Cancel a queued user application deployment by ID."
+                }
+            ]
+        }
+    ]
+}
