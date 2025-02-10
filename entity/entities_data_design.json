@@ -1,0 +1,27 @@
+{
+    "entities": [
+        {
+            "entity_name": "download_data",
+            "entity_data_example": {
+                "message": "Data downloaded successfully!",
+                "data": "CSV File Content"
+            }
+        },
+        {
+            "entity_name": "analyze_data",
+            "entity_data_example": {
+                "message": "Data analyzed successfully!",
+                "report": {
+                    "average_price": 450000,
+                    "total_properties": 100
+                }
+            }
+        },
+        {
+            "entity_name": "save_report",
+            "entity_data_example": {
+                "message": "Report saved successfully!"
+            }
+        }
+    ]
+}
