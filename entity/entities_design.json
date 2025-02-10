@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_name": "build",
+            "entity_data_example": "{\"build_id\": \"string\", \"build_type\": \"KubernetesPipeline_CyodaSaas\", \"user_name\": \"example_user\", \"repository_url\": \"https://github.com/example/repo\", \"is_public\": true, \"created_at\": \"2023-10-03T12:00:00Z\"}"
+        },
+        {
+            "entity_name": "buildstatistics",
+            "entity_data_example": "{\"build_id\": \"string\", \"success\": 10, \"failures\": 2, \"duration\": 120000, \"created_at\": \"2023-10-03T12:30:00Z\"}"
+        },
+        {
+            "entity_name": "buildstatus",
+            "entity_data_example": "{\"build_id\": \"string\", \"status\": \"success\", \"message\": \"Build completed successfully\", \"updated_at\": \"2023-10-03T12:45:00Z\"}"
+        }
+    ]
+}
