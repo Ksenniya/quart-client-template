@@ -1,52 +1,41 @@
-Based on the provided `api.py` prototype code and the requirements, we can deduce the following entities and their classifications:
+Based on your requirements and the provided Python `api.py` code using the Quart framework, we can identify the following entities:
 
-### Primary Entities (Entities created with POST requests):
+### Primary Entities (Resources Saved with POST and Require Workflows)
+1. **deploy_cyoda_env**
+   - Endpoint: `/deploy/cyoda-env`
+   - Description: Initiates the deployment of the Cyoda environment based on the provided user name.
 
-1. **cyoda-env**
-   - Created via the endpoint: `/deploy/cyoda-env` (POST)
-   - Description: Represents a deployment of the Cyoda environment.
+2. **deploy_user_app**
+   - Endpoint: `/deploy/user_app`
+   - Description: Initiates the deployment of a user-specific application based on the provided repository URL and public status.
 
-2. **user_app**
-   - Created via the endpoint: `/deploy/user_app` (POST)
-   - Description: Represents the deployment of a user application.
+3. **cancel_user_app**
+   - Endpoint: `/deploy/cancel/user_app/<id>`
+   - Description: Cancels the queued build of the user app based on the provided build ID.
 
-### Secondary Entities (Entities retrieved with GET requests and dependent on primary entities):
-
-1. **cyoda-env_status**
-   - Retrieved via the endpoint: `/deploy/cyoda-env/status/<int:id>` (GET)
-   - Description: Represents the status of a deployed Cyoda environment. 
-   - Relation: Depends on the `cyoda-env` entity.
-
-2. **cyoda-env_statistics**
-   - Retrieved via the endpoint: `/deploy/cyoda-env/statistics/<int:id>` (GET)
-   - Description: Represents the statistics for a specific build of the Cyoda environment.
-   - Relation: Depends on the `cyoda-env` entity.
+### Secondary Entities (Resources Retrieved with GET, Depend on Primary Entities)
+1. **cyoda_env_status**
+   - Endpoint: `/deploy/cyoda-env/status/<id>`
+   - Description: Fetches the status of the Cyoda environment deployment using the build ID.
+   - Depends on: `deploy_cyoda_env`
+  
+2. **cyoda_env_statistics**
+   - Endpoint: `/deploy/cyoda-env/statistics/<id>`
+   - Description: Retrieves statistics for the Cyoda environment deployment using the build ID.
+   - Depends on: `deploy_cyoda_env`
 
 3. **user_app_status**
-   - Retrieved via the endpoint: `/deploy/user_app/status/<int:id>` (GET)
-   - Description: Represents the status of a deployed user application.
-   - Relation: Depends on the `user_app` entity.
-
+   - Endpoint: `/deploy/user_app/status/<id>`
+   - Description: Fetches the status of the user application deployment using the build ID.
+   - Depends on: `deploy_user_app`
+  
 4. **user_app_statistics**
-   - Retrieved via the endpoint: `/deploy/user_app/statistics/<int:id>` (GET)
-   - Description: Represents the statistics for a specific build of a user application.
-   - Relation: Depends on the `user_app` entity.
+   - Endpoint: `/deploy/user_app/statistics/<id>`
+   - Description: Retrieves statistics for the user application deployment using the build ID.
+   - Depends on: `deploy_user_app`
 
-5. **cancel_user_app**
-   - Although this endpoint performs a POST request to cancel a deployment, it retrieves information status/payload related to the `user_app` build.
-   - Description: Represents the action of cancelling a user application deployment.
-   - Relation: Depends on the `user_app` entity but is primarily an action rather than an entity itself.
+### Summary
+- **Primary Entities**: `deploy_cyoda_env`, `deploy_user_app`, `cancel_user_app`
+- **Secondary Entities**: `cyoda_env_status`, `cyoda_env_statistics`, `user_app_status`, `user_app_statistics`
 
-### Summary:
-
-- **Primary Entities:**
-  - `cyoda-env`
-  - `user_app`
-
-- **Secondary Entities:**
-  - `cyoda-env_status` (depends on `cyoda-env`)
-  - `cyoda-env_statistics` (depends on `cyoda-env`)
-  - `user_app_status` (depends on `user_app`)
-  - `user_app_statistics` (depends on `user_app`)
-
-This classification aligns with your specifications regarding resource saving and retrieval behaviors.
+This structure allows you to establish the relationships between entities as per your specifications. Each primary entity corresponds to a resource that can be created and requires a workflow, whereas the secondary entities are reads that depend on the primary entities for context.
