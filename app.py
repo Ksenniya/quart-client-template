@@ -10,7 +10,7 @@ from app_init.app_init import cyoda_token
 from entity.analyze_data.api import api_bp_analyze_data
 from entity.save_report.api import api_bp_save_report
 from entity.download_data.api import api_bp_download_data
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +19,7 @@ QuartSchema(app)
 app.register_blueprint(api_bp_analyze_data, url_prefix='/api/analyze_data')
 app.register_blueprint(api_bp_save_report, url_prefix='/api/save_report')
 app.register_blueprint(api_bp_download_data, url_prefix='/api/download_data')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():
