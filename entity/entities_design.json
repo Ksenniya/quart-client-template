@@ -1,0 +1,50 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/report",
+                        "description": "Triggers the generation and caching of a report by aggregating activity data.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "No report available",
+                                "end_state": "Report generated and cached",
+                                "action": "generate_report",
+                                "complete_code_for_action_derived_from_the_prototype": "async def generate_report() -> List[Dict[str, Any]]:\n    global report_cache\n    activities = await fetch_activities()\n    report = []\n    for activity in activities:\n        activity_id = activity[\"id\"]\n        details = await fetch_activity_details(activity_id)\n        report.append(details)\n    report_cache = report\n    return report",
+                                "description": "Fetches activities, retrieves details for each activity, and aggregates them into a single report.",
+                                "related_secondary_entities": [
+                                    "activity"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/report",
+                        "description": "Retrieves the cached report in JSON format."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "activity",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/activities",
+                        "description": "Fetches a list of activities from the external API."
+                    },
+                    {
+                        "endpoint": "/api/activities/{activity_id}",
+                        "description": "Fetches detailed information for a specific activity by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
