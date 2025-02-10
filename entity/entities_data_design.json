@@ -1,0 +1,28 @@
+{
+    "entities": [
+        {
+            "entity_name": "user_authentication",
+            "entity_data_example": "{\"user_story\": \"As a user, I want to authenticate myself so that I can access deployment and environment configuration features.\", \"use_case\": {\"name\": \"Authenticate User\", \"api_endpoint\": \"POST /deploy/cyoda-env\", \"request_format\": {\"user_name\": \"test\"}, \"response_format\": {\"token\": \"Bearer your_access_token\"}}}"
+        },
+        {
+            "entity_name": "manage_cyoda_environment_deployment",
+            "entity_data_example": "{\"user_story\": \"As a user, I want to deploy a Cyoda environment specific to my user account.\", \"use_case\": {\"name\": \"Create Deployment for Cyoda Environment\", \"api_endpoint\": \"POST /deploy/cyoda-env\", \"request_format\": {\"user_name\": \"test\"}, \"action\": \"POST https://teamcity.cyoda.org/app/rest/buildQueue\", \"payload\": {\"buildType\": {\"id\": \"KubernetesPipeline_CyodaSaas\"}, \"properties\": {\"property\": [{\"name\": \"user_defined_keyspace\", \"value\": \"test\"}, {\"name\": \"user_defined_namespace\", \"value\": \"test\"}]}}}, \"response_format\": {\"build_id\": \"12345\"}}}"
+        },
+        {
+            "entity_name": "manage_user_application_deployment",
+            "entity_data_example": "{\"user_story\": \"As a user, I want to deploy my application using a Git repository.\", \"use_case\": {\"name\": \"Create User Application Deployment\", \"api_endpoint\": \"POST /deploy/user_app\", \"request_format\": {\"repository_url\": \"http://....\", \"is_public\": \"true\"}, \"action\": \"POST https://teamcity.cyoda.org/app/rest/buildQueue\", \"payload\": {\"buildType\": {\"id\": \"KubernetesPipeline_CyodaSaasUserEnv\"}, \"properties\": {\"property\": [{\"name\": \"user_defined_keyspace\", \"value\": \"test\"}, {\"name\": \"user_defined_namespace\", \"value\": \"test\"}]}}}, \"response_format\": {\"build_id\": \"54321\"}}}"
+        },
+        {
+            "entity_name": "check_deployment_status",
+            "entity_data_example": "{\"user_story\": \"As a user, I want to check the status of my deployments.\", \"use_case\": {\"name\": \"Get Deployment Status\", \"api_endpoint\": \"GET /deploy/cyoda-env/status/{id}\", \"request_format\": \"Path variable\", \"action\": \"GET https://teamcity.cyoda.org/app/rest/buildQueue/id:build_id\", \"response_format\": {\"status\": \"running\", \"details\": \"...\"}}}"
+        },
+        {
+            "entity_name": "retrieve_deployment_statistics",
+            "entity_data_example": "{\"user_story\": \"As a user, I want to retrieve statistical information about my deployments.\", \"use_case\": {\"name\": \"Get Deployment Statistics\", \"api_endpoint\": \"GET /deploy/cyoda-env/statistics/{id}\", \"request_format\": \"Path variable\", \"action\": \"GET https://teamcity.cyoda.org/app/rest/builds/id:build_id/statistics/\", \"response_format\": {\"statistics\": {...}}}}"
+        },
+        {
+            "entity_name": "cancel_deployment",
+            "entity_data_example": "{\"user_story\": \"As a user, I want to cancel a deployment if needed.\", \"use_case\": {\"name\": \"Cancel User Application Deployment\", \"api_endpoint\": \"POST /deploy/cancel/user_app/{id}\", \"request_format\": \"Path variable\", \"action\": \"POST https://teamcity.cyoda.org/app/rest/builds/id:build_id\", \"payload\": {\"comment\": \"Canceling a queued build\", \"readdIntoQueue\": false}, \"response_format\": {\"status\": \"canceled\"}}}"
+        }
+    ]
+}
