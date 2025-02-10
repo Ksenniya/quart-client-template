@@ -1,0 +1,48 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Generates a report based on fetched activities and sends it to the admin's email.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Report Generation Initiated",
+                                "end_state": "Report Generated and Email Sent",
+                                "action": "Generate report",
+                                "complete_code_for_action_derived_from_the_prototype": "activities = await fetch_activities()\naggregated_data = []\nfor activity in activities:\n    details = await fetch_activity_details(activity['id'])\n    if details:\n        aggregated_data.append(details)\nreport_id = str(int(datetime.datetime.now().timestamp()))\nreport = {\"reportId\": report_id, \"aggregatedData\": aggregated_data, \"generatedAt\": datetime.datetime.utcnow().isoformat() + \"Z\"}\nreports[report_id] = report",
+                                "description": "Fetch activities, aggregate data, create a report, and send an email.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves a report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "activity",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/activities",
+                        "description": "Fetches a list of activities from the external API."
+                    },
+                    {
+                        "endpoint": "/activities/<id>",
+                        "description": "Fetches details of a specific activity by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
