@@ -1,0 +1,79 @@
+{
+    "entities": [
+        {
+            "entity_name": "deployment",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "",
+            "entity_workflow": {
+                "name": "deployment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "create_deployment",
+                        "description": "Transition to create a new deployment.",
+                        "start_state": "pending",
+                        "start_state_description": "Deployment is pending.",
+                        "end_state": "completed",
+                        "end_state_description": "Deployment has been completed.",
+                        "process": {
+                            "name": "create_deployment_process",
+                            "description": "Process for creating a deployment.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "build",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "deployment",
+            "entity_workflow": {
+                "name": "build_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "initiate_build",
+                        "description": "Transition to initiate a build.",
+                        "start_state": "queued",
+                        "start_state_description": "Build is queued.",
+                        "end_state": "running",
+                        "end_state_description": "Build is currently running.",
+                        "process": {
+                            "name": "initiate_build_process",
+                            "description": "Process for initiating a build.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "cancel_request",
+            "entity_type": "JOB",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "build",
+            "entity_workflow": {
+                "name": "cancel_request_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "process_cancel_request",
+                        "description": "Transition to process a cancel request.",
+                        "start_state": "pending",
+                        "start_state_description": "Cancel request is pending.",
+                        "end_state": "processed",
+                        "end_state_description": "Cancel request has been processed.",
+                        "process": {
+                            "name": "process_cancel_request_process",
+                            "description": "Process for handling a cancel request.",
+                            "adds_new_entites": "false"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
