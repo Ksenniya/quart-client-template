@@ -1,0 +1,32 @@
+{
+    "entities": [
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "activities": [
+                    {
+                        "id": 1,
+                        "title": "Activity 1",
+                        "dueDate": "2025-02-10T22:56:42.2882278+00:00",
+                        "completed": false
+                    },
+                    {
+                        "id": 2,
+                        "title": "Activity 2",
+                        "dueDate": "2025-02-10T23:55:28.3667859+00:00",
+                        "completed": true
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "activity",
+            "entity_data_example": {
+                "id": 1,
+                "title": "Activity 1",
+                "dueDate": "2025-02-10T22:56:42.2882278+00:00",
+                "completed": false
+            }
+        }
+    ]
+}
