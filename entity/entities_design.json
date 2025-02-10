@@ -1,0 +1,81 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "deploy_cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploys a Cyoda environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployed",
+                                "action": "deploy_cyoda_env",
+                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_cyoda_env():\n    data = await request.get_json()\n    user_name = data.get(\"user_name\")\n...",
+                                "description": "Deploy a Cyoda environment using the provided user name.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<int:id>",
+                        "description": "Retrieve the deployment status of a Cyoda environment."
+                    },
+                    {
+                        "endpoint": "/deploy/cyoda-env/statistics/<int:id>",
+                        "description": "Retrieve deployment statistics of a Cyoda environment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "deploy_user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploys a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployed",
+                                "action": "deploy_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "async def deploy_user_app():\n    data = await request.get_json()\n    repository_url = data.get(\"repository_url\")\n...",
+                                "description": "Deploy a user application with the given repository URL.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    },
+                    {
+                        "endpoint": "/deploy/cancel/user_app/<int:id>",
+                        "description": "Cancels a queued build of a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "queued",
+                                "end_state": "canceled",
+                                "action": "cancel_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "async def cancel_user_app(id):\n    payload = {\n        \"comment\": \"Canceling a queued build\",\n...",
+                                "description": "Cancel a queued build of user app identified by ID.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<int:id>",
+                        "description": "Retrieve the deployment status of a user application."
+                    },
+                    {
+                        "endpoint": "/deploy/user_app/statistics/<int:id>",
+                        "description": "Retrieve deployment statistics of a user application."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
