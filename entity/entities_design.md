@@ -1,78 +1,53 @@
-Based on your application prototype and functional requirements, we can outline several key entities with their properties. This will help in organizing the data and operations in your application more effectively. Let's begin by identifying the main entities and then represent them using a Mermaid Entity-Relationship (ER) diagram.
+Certainly! To outline the entities for your application prototype focusing on "Deployment" and "Status," we can define their properties based on the functional requirements you've provided. Below is a description of the entities and their properties, along with a Mermaid entity-relationship (ER) diagram.
 
-### Key Entities and Properties
+### Entities and Properties
 
-1. **User**
-   - **Properties:**
-     - `user_id`: Unique identifier for the user (e.g., UUID)
-     - `user_name`: Name of the user
-     - `email`: Email of the user
-     - `token`: Authentication token (e.g., Bearer token)
-     - `is_authenticated`: Boolean representing the authentication status
+1. **Deployment**
+   - **deployment_id**: Unique identifier for each deployment (Primary Key)
+   - **user_name**: Name of the user initiating the deployment
+   - **repository_url**: URL for the repository (applicable for user application deployments)
+   - **is_public**: Boolean indicating if the application is public
+   - **build_type**: Type of build (e.g., "Cyoda Environment", "User Application")
+   - **created_at**: Timestamp indicating when the deployment was created
+   - **updated_at**: Timestamp for the latest update
+   - **status_id**: Foreign key referencing the current status of the deployment
 
-2. **Deployment**
-   - **Properties:**
-     - `deployment_id`: Unique identifier for the deployment (e.g., UUID)
-     - `user_id`: Foreign key referencing User
-     - `status`: Current status of the deployment (e.g., queued, running, completed, canceled)
-     - `type`: Type of deployment (e.g., Cyoda environment, User application)
-     - `repository_url`: URL of the repository (for user app deployments)
-     - `is_public`: Boolean indicating if the repository is public (for user app deployments)
-     - `created_at`: Timestamp of when the deployment was created
-     - `updated_at`: Timestamp of the last update to the deployment
+2. **Status**
+   - **status_id**: Unique identifier for each status (Primary Key)
+   - **status**: Current status (e.g., "Pending", "In Progress", "Success", "Failed")
+   - **details**: Additional details about the status (can be a string or JSON object)
+   - **timestamp**: Timestamp of when the status was last updated
 
-3. **Build**
-   - **Properties:**
-     - `build_id`: Unique identifier for the build (e.g., Integer)
-     - `deployment_id`: Foreign key referencing Deployment
-     - `build_type`: Type of build (linked to Deployment type)
-     - `details`: JSON object containing detailed information about the build (e.g., build logs)
-     - `build_status`: Current status of the build (from TeamCity API)
-     - `timestamp`: Timestamp of when the build was initiated
+### Mermaid ER Diagram
 
-### Mermaid ER Diagram 
-
-Here's how you can represent these entities in a Mermaid ER diagram:
+Here’s how the entities and their relationship can be represented in a Mermaid diagram:
 
 ```mermaid
 erDiagram
-    USER {
-        UUID user_id PK
-        STRING user_name
-        STRING email
-        STRING token
-        BOOLEAN is_authenticated
+    Deployment {
+        int deployment_id PK
+        string user_name
+        string repository_url
+        boolean is_public
+        string build_type
+        datetime created_at
+        datetime updated_at
+        int status_id FK
     }
-    
-    DEPLOYMENT {
-        UUID deployment_id PK
-        UUID user_id FK
-        STRING status
-        STRING type
-        STRING repository_url
-        BOOLEAN is_public
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
+
+    Status {
+        int status_id PK
+        string status
+        string details
+        datetime timestamp
     }
-    
-    BUILD {
-        INTEGER build_id PK
-        UUID deployment_id FK
-        STRING build_type
-        JSON details
-        STRING build_status
-        TIMESTAMP timestamp
-    }
-    
-    USER ||--o{ DEPLOYMENT : creates
-    DEPLOYMENT ||--o{ BUILD : initiates
+
+    Deployment ||--o| Status : has
 ```
 
 ### Explanation of Relationships
 
-- **User → Deployment**: A user can create multiple deployments (one-to-many relationship).
-- **Deployment → Build**: A deployment can initiate multiple builds, representing the actions taken for that particular deployment (one-to-many relationship).
+- The **Deployment** entity has a foreign key **status_id** that references the **Status** entity. This establishes a relationship indicating that each deployment can have one current status.
+- The relationship is a "one-to-many" relationship, where one status can be associated with multiple deployments over time as deployments can be updated with new statuses through their lifecycle.
 
-### Conclusion
-
-This structure provides a clear organization of your application's key entities and their relationships, which will help guide your further development efforts. Should you have any further needs or adjustments to consider, feel free to let me know!
+This model provides a clear structure for managing deployments and their statuses in your application. If you need more details or additional entities, feel free to ask!
