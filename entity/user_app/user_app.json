@@ -1,0 +1,13 @@
+{
+    "repository_url": "http://....",
+    "is_public": "true",
+    "build_id": "67890",
+    "status": "in_progress",
+    "statistics": {
+        "duration": "10min",
+        "success": true,
+        "logs": "Logs here"
+    },
+    "comment": "Canceling a queued build",
+    "readdIntoQueue": false
+}
