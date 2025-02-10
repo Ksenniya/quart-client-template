@@ -1,114 +1,49 @@
-Based on the information you provided about your prototype application, we can outline the entities and their properties along with corresponding ER diagrams and class diagrams.
+To outline the entities for your application prototype and represent them visually using Mermaid ER diagrams, I will describe the remaining entities and their properties without including the "User" entity.
 
-### Entities and Their Properties
+### Entities and Properties
 
-1. **User**
-   - **Properties**:
-     - `user_id`: Unique identifier for each user (e.g., string or integer)
-     - `user_name`: The username of the user (e.g., string)
-     - `token`: Optional property for authentication (e.g., string)
+1. **Build**
+   - **id**: String (Unique identifier for the build)
+   - **status**: String (Current status of the build, e.g., pending, in progress, completed, canceled)
+   - **repository_url**: String (URL of the repository for the user app deployment)
+   - **is_public**: Boolean (Indicates if the repository is public)
+   - **build_type**: String (Type of the build, e.g., Cyoda environment or user app)
+   - **statistics**: Object (Holds statistics such as success and failure rates)
 
-2. **Build**
-   - **Properties**:
-     - `build_id`: Unique identifier for the build (e.g., string)
-     - `user_id`: Foreign key referencing the User (e.g., string or integer)
-     - `status`: Current status of the build (e.g., string: pending, in progress, completed, canceled)
-     - `repository_url`: URL of the repository for deployment (e.g., string, nullable)
-     - `is_public`: Boolean flag indicating if the app is public (e.g., boolean, nullable)
-     - `timestamp`: Timestamp of when the build was initiated (e.g., datetime)
+2. **Deployment**
+   - **id**: String (Unique identifier for the deployment)
+   - **build_id**: String (Reference to the corresponding Build)
+   - **environment_type**: String (Type of environment deployed, e.g., Kubernetes)
+   - **timestamp**: DateTime (The date and time of the deployment)
 
-3. **BuildStatistics**
-   - **Properties**:
-     - `build_id`: Foreign key referencing Build (e.g., string)
-     - `success`: Number of successful deployments (e.g., integer)
-     - `failures`: Number of failed deployments (e.g., integer)
+### Mermaid ER Diagram
 
-4. **BuildQueue**
-   - **Properties**:
-     - `queue_id`: Unique identifier for the build queue (e.g., string)
-     - `build_id`: Foreign key referencing Build (e.g., string)
-     - `position`: Position in the queue (e.g., integer)
-
-### Entity Relationship Diagram (ERD)
-
-Here’s a simplified version of the ERD using Mermaid syntax:
+Here's a Mermaid diagram representing the entities:
 
 ```mermaid
 erDiagram
-    USER {
-        string user_id PK
-        string user_name
-        string token
+    Build {
+        String id PK
+        String status
+        String repository_url
+        Boolean is_public
+        String build_type
+        Object statistics
     }
 
-    BUILD {
-        string build_id PK
-        string user_id FK
-        string status
-        string repository_url
-        boolean is_public
-        datetime timestamp
+    Deployment {
+        String id PK
+        String build_id FK
+        String environment_type
+        DateTime timestamp
     }
 
-    BUILD_STATISTICS {
-        string build_id FK
-        integer success
-        integer failures
-    }
-
-    BUILD_QUEUE {
-        string queue_id PK
-        string build_id FK
-        integer position
-    }
-
-    USER ||--o{ BUILD : "has"
-    BUILD ||--o{ BUILD_STATISTICS : "has"
-    BUILD ||--o{ BUILD_QUEUE : "is queued in"
+    Build ||--o{ Deployment : "includes"
 ```
 
-### Class Diagram
+### Explanation
+- The **Build** entity holds information regarding each build process, including the current status, related repository details, and build statistics.
+- The **Deployment** entity references the **Build** entity through the `build_id` foreign key, linking a specific deployment to its corresponding build.
+- The relationship depicted in the diagram indicates that one build can have multiple deployments (hence the one-to-many relationship).
 
-Here’s a class diagram representing the same entities and their relationships:
-
-```mermaid
-classDiagram
-    class User {
-        +String user_id
-        +String user_name
-        +String token
-    }
-
-    class Build {
-        +String build_id
-        +String user_id
-        +String status
-        +String repository_url
-        +Boolean is_public
-        +DateTime timestamp
-    }
-
-    class BuildStatistics {
-        +String build_id
-        +Integer success
-        +Integer failures
-    }
-
-    class BuildQueue {
-        +String queue_id
-        +String build_id
-        +Integer position
-    }
-
-    User "1" --o "0..*" Build : "has"
-    Build "1" --o "1" BuildStatistics : "has"
-    Build "1" --o "0..*" BuildQueue : "is queued in"
-```
-
-### Overview of Relationships
-
-- A **User** can have multiple **Builds**, but each **Build** belongs to one **User** (`1` to `0..*` relationship).
-- A **Build** has exactly one **BuildStatistics** record.
-- A **Build** can be part of multiple entries in the **BuildQueue** (especially if you support features like cancelling builds and re-queuing).
-
-These diagrams and entity outlines should help you represent your application's design clearly. As your application evolves, you might need to refine these entities and relationships to accommodate new requirements.
+If you need additional entities or adjustments, feel free to let me know!
