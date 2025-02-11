@@ -1,0 +1,84 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploy a Cyoda environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployment_in_progress",
+                                "action": "Trigger Cyoda environment deployment",
+                                "complete_code_for_action_derived_from_the_prototype": "async with session.post(TEAMCITY_URL, json=payload) as response:",
+                                "description": "Initiates the deployment of the Cyoda environment using the provided user name.",
+                                "secondary_entities": [
+                                    "cyoda_env_status",
+                                    "cyoda_env_statistics"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<string:id>",
+                        "description": "Retrieve the status of the specified Cyoda environment deployment."
+                    },
+                    {
+                        "endpoint": "/deploy/cyoda-env/statistics/<string:id>",
+                        "description": "Retrieve the statistics for the specified Cyoda environment deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploy a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployment_in_progress",
+                                "action": "Trigger user application deployment",
+                                "complete_code_for_action_derived_from_the_prototype": "async with session.post(TEAMCITY_URL, json=payload) as response:",
+                                "description": "Initiates the deployment of the user application using the provided repository URL.",
+                                "secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "cyoda_env_status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<string:id>",
+                        "description": "Retrieve the status of the specified Cyoda environment deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "cyoda_env_statistics",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/statistics/<string:id>",
+                        "description": "Retrieve the statistics for the specified Cyoda environment deployment."
+                    }
+                ]
+            }
+        }
+    ]
+}
