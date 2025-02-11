@@ -11,7 +11,7 @@ from entity.cyoda_env.api import api_bp_cyoda_env
 from entity.user_app.api import api_bp_user_app
 from entity.cyoda_env_status.api import api_bp_cyoda_env_status
 from entity.cyoda_env_statistics.api import api_bp_cyoda_env_statistics
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,7 +21,7 @@ app.register_blueprint(api_bp_cyoda_env, url_prefix='/api/cyoda_env')
 app.register_blueprint(api_bp_user_app, url_prefix='/api/user_app')
 app.register_blueprint(api_bp_cyoda_env_status, url_prefix='/api/cyoda_env_status')
 app.register_blueprint(api_bp_cyoda_env_statistics, url_prefix='/api/cyoda_env_statistics')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():
