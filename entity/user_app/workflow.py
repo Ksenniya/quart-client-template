@@ -1,4 +1,4 @@
-# Here’s the `workflow.py` file for the `user_app` entity, implementing the necessary logic to trigger the deployment for the user application. This implementation follows the provided template and uses the relevant information from the `api.py` file.
+# Here’s the complete `workflow.py` file for the `user_app` entity, implementing the necessary logic to trigger the deployment for the user application, using the relevant information from the `api.py` file.
 # 
 # ```python
 import json
@@ -14,7 +14,8 @@ TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest/buildQueue"
 async def trigger_user_app_deployment(data):
     """Trigger deployment for user application."""
     repository_url = data.get("repository_url")
-    
+    is_public = data.get("is_public")  # Although not used in the build, included for completeness
+
     if not repository_url:
         logger.error("No repository_url provided.")
         raise ValueError("repository_url is required.")
@@ -40,7 +41,7 @@ async def trigger_build(build_type_id, repository_url):
             ]
         }
     }
-    
+
     async with aiohttp.ClientSession() as session:
         async with session.post(TEAMCITY_BASE_URL, json=payload) as response:
             if response.status == 200:
@@ -52,8 +53,8 @@ async def trigger_build(build_type_id, repository_url):
 # ```
 # 
 # ### Key Components
-# - **Logging**: The logging module is used to log information and errors during the workflow execution.
-# - **Function `trigger_user_app_deployment`**: This function handles the action of triggering the deployment for the user application. It checks for the required `repository_url` and calls the `trigger_build` function.
-# - **Function `trigger_build`**: This function constructs the payload required by the TeamCity API and makes an asynchronous POST request to trigger the build. It handles the response and returns the build ID if successful, or logs an error and raises an exception if it fails.
+# - **Logging**: The logging module is used to track significant events and errors during the workflow execution.
+# - **Function `trigger_user_app_deployment`**: This function handles the action of triggering the deployment for the user application. It validates the required `repository_url` and calls `trigger_build`.
+# - **Function `trigger_build`**: This function constructs the payload required by the TeamCity API and makes an asynchronous POST request to initiate the build. It processes the response and returns the build ID if successful, or logs an error and raises an exception if it fails.
 # 
-# This implementation encapsulates all the necessary logic for handling the `user_app` workflow and interacts with the TeamCity API as specified. If you have any further modifications or additional features in mind, feel free to let me know!
+# This implementation encapsulates all the required logic for handling the `user_app` workflow and effectively interacts with the TeamCity API as specified. If you have any further modifications or additional features in mind, feel free to let me know!
