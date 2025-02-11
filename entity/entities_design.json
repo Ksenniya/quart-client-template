@@ -1,0 +1,39 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report_request",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report-request",
+                        "description": "Request a conversion rate report for Bitcoin in USD or EUR and send it to the provided email address.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Request Received",
+                                "end_state": "Email Sent",
+                                "action": "Fetch conversion rate and send email",
+                                "complete_code_for_action_derived_from_the_prototype": "conversion_rate = await fetch_conversion_rate(currency)\nawait send_email(email, report_content)",
+                                "description": "Fetch the current conversion rate for Bitcoin in the specified currency and send the report via email.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "conversion_rate",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/fetch_conversion_rate",
+                        "description": "Fetch the current Bitcoin conversion rate in the specified currency from the external API."
+                    }
+                ]
+            }
+        }
+    ]
+}
