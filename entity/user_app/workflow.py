@@ -64,7 +64,7 @@ async def trigger_user_app_deployment(data, meta={"token": "cyoda_token"}):
 # ```
 # 
 # ### Key Points:
-# - The `trigger_build` function sends a POST request to the TeamCity API to initiate the deployment based on the specified build type and properties.
-# - The `trigger_user_app_deployment` function handles the workflow for triggering a user application deployment, preparing properties and invoking the `trigger_build` function.
-# - It saves the status and statistics of the deployment using the `entity_service`.
-# - Error handling is incorporated to log issues and ensure proper feedback if the deployment fails.
+# - **Trigger Build**: The `trigger_build` function sends a POST request to the TeamCity API to initiate the deployment based on the specified build type and properties.
+# - **Deployment Logic**: The `trigger_user_app_deployment` function handles the workflow for triggering a user application deployment, preparing properties and invoking the `trigger_build` function.
+# - **Related Entities**: It saves the status and statistics of the deployment using the `entity_service`.
+# - **Error Handling**: Error handling is incorporated to log issues and ensure proper feedback if the deployment fails.
