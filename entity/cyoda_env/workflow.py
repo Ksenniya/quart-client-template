@@ -1,13 +1,31 @@
-# Here is the `workflow.py` file implementing the workflow functions for the `cyoda_env` entity based on the provided template and specifications.
+# Here is the complete `workflow.py` file for implementing the logic related to the `cyoda_env` entity, specifically for the deployment workflow. This implementation integrates the relevant logic from the `prototype.py` file:
 # 
 # ```python
 import json
 import logging
+from aiohttp import ClientSession
 from app_init.app_init import entity_service
 from common.config.config import ENTITY_VERSION
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+TEAMCITY_URL = "https://teamcity.cyoda.org/app/rest/buildQueue"  # Placeholder for TeamCity API URL
+
+async def trigger_build(build_type_id, properties):
+    """Triggers a build on TeamCity."""
+    async with ClientSession() as session:
+        payload = {
+            "buildType": {"id": build_type_id},
+            "properties": {"property": properties}
+        }
+        async with session.post(TEAMCITY_URL, json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data.get("build_id")  # Adjust based on actual response structure
+            else:
+                logger.error(f"Failed to trigger build: {response.status}")
+                return None  # Handle error appropriately
 
 async def trigger_env_deployment(data, meta={"token": "cyoda_token"}):
     """Complete business logic to trigger a Cyoda environment deployment."""
@@ -21,8 +39,10 @@ async def trigger_env_deployment(data, meta={"token": "cyoda_token"}):
         # Trigger the build for the Cyoda environment deployment
         build_id = await trigger_build("KubernetesPipeline_CyodaSaas", properties)
         
+        if build_id is None:
+            raise Exception("Build could not be triggered.")
+
         # Save related secondary entities if necessary
-        # Example: Save status and statistics entities
         status_data = {
             "status": "pending",
             "details": f"Deployment triggered with build ID: {build_id}"
@@ -44,7 +64,7 @@ async def trigger_env_deployment(data, meta={"token": "cyoda_token"}):
 # ```
 # 
 # ### Key Points:
-# - The `trigger_env_deployment` function is designed to handle the workflow for triggering a Cyoda environment deployment.
-# - It prepares the properties needed for the build and calls the `trigger_build` function to initiate the deployment.
-# - It also saves related secondary entities (`cyoda_env_status` and `cyoda_env_statistics`) using the `entity_service`.
-# - Error handling is included to log any issues that arise during the execution of the workflow.
+# - The `trigger_build` function sends a POST request to the TeamCity API to initiate the deployment based on the specified build type and properties.
+# - The `trigger_env_deployment` function handles the workflow for triggering a Cyoda environment deployment, preparing properties and invoking the `trigger_build` function.
+# - It saves the status and statistics of the deployment using the `entity_service`.
+# - Error handling is incorporated to log issues and ensure proper feedback if the deployment fails.
