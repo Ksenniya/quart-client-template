@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report-request",
+                        "description": "Initiates the report creation process and stores the results.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "request_received",
+                                "end_state": "report_generated",
+                                "action": "Fetch conversion rates and create report",
+                                "complete_code_for_action_derived_from_the_prototype": "btc_usd_rate, btc_eur_rate = await fetch_conversion_rates()",
+                                "description": "Fetches the latest Bitcoin conversion rates for the report.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves the stored report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Fetches a specific report using its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
