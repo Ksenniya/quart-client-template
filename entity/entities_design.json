@@ -1,0 +1,67 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "environments",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/environments",
+                        "description": "Create a new deployment environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "created",
+                                "action": "create_environment",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nuser_name = data.get(\"user_name\")\nreturn jsonify({\"id\": \"env_id\", \"user_name\": user_name, \"status\": \"created\"}), 201",
+                                "description": "This action creates a new environment for the user.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/environments/status/<string:id>",
+                        "description": "Retrieve the status of a specific environment deployment."
+                    },
+                    {
+                        "endpoint": "/environments/cancel/<string:id>",
+                        "description": "Cancel a specific environment deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_applications",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/user-applications",
+                        "description": "Deploy a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "deployed",
+                                "action": "deploy_user_application",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nrepository_url = data.get(\"repository_url\")\nis_public = data.get(\"is_public\")\nbuild_id = await trigger_build(\"KubernetesPipeline_CyodaSaasUserEnv\", repository_url)\nreturn jsonify({\"build_id\": build_id}), 201",
+                                "description": "This action triggers the deployment of a user application.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/user-applications/status/<string:id>",
+                        "description": "Retrieve the status of a specific user application deployment."
+                    },
+                    {
+                        "endpoint": "/user-applications/cancel/<string:id>",
+                        "description": "Cancel a specific user application deployment."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
