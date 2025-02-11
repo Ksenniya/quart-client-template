@@ -14,7 +14,9 @@
                                 "action": "Create job and fetch BTC rates",
                                 "complete_code_for_action_derived_from_the_prototype": "report_id = str(uuid.uuid4())\nreports[report_id] = {\"status\": \"processing\"}\nrates = await fetch_btc_rates()\nif rates:\n    reports[report_id].update({\n        \"btc_usd\": rates['btc_usd'],\n        \"btc_eur\": rates['btc_eur'],\n        \"timestamp\": \"2023-10-01T12:00:00Z\",  # TODO: Use actual timestamp\n        \"status\": \"completed\"\n    })\n    await send_email(report_id, email, rates)\nelse:\n    reports[report_id]['status'] = \"failed\"",
                                 "description": "This action involves creating a report ID, fetching current BTC rates, and sending an email with the results.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
