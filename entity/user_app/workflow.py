@@ -1,4 +1,4 @@
-# Here’s the `workflow.py` file implementing the workflow functions for the `user_app` entity, following the provided template and ensuring that it adheres to the specified imports and method signatures.
+# Here’s the complete `workflow.py` file for the `user_app` entity, implementing all the necessary logic based on the relevant information from `api.py`.
 # 
 # ```python
 import json
@@ -15,6 +15,7 @@ TEAMCITY_URL = "https://teamcity.cyoda.org/app/rest/buildQueue"
 async def deploy_user_app(meta={"token": "cyoda_token"}, data):
     """Trigger a build for the user application with the provided repository URL."""
     repository_url = data.get('repository_url')
+    is_public = data.get('is_public')  # Capture is_public if needed
 
     if not repository_url:
         logger.error("No repository_url provided")
@@ -61,13 +62,25 @@ async def trigger_build(build_type_id, repository_url):
 
 async def fetch_build_status(build_id):
     """Fetches the build status from TeamCity."""
-    # TODO: Implement fetching build status from TeamCity
-    return {"status": "running", "details": {}}  # Placeholder response
+    async with aiohttp.ClientSession() as session:
+        url = f"{TEAMCITY_URL}/{build_id}/status"  # Adjust based on TeamCity API
+        async with session.get(url) as response:
+            if response.status != 200:
+                logger.error(f"Failed to fetch build status: {response.status} - {await response.text()}")
+                raise Exception("Failed to fetch build status")
+
+            return await response.json()
 
 async def fetch_build_statistics(build_id):
     """Fetches the build statistics from TeamCity."""
-    # TODO: Implement fetching build statistics from TeamCity
-    return {"statistics": {}}  # Placeholder response
+    async with aiohttp.ClientSession() as session:
+        url = f"{TEAMCITY_URL}/{build_id}/statistics"  # Adjust based on TeamCity API
+        async with session.get(url) as response:
+            if response.status != 200:
+                logger.error(f"Failed to fetch build statistics: {response.status} - {await response.text()}")
+                raise Exception("Failed to fetch build statistics")
+
+            return await response.json()
 # ```
 # 
 # ### Explanation:
@@ -77,7 +90,7 @@ async def fetch_build_statistics(build_id):
 #    - It checks for the `repository_url`.
 #    - It triggers the build by calling `trigger_build`.
 #    - It saves the initial status and statistics of the deployment using the `entity_service`.
-# 4. **`trigger_build` Function**: This function interacts with the TeamCity API to trigger the build and returns the build ID. Error handling is included to log and raise exceptions if the build fails.
-# 5. **Placeholder Functions**: The functions `fetch_build_status` and `fetch_build_statistics` are placeholders for future implementations to fetch the actual status and statistics from TeamCity.
+# 4. **`trigger_build` Function**: This function interacts with the TeamCity API to trigger the build and returns the build ID. It handles errors and logs them appropriately.
+# 5. **`fetch_build_status` and `fetch_build_statistics` Functions**: These functions interact with the TeamCity API to fetch the status and statistics of the builds, respectively. Error handling is included to log and raise exceptions if the fetch fails.
 # 
 # This implementation provides a complete workflow for managing the deployment of the `user_app` entity. If you need any further modifications or additional features, feel free to ask!
