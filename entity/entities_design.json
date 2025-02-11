@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report-request",
+                        "description": "Initiates the report creation process and sends an email with the current Bitcoin conversion rates.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "request_received",
+                                "end_state": "report_generated",
+                                "action": "fetch_and_send_report",
+                                "complete_code_for_action_derived_from_the_prototype": "async with aiohttp.ClientSession() as session: async with session.get(BTC_API_URL) as response: if response.status == 200: rates = await response.json() ... await send_email(report_id, email, report_data)",
+                                "description": "Fetches Bitcoin rates, generates a report, and sends it via email.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves a previously generated report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves a stored report using its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
