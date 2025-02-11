@@ -1,0 +1,100 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "cyoda_env",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/cyoda-env",
+                        "description": "Deploy a Cyoda environment.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "pending",
+                                "end_state": "completed",
+                                "action": "trigger_env_deployment",
+                                "complete_code_for_action_derived_from_the_prototype": "build_id = await trigger_build(\"KubernetesPipeline_CyodaSaas\", properties)",
+                                "description": "Trigger a build for the Cyoda environment deployment.",
+                                "related_secondary_entities": [
+                                    "cyoda_env_status",
+                                    "cyoda_env_statistics"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/deploy/user_app",
+                        "description": "Deploy a user application.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "pending",
+                                "end_state": "completed",
+                                "action": "trigger_user_app_deployment",
+                                "complete_code_for_action_derived_from_the_prototype": "build_id = await trigger_build(\"KubernetesPipeline_CyodaSaasUserEnv\", properties)",
+                                "description": "Trigger a build for the user application deployment.",
+                                "related_secondary_entities": [
+                                    "user_app_status",
+                                    "user_app_statistics"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "cyoda_env_status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/status/<string:id>",
+                        "description": "Get the status of the Cyoda environment deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "cyoda_env_statistics",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/cyoda-env/statistics/<string:id>",
+                        "description": "Get statistics for the Cyoda environment deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app_status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/status/<string:id>",
+                        "description": "Get the status of the user application deployment."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app_statistics",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/deploy/user_app/statistics/<string:id>",
+                        "description": "Get statistics for the user application deployment."
+                    }
+                ]
+            }
+        }
+    ]
+}
