@@ -1,10 +1,11 @@
-# Here’s a prototype implementation of your application using Quart and aiohttp. This prototype includes the specified endpoints and uses placeholders where necessary. The goal is to provide a working prototype to verify the user experience and identify any gaps.
+# Here’s a fully functioning version of the `prototype.py` code, incorporating the previous suggestions and ensuring it remains a working prototype for your application. This version includes a mock implementation for email sending and a simple in-memory storage for reports. You can easily replace the mocks as needed.
 # 
 # ```python
 import asyncio
 import aiohttp
 from quart import Quart, Blueprint, request, jsonify
 from quart_cors import cors
+from datetime import datetime
 
 app = Quart(__name__)
 app = cors(app)  # Enable CORS for all routes
@@ -12,12 +13,15 @@ app = cors(app)  # Enable CORS for all routes
 api = Blueprint('api', __name__)
 
 # Placeholder for external API URL to fetch BTC rates
-BTC_API_URL = "https://api.example.com/btc/rates"  # TODO: Replace with actual API URL
+BTC_API_URL = "https://api.coindesk.com/v1/bpi/currentprice.json"  # Example API
 
-# Placeholder for the email sending function
+# In-memory storage for reports
+reports = {}
+
 async def send_email(report_id, email, rates):
-    # TODO: Implement actual email sending logic
+    # Mock email sending
     print(f"Sending email to {email} with report ID {report_id} and rates: {rates}")
+    await asyncio.sleep(1)  # Simulate email sending delay
 
 @api.route('/report-request', methods=['POST'])
 async def request_report():
@@ -29,20 +33,23 @@ async def request_report():
         async with session.get(BTC_API_URL) as response:
             if response.status == 200:
                 rates = await response.json()
-                btc_usd = rates['USD']  # TODO: Adjust according to actual API response structure
-                btc_eur = rates['EUR']  # TODO: Adjust according to actual API response structure
+                btc_usd = rates['bpi']['USD']['rate_float']  # Fetching the USD rate
+                btc_eur = rates['bpi']['EUR']['rate_float']  # Fetching the EUR rate
             else:
                 return jsonify({"error": "Failed to fetch BTC rates"}), 500
 
-    # Simulate generating a report ID
-    report_id = 12345  # TODO: Implement a proper report ID generation
+    # Generate a unique report ID
+    report_id = len(reports) + 1
     report_data = {
         "report_id": report_id,
         "btc_usd": btc_usd,
         "btc_eur": btc_eur,
-        "timestamp": "2023-10-01T12:00:00Z"  # TODO: Use actual timestamp
+        "timestamp": datetime.utcnow().isoformat() + "Z"  # Current UTC timestamp
     }
     
+    # Store the report in memory
+    reports[report_id] = report_data
+
     # Send the report via email
     await send_email(report_id, email, report_data)
 
@@ -52,16 +59,11 @@ async def request_report():
 async def retrieve_report():
     report_id = request.args.get('id')
 
-    # TODO: Implement logic to fetch the report by ID from storage
-    # Here, we use a mock return for demonstration purposes.
-    mock_report = {
-        "report_id": report_id,
-        "btc_usd": "50000",  # TODO: Fetch actual value
-        "btc_eur": "42000",  # TODO: Fetch actual value
-        "timestamp": "2023-10-01T12:00:00Z"
-    }
-
-    return jsonify(mock_report)
+    # Check if report exists
+    if report_id.isdigit() and int(report_id) in reports:
+        return jsonify(reports[int(report_id)])
+    else:
+        return jsonify({"error": "Report not found"}), 404
 
 app.register_blueprint(api)
 
@@ -69,17 +71,16 @@ if __name__ == '__main__':
     app.run(debug=True)
 # ```
 # 
-# ### Key Points:
+# ### Key Features:
 # 
-# - **HTTP Client**: The code uses `aiohttp.ClientSession` to fetch Bitcoin rates from an external API.
-# - **Email Sending**: The `send_email` function is a placeholder where you can implement actual email logic.
-# - **Report Storage**: The `retrieve_report` function currently returns a mock report. You will need to implement actual storage and retrieval logic.
-# - **Error Handling**: Basic error handling is implemented for the API request to fetch rates.
+# 1. **Fetching Bitcoin Rates**: The application fetches current Bitcoin conversion rates from the CoinDesk API, which provides the latest BTC to USD and EUR rates.
 # 
-# ### TODO Comments:
-# - Replace the placeholder API URL with the actual one.
-# - Implement the actual email sending logic.
-# - Enhance report ID generation and storage/retrieval logic.
-# - Consider using a real timestamp for the report.
+# 2. **In-Memory Report Storage**: Reports are stored in a dictionary (`reports`) with a unique ID generated based on the number of reports.
 # 
-# This prototype should help you evaluate the user experience and identify any gaps in requirements. If you need further modifications or additions, let me know!
+# 3. **Email Sending**: The `send_email` function simulates sending an email by printing to the console; you can replace this with actual email-sending logic later.
+# 
+# 4. **Error Handling**: The application includes basic error handling for both fetching rates and retrieving reports.
+# 
+# 5. **Timestamp**: The report includes a timestamp of when it was generated in UTC format.
+# 
+# This implementation should be a good starting point for verifying user experience and identifying any gaps in your requirements. If you need further adjustments or additional features, feel free to ask!
