@@ -1,0 +1,20 @@
+{
+    "entities": [
+        {
+            "entity_name": "environments",
+            "entity_data_example": {
+                "user_name": "test_user",
+                "id": "env_id",
+                "status": "created"
+            }
+        },
+        {
+            "entity_name": "user_applications",
+            "entity_data_example": {
+                "repository_url": "http://example.com/repo.git",
+                "is_public": true,
+                "build_id": "build_id"
+            }
+        }
+    ]
+}
