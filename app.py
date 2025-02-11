@@ -7,12 +7,16 @@ from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
 #please update this line to your entity
+from entity.report_request.api import api_bp_report_request
+from entity.conversion_rate.api import api_bp_conversion_rate
 from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+app.register_blueprint(api_bp_report_request, url_prefix='/api/report_request')
+app.register_blueprint(api_bp_conversion_rate, url_prefix='/api/conversion_rate')
 app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
 
 @app.before_serving
