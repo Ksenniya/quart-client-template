@@ -14,7 +14,9 @@
                                 "action": "Create report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()  # Capture the user's email for sending reports\nreport_id = str(uuid.uuid4())\nbtc_usd, btc_eur = await fetch_btc_rates()\ntimestamp = datetime.datetime.utcnow().isoformat()\nreports[report_id] = {\"report_id\": report_id, \"timestamp\": timestamp, \"btc_usd\": btc_usd, \"btc_eur\": btc_eur}",
                                 "description": "Fetches the latest BTC rates and stores the report.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
