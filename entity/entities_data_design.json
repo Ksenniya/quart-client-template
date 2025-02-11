@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env",
+            "entity_data_example": {
+                "user_name": "test"
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "entity_data_example": {
+                "repository_url": "http://....",
+                "is_public": "true"
+            }
+        },
+        {
+            "entity_name": "cyoda_env_status",
+            "entity_data_example": {
+                "status": "running",
+                "details": "Deployment is in progress."
+            }
+        },
+        {
+            "entity_name": "cyoda_env_statistics",
+            "entity_data_example": {
+                "statistics": {
+                    "duration": "5m",
+                    "success_rate": "100%"
+                }
+            }
+        }
+    ]
+}
