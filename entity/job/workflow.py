@@ -1,4 +1,4 @@
-# Here’s the `workflow.py` file implementing the entity job workflow functions based on the provided template and requirements. The file includes the necessary imports and implements the action to create a job and fetch Bitcoin rates.
+# Here's the complete implementation of the `workflow.py` file, incorporating all the relevant logic based on the provided `prototype.py`. This includes fetching the Bitcoin rates, creating a job, sending an email, and updating the status of the report.
 # 
 # ### `workflow.py`
 # 
@@ -8,10 +8,34 @@ import logging
 import uuid
 from app_init.app_init import entity_service
 from common.config.config import ENTITY_VERSION
-from prototype import fetch_btc_rates, send_email  # Assuming these functions are in prototype.py
+import aiohttp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# In-memory report storage (temporary)
+reports = {}
+
+async def fetch_btc_rates():
+    """Fetch current Bitcoin rates from the CoinGecko API."""
+    BTC_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(BTC_API_URL) as response:
+            if response.status == 200:
+                data = await response.json()
+                return {
+                    "btc_usd": data['bitcoin']['usd'],
+                    "btc_eur": data['bitcoin']['eur']
+                }
+            else:
+                logger.error(f"Failed to fetch BTC rates: {response.status}")
+                return None
+
+async def send_email(report_id, email, rates):
+    """Simulate sending an email with the report data."""
+    # Placeholder for email sending logic
+    logger.info(f"Sending email to {email} with report ID {report_id} and rates: {rates}")
+    return True  # Simulate successful email sending
 
 async def create_job_and_fetch_btc_rates(data, meta={"token": "cyoda_token"}):
     """Complete business logic for creating a job and fetching BTC rates."""
@@ -35,11 +59,13 @@ async def create_job_and_fetch_btc_rates(data, meta={"token": "cyoda_token"}):
                 "status": "completed"
             })
             await send_email(report_id, email, rates)
+            
+            # Optionally save the report as a secondary entity
+            # report_id = await entity_service.add_item(cyoda_token, "report", ENTITY_VERSION, reports[report_id])
+
         else:
             reports[report_id]['status'] = "failed"
-
-        # Optionally save the report as a secondary entity
-        # report_id = await entity_service.add_item(cyoda_token, "report", ENTITY_VERSION, reports[report_id])
+            logger.error("Failed to fetch BTC rates, report status updated to failed.")
 
     except Exception as e:
         logger.error(f"Error in create_job_and_fetch_btc_rates: {e}")
@@ -47,13 +73,15 @@ async def create_job_and_fetch_btc_rates(data, meta={"token": "cyoda_token"}):
 # ```
 # 
 # ### Explanation
-# - **Imports**: The necessary modules are imported, including logging and the entity service.
-# - **Function**: The `create_job_and_fetch_btc_rates` function implements the workflow for creating a job and fetching Bitcoin rates.
-#   - It checks for the presence of an email.
-#   - Generates a unique report ID.
-#   - Fetches the current Bitcoin rates using the `fetch_btc_rates` function.
-#   - Updates the report status and sends an email with the results.
-#   - Optionally, it can save the report as a secondary entity using the `entity_service.add_item` method (commented out for now).
-# - **Error Handling**: Any exceptions are logged, and the function raises an error if necessary.
+# - **Imports**: The necessary modules are imported, including logging, UUID for generating report IDs, and aiohttp for making asynchronous HTTP requests.
+# - **In-memory Reports Storage**: A temporary dictionary `reports` is used to store ongoing reports.
+# - **`fetch_btc_rates` Function**: This function fetches the current Bitcoin rates from the CoinGecko API and returns them as a dictionary.
+# - **`send_email` Function**: This function simulates sending an email, logging the details instead of actually sending it.
+# - **`create_job_and_fetch_btc_rates` Function**: This is the main workflow function that:
+#   - Validates the presence of an email.
+#   - Generates a unique report ID and initializes the processing status.
+#   - Calls `fetch_btc_rates` to retrieve the latest rates.
+#   - Updates the report status upon success or failure.
+#   - Calls `send_email` to simulate sending the report.
 # 
-# This implementation adheres strictly to the provided template and requirements. If you have any further modifications or additional requirements, let me know!
+# This implementation adheres to the requirements and logic specified in the prototype. If there are any further modifications or additional requirements, feel free to let me know!
