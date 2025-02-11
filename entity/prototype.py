@@ -1,4 +1,6 @@
-# Here's a prototype implementation of your application in a `prototype.py` file using Quart, aiohttp, and QuartSchema. This code includes placeholders and TODO comments where specific details are not provided or are subject to further clarification.
+# Here's an updated version of the `prototype.py` code that includes a functioning prototype for fetching Bitcoin conversion rates using a public API. In this case, we will use the CoinGecko API, which provides free access to cryptocurrency data, including Bitcoin prices in various currencies.
+# 
+# ### Updated `prototype.py`
 # 
 # ```python
 from quart import Quart, jsonify, request
@@ -10,9 +12,8 @@ import uuid
 app = Quart(__name__)
 QuartSchema(app)
 
-# Configuration for external API (replace with actual API details)
-BTC_API_URL = "https://api.example.com/btc"  # TODO: Replace with actual Bitcoin API URL
-EMAIL_SERVICE_URL = "https://api.example.com/send-email"  # TODO: Replace with actual email service API URL
+# Configuration for external API
+BTC_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur"
 
 # In-memory report storage (temporary)
 reports = {}
@@ -22,23 +23,19 @@ async def fetch_btc_rates():
         async with session.get(BTC_API_URL) as response:
             if response.status == 200:
                 data = await response.json()
-                # TODO: Adjust based on actual API response structure
+                # Extract BTC rates from the response
                 return {
-                    "btc_usd": data['usd'],  # TODO: Adjust key name
-                    "btc_eur": data['eur']   # TODO: Adjust key name
+                    "btc_usd": data['bitcoin']['usd'],
+                    "btc_eur": data['bitcoin']['eur']
                 }
             else:
                 return None  # Handle error appropriately in production
 
 async def send_email(report_id, email, rates):
-    email_payload = {
-        "to": email,
-        "subject": f"Bitcoin Conversion Rates Report: {report_id}",
-        "body": f"BTC/USD: {rates['btc_usd']}, BTC/EUR: {rates['btc_eur']}"
-    }
-    async with aiohttp.ClientSession() as session:
-        async with session.post(EMAIL_SERVICE_URL, json=email_payload) as response:
-            return response.status == 200  # Adjust based on actual response handling
+    # Placeholder for email sending logic
+    # TODO: Implement actual email sending logic
+    print(f"Sending email to {email} with report ID {report_id} and rates: {rates}")
+    return True  # Simulate successful email sending
 
 @app.route('/job', methods=['POST'])
 async def create_job():
@@ -76,11 +73,24 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Points
-# - **External APIs**: Placeholders for the Bitcoin API and email service API URLs need to be replaced with actual endpoints.
-# - **Report Storage**: Reports are stored in memory for simplicity; consider using a persistent storage solution for a production application.
-# - **Rate Fetching**: The `fetch_btc_rates` function assumes a specific structure of the JSON response, which should be adjusted based on the actual API response format.
-# - **Email Sending**: The `send_email` function is a placeholder to demonstrate sending an email, which needs to be implemented based on the actual email service being used.
-# - **Error Handling**: Basic error handling is included; further handling may be needed based on requirements.
+# ### Key Changes
+# 1. **BTC API URL**: The code now uses the CoinGecko API to fetch the current Bitcoin prices in USD and EUR.
+# 2. **Email Sending**: A placeholder function `send_email` is included, which currently prints a message instead of sending an email. This should be replaced with actual email sending logic when ready.
+# 3. **Report Storage**: The reports continue to be stored in memory for simplicity, which is suitable for a prototype but not for production.
 # 
-# You can use this prototype to verify user experience and identify any gaps in the requirements. If you have specific details to add or modify, let me know!
+# ### Testing the Prototype
+# To test the prototype, you can use tools like Postman or curl to send a POST request to `http://localhost:8000/job` with a JSON body containing an email address. After that, you can GET the report using the returned report ID.
+# 
+# Example POST request:
+# ```json
+# POST /job
+# Content-Type: application/json
+# 
+# {
+#     "email": "user@example.com"
+# }
+# ```
+# 
+# This should trigger the fetching of rates and simulate sending an email. 
+# 
+# If you have any further changes or specific requirements, let me know!
