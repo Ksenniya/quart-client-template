@@ -14,7 +14,9 @@
                                 "action": "Create report with email",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get(\"email\")\nif not email:\n    return jsonify({\"error\": \"Invalid email format.\"}), 400\nrates = await fetch_btc_rates()\nif \"error\" in rates:\n    return jsonify({\"error\": rates[\"error\"]}), 500\nreport_id = str(uuid.uuid4())\nreports[report_id] = {...}\nreturn jsonify({\"report_id\": report_id, \"status\": \"processing\"}), 201",
                                 "description": "The user submits their email to create a report, which triggers the fetching of BTC rates.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
