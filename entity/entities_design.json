@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Initiates the report creation process and sends the email report.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "awaiting_email",
+                                "end_state": "report_processing",
+                                "action": "Create report with email",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get(\"email\")\nif not email:\n    return jsonify({\"error\": \"Invalid email format.\"}), 400\nrates = await fetch_btc_rates()\nif \"error\" in rates:\n    return jsonify({\"error\": rates[\"error\"]}), 500\nreport_id = str(uuid.uuid4())\nreports[report_id] = {...}\nreturn jsonify({\"report_id\": report_id, \"status\": \"processing\"}), 201",
+                                "description": "The user submits their email to create a report, which triggers the fetching of BTC rates.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Not applicable as there is no GET endpoint for /job."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves the stored report by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
