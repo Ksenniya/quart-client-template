@@ -1,0 +1,9 @@
+{
+    "build_id": "12345",
+    "duration": "5m",
+    "success": true,
+    "details": {
+        "cpu_usage": "20%",
+        "memory_usage": "512MB"
+    }
+}
