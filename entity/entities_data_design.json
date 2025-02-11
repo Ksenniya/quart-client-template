@@ -1,0 +1,20 @@
+{
+    "entities": [
+        {
+            "entity_name": "report_request",
+            "entity_data_example": {
+                "email": "user@example.com",
+                "currency": "USD"
+            }
+        },
+        {
+            "entity_name": "conversion_rate",
+            "entity_data_example": {
+                "bitcoin": {
+                    "usd": 45000,
+                    "eur": 38000
+                }
+            }
+        }
+    ]
+}
