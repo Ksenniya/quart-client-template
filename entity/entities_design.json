@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Initiates report creation and sends email with Bitcoin conversion rates.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "completed",
+                                "action": "Create job and fetch BTC rates",
+                                "complete_code_for_action_derived_from_the_prototype": "report_id = str(uuid.uuid4())\nreports[report_id] = {\"status\": \"processing\"}\nrates = await fetch_btc_rates()\nif rates:\n    reports[report_id].update({\n        \"btc_usd\": rates['btc_usd'],\n        \"btc_eur\": rates['btc_eur'],\n        \"timestamp\": \"2023-10-01T12:00:00Z\",  # TODO: Use actual timestamp\n        \"status\": \"completed\"\n    })\n    await send_email(report_id, email, rates)\nelse:\n    reports[report_id]['status'] = \"failed\"",
+                                "description": "This action involves creating a report ID, fetching current BTC rates, and sending an email with the results.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Not applicable, as this is a POST-only endpoint for initiating jobs."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves the stored report by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
