@@ -31,7 +31,7 @@ async def init_entities_schema(entity_dir, token):
                     meta = await cyoda_repository.get_meta(token, entity_name, ENTITY_VERSION)
                     await cyoda_repository.save(meta=meta, entity=json.loads(entity))
                     await init_trino(entity_name=entity_name, token=token)
-                    await init_workflow(entity_dir=json_file.parent, token=token)
+                await init_workflow(entity_dir=json_file.parent, token=token)
 
                     # cyoda_repository._lock_entity_schema(token, entity_name, ENTITY_VERSION, None)
         except Exception as e:
