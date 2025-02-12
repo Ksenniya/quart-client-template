@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Create a report and send it via email.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "report_generated",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get('email')\nif not email:\n    return jsonify({\"error\": \"Invalid email address.\"}), 400\nrates = await fetch_btc_rates()\nif not rates:\n    return jsonify({\"error\": \"Failed to fetch rates.\"}), 500\nreport_id = str(uuid.uuid4())\nreport = {\n    \"report_id\": report_id,\n    \"btc_usd_rate\": rates[\"btc_usd\"],\n    \"btc_eur_rate\": rates[\"btc_eur\"],\n    \"timestamp\": \"2023-10-01T12:00:00Z\"\n}\nawait send_email(email, report)\nreturn jsonify({\"report_id\": report_id, \"message\": \"Report is being generated and will be sent to your email.\"}), 201",
+                                "description": "Creates a report and sends it via email to the provided address.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieve a report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieve a report by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
