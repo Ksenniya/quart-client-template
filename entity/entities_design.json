@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Create a report with Bitcoin conversion rates.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_creation_initiated",
+                                "end_state": "report_generated",
+                                "action": "generate_report",
+                                "complete_code_for_action_derived_from_the_prototype": "report_id = str(uuid.uuid4())\nreports[report_id] = {...}",
+                                "description": "Initiates the report generation process.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieve the report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Fetch the report details by report ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
