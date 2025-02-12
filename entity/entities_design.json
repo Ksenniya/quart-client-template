@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Create a report",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "report_generated",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nbtc_usd, btc_eur = await fetch_conversion_rates()\nreport_data = { ... }\nawait send_email(report_id, report_data)",
+                                "description": "This action creates a report based on the Bitcoin conversion rates.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieve a report by ID"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Get report details by report ID"
+                    }
+                ]
+            }
+        }
+    ]
+}
