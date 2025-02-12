@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get(\"email\")\nrates = await fetch_conversion_rates()\nreport_id = str(uuid.uuid4())\nreport = {...}\nreports[report_id] = report\nasyncio.create_task(send_email(email, report))",
                                 "description": "Create a report and send an email with the report details.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
