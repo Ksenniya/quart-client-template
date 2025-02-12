@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()",
                                 "description": "Handle the creation of a report based on user input.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
