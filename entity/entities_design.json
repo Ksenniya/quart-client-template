@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Creates a new report and sends an email notification.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_creation_initiated",
+                                "end_state": "report_generation_completed",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()",
+                                "description": "Handle the creation of a report based on user input.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves a report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves a stored report by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
