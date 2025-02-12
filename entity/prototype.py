@@ -1,13 +1,13 @@
-# To create a fully functioning `prototype.py` that avoids the DNS connection error and allows you to test the functionality locally, we can mock the response from the external API instead of making actual HTTP requests. This way, you can focus on the user experience without needing a live API.
+# Certainly! Below is the updated `prototype.py` code that utilizes a real external API to fetch Bitcoin conversion rates. For this example, we'll use the CoinGecko API, which provides free access to cryptocurrency data, including Bitcoin prices in various currencies.
 # 
-# Here’s the updated code:
+# Here’s the complete implementation:
 # 
 # ```python
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema
 import uuid
 import datetime
-import random
+import aiohttp
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -15,13 +15,18 @@ QuartSchema(app)
 # Placeholder for the in-memory report storage
 reports = {}
 
-# Mock function to simulate fetching Bitcoin conversion rates
+# Function to fetch Bitcoin conversion rates from CoinGecko API
 async def fetch_btc_rates():
-    # Mock response simulating external API response
-    return {
-        "USD": round(random.uniform(40000, 50000), 2),  # Random BTC/USD rate
-        "EUR": round(random.uniform(35000, 45000), 2)   # Random BTC/EUR rate
-    }
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                return {"USD": None, "EUR": None}  # Handle errors gracefully
+            data = await response.json()
+            return {
+                "USD": data['bitcoin']['usd'],
+                "EUR": data['bitcoin']['eur']
+            }
 
 @app.route('/job', methods=['POST'])
 async def create_report():
@@ -32,6 +37,9 @@ async def create_report():
     btc_rates = await fetch_btc_rates()
     btc_usd = btc_rates.get('USD')
     btc_eur = btc_rates.get('EUR')
+
+    if btc_usd is None or btc_eur is None:
+        return jsonify({"error": "Failed to fetch Bitcoin rates."}), 500
 
     # Create a report ID and store the report
     report_id = str(uuid.uuid4())
@@ -58,11 +66,19 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Changes
-# 1. **Mocked API Response**: The `fetch_btc_rates()` function now returns a mocked response with random values for Bitcoin conversion rates instead of attempting to make a real API call. This avoids the DNS connection error.
+# ### Key Features
+# 1. **Real API Endpoint**: The `fetch_btc_rates()` function now calls the CoinGecko API to retrieve the latest Bitcoin conversion rates for USD and EUR.
 # 
-# 2. **Random Values**: The rates for BTC/USD and BTC/EUR are generated using `random.uniform()` to simulate realistic values within a specified range.
+# 2. **Error Handling**: If the API request fails, the application will return an appropriate error message and status code.
 # 
-# 3. **Email Sending Placeholder**: The email sending functionality is still marked as TODO, so you can implement that based on your requirements later.
+# 3. **In-memory Storage**: Reports are stored in a dictionary for easy retrieval, simulating a simple storage mechanism.
 # 
-# With this implementation, you can run the application locally and test the endpoints without relying on an external service. This should help you verify the user experience and identify any further gaps or requirements. Let me know if you have any more questions or need further adjustments!
+# 4. **Email Sending Placeholder**: The email sending functionality is still marked as a TODO, allowing you to implement that based on your chosen email service in the future.
+# 
+# ### Testing the Prototype
+# To test this prototype:
+# 1. Run the script. 
+# 2. Use an API client (like Postman or curl) to send a POST request to `http://localhost:8000/job` with a JSON body containing an email address (e.g., `{"email": "user@example.com"}`).
+# 3. Retrieve the report using a GET request to `http://localhost:8000/report/<report_id>`.
+# 
+# This implementation should work seamlessly and provide a solid foundation for further enhancement and testing. Let me know if you need any additional changes or features!
