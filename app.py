@@ -29,4 +29,4 @@ async def shutdown():
 #put_application_code_here
 
 if __name__ == '__main__':
-    app.run()
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

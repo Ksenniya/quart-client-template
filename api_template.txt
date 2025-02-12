@@ -1,0 +1,38 @@
+from quart import Blueprint, request, jsonify
+from app_init.app_init import entity_service, cyoda_token
+from common.config.config import ENTITY_VERSION
+
+api_bp_ENTITY_NAME_VAR = Blueprint('api/ENTITY_NAME_VAR', __name__)
+
+
+@api_bp_ENTITY_NAME_VAR.route('/ENTITY_NAME_VAR', methods=['POST'])
+async def add_ENTITY_NAME_VAR():
+    """API endpoint to create a new order entity."""
+    data = await request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    try:
+        # Add the ENTITY_NAME_VAR entity using the entity service
+        ENTITY_NAME_VAR_id = await entity_service.add_item(
+            cyoda_token, ENTITY_NAME_VAR, ENTITY_VERSION, data
+        )
+        return jsonify({"ENTITY_NAME_VAR_id": ENTITY_NAME_VAR_id}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp_ENTITY_NAME_VAR.route('/ENTITY_NAME_VAR/', methods=['GET'])
+async def get_ENTITY_NAME_VAR():
+    """API endpoint to create a new order entity."""
+    try:
+        entity_id = request.args.get('id')
+        # Add the ENTITY_NAME_VAR entity using the entity service
+        ENTITY_NAME_VAR_id = await entity_service.get_item(
+            cyoda_token, ENTITY_NAME_VAR, ENTITY_VERSION, entity_id
+        )
+        return jsonify({"ENTITY_NAME_VAR_id": ENTITY_NAME_VAR_id}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
