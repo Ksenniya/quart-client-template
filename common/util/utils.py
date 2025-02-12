@@ -431,6 +431,7 @@ async def send_request(headers, url, method, data, json):
             async with session.get(url, headers=headers) as response:
                 if response and (response.status == 200 or response.status == 404):
                     data = await response.json()
+                    data['status'] = response.status
         elif method == 'POST':
             async with session.post(url, headers=headers, data=data, json=json) as response:
                 if response:

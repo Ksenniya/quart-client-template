@@ -229,7 +229,7 @@ class CyodaRepository(CrudRepository):
         export_model_path = f"model/export/SIMPLE_VIEW/{entity_name}/{version}"
         response = await send_get_request(token, CYODA_API_URL, export_model_path)
 
-        if response:
+        if response['status'] == 200:
             return True
         else:
             return False
