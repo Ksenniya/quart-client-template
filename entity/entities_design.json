@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Initiates the report creation process and sends an email.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "processing",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get(\"email\")\nrates = await fetch_conversion_rates()\nreport_id = str(uuid.uuid4())\nreport = {...}\nreports[report_id] = report\nasyncio.create_task(send_email(email, report))",
+                                "description": "Create a report and send an email with the report details.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves the stored report by ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves the stored report by ID."
+                    }
+                ]
+            }
+        }
+    ]
+}
