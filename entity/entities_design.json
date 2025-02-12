@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.json\nemail = data.get('email')\nrates = await fetch_conversion_rates()\nreport_id = str(uuid.uuid4())\ntimestamp = \"2023-10-01T12:00:00Z\"\nreports[report_id] = {\"report_id\": report_id, \"btc_usd\": rates['btc_usd'], \"btc_eur\": rates['btc_eur'], \"timestamp\": timestamp}",
                                 "description": "Initiates the creation of a report by fetching conversion rates and storing the report.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
