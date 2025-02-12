@@ -14,7 +14,11 @@
                                 "action": "generate_report",
                                 "complete_code_for_action_derived_from_the_prototype": "report_id = str(uuid.uuid4())\nreports[report_id] = {...}",
                                 "description": "Initiates the report generation process.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    {
+                                        "entity_name": "report"
+                                    }
+                                ]
                             }
                         ]
                     }
