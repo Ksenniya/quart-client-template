@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nbtc_usd, btc_eur = await fetch_conversion_rates()\nreport_data = { ... }\nawait send_email(report_id, report_data)",
                                 "description": "This action creates a report based on the Bitcoin conversion rates.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }
