@@ -1,11 +1,13 @@
-# Here is a prototype implementation of the `prototype.py` file based on the requirements specified. This code uses Quart for the API and aiohttp for making HTTP requests to retrieve Bitcoin conversion rates. It includes placeholders and TODO comments where further implementation would be necessary.
+# To create a fully functioning `prototype.py` that avoids the DNS connection error and allows you to test the functionality locally, we can mock the response from the external API instead of making actual HTTP requests. This way, you can focus on the user experience without needing a live API.
+# 
+# Here’s the updated code:
 # 
 # ```python
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema
-import aiohttp
 import uuid
 import datetime
+import random
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -13,14 +15,13 @@ QuartSchema(app)
 # Placeholder for the in-memory report storage
 reports = {}
 
-# Function to fetch Bitcoin conversion rates
+# Mock function to simulate fetching Bitcoin conversion rates
 async def fetch_btc_rates():
-    # TODO: Replace with actual API URL for fetching BTC rates
-    url = "https://api.example.com/btc-rates"  # Placeholder URL
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            # TODO: Implement error handling for the HTTP request
-            return await response.json()
+    # Mock response simulating external API response
+    return {
+        "USD": round(random.uniform(40000, 50000), 2),  # Random BTC/USD rate
+        "EUR": round(random.uniform(35000, 45000), 2)   # Random BTC/EUR rate
+    }
 
 @app.route('/job', methods=['POST'])
 async def create_report():
@@ -29,8 +30,8 @@ async def create_report():
 
     # Fetch the latest BTC rates
     btc_rates = await fetch_btc_rates()
-    btc_usd = btc_rates.get('USD')  # TODO: Adjust based on actual response structure
-    btc_eur = btc_rates.get('EUR')  # TODO: Adjust based on actual response structure
+    btc_usd = btc_rates.get('USD')
+    btc_eur = btc_rates.get('EUR')
 
     # Create a report ID and store the report
     report_id = str(uuid.uuid4())
@@ -57,15 +58,11 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Points
-# 1. **AJAX Requests**: The code uses `aiohttp.ClientSession` to fetch the Bitcoin conversion rates from a placeholder API. You should replace the URL with the actual API endpoint you intend to use.
+# ### Key Changes
+# 1. **Mocked API Response**: The `fetch_btc_rates()` function now returns a mocked response with random values for Bitcoin conversion rates instead of attempting to make a real API call. This avoids the DNS connection error.
 # 
-# 2. **In-memory Storage**: Reports are stored in a simple dictionary for demonstration purposes. For production, consider using a database.
+# 2. **Random Values**: The rates for BTC/USD and BTC/EUR are generated using `random.uniform()` to simulate realistic values within a specified range.
 # 
-# 3. **Email Functionality**: The email sending logic is marked with a TODO comment and needs to be implemented based on your choice of email service.
+# 3. **Email Sending Placeholder**: The email sending functionality is still marked as TODO, so you can implement that based on your requirements later.
 # 
-# 4. **Error Handling**: Basic error handling has been noted as a TODO, particularly for HTTP requests and potential issues with data retrieval.
-# 
-# 5. **Dynamic Data Handling**: As per your request, no validation decorators have been added since the data is dynamic.
-# 
-# This prototype should allow you to test the user experience and identify any gaps in the requirements before moving on to a more robust solution. Let me know if you have any questions or need further adjustments!
+# With this implementation, you can run the application locally and test the endpoints without relying on an external service. This should help you verify the user experience and identify any further gaps or requirements. Let me know if you have any more questions or need further adjustments!
