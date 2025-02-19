@@ -1,0 +1,105 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "load",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/data/load",
+                        "description": "Create a new load.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if data.file_path in data_cache:\n        # TODO: Replace the mock summary with loading data via pandas and summarizing the DataFrame.\n        summary = {\"total_rows\": 100, \"columns\": [\"Address\", \"Neighborhood\", \"Bedrooms\", \"Price (\u00a3)\"]}\n        return jsonify(message=\"Data loaded successfully\", data_summary=summary), 200\n    else:\n        return jsonify(error=\"File does not exist.\"), 404\n",
+                        "action": "load_data",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "load_not_created",
+                                "end_state": "load_created",
+                                "action": "load_data",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    if data.file_path in data_cache:\n        # TODO: Replace the mock summary with loading data via pandas and summarizing the DataFrame.\n        summary = {\"total_rows\": 100, \"columns\": [\"Address\", \"Neighborhood\", \"Bedrooms\", \"Price (\u00a3)\"]}\n        return jsonify(message=\"Data loaded successfully\", data_summary=summary), 200\n    else:\n        return jsonify(error=\"File does not exist.\"), 404\n",
+                                "description": "Create a new load.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/load/<id>",
+                        "description": "Retrieve a load by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/loads",
+                        "description": "Retrieve all loads entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "datum",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/data/analyze",
+                        "description": "Create a new datum.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if data.file_path in data_cache:\n        # TODO: Use pandas to perform actual data analysis on data_cache[data.file_path]\n        statistics = {\n            \"average_price\": 2000000,\n            \"property_distribution\": {\"Apartment\": 30, \"Semi-Detached\": 70}\n        }\n        return jsonify(statistics=statistics), 200\n    else:\n        return jsonify(error=\"Data is invalid or analysis failed.\"), 400\n",
+                        "action": "analyze_data",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "datum_not_created",
+                                "end_state": "datum_created",
+                                "action": "analyze_data",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    if data.file_path in data_cache:\n        # TODO: Use pandas to perform actual data analysis on data_cache[data.file_path]\n        statistics = {\n            \"average_price\": 2000000,\n            \"property_distribution\": {\"Apartment\": 30, \"Semi-Detached\": 70}\n        }\n        return jsonify(statistics=statistics), 200\n    else:\n        return jsonify(error=\"Data is invalid or analysis failed.\"), 400\n",
+                                "description": "Create a new datum.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/data",
+                        "description": "Retrieve datum information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    async with ClientSession() as session:\n        try:\n            async with session.get(DATA_URL) as response:\n                if response.status == 200:\n                    data = await response.text()\n                    # TODO: Consider file corruption check or CSV format verification.\n                    data_cache['london_houses.csv'] = data\n                    return jsonify(message=\"Data downloaded successfully\", file_path=\"/path/to/london_houses.csv\"), 200\n                else:\n                    return jsonify(error=\"URL is unreachable or file not found.\"), 400\n        except Exception as e:\n            return jsonify(error=str(e)), 500\n"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report/generate",
+                        "description": "Create a new report.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Replace this mock report generation with the actual logic to generate a report\n    report_path = \"/path/to/report.pdf\" if data.format.upper() == \"PDF\" else \"/path/to/report.html\"\n    report_cache[report_path] = {\"analysis_results\": data.analysis_results, \"format\": data.format}\n    return jsonify(message=\"Report generated successfully\", report_path=report_path), 200\n",
+                        "action": "generate_report",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_not_created",
+                                "end_state": "report_created",
+                                "action": "generate_report",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Replace this mock report generation with the actual logic to generate a report\n    report_path = \"/path/to/report.pdf\" if data.format.upper() == \"PDF\" else \"/path/to/report.html\"\n    report_cache[report_path] = {\"analysis_results\": data.analysis_results, \"format\": data.format}\n    return jsonify(message=\"Report generated successfully\", report_path=report_path), 200\n",
+                                "description": "Create a new report.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<id>",
+                        "description": "Retrieve a report by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/reports",
+                        "description": "Retrieve all reports entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
