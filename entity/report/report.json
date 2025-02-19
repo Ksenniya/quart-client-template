@@ -1,0 +1,10 @@
+{
+    "analysis_results": {
+        "average_price": 2000000,
+        "property_distribution": {
+            "Apartment": 30,
+            "Semi-Detached": 70
+        }
+    },
+    "format": "PDF"
+}
