@@ -1,0 +1,67 @@
+{
+    "name": "login_workflow:ENTITY_VERSION_VAR:c7bca287-eebe-11ef-a804-40c2ba0ac9eb",
+    "description": "Workflow for user login process",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "login:ENTITY_VERSION_VAR:c7bca287-eebe-11ef-a804-40c2ba0ac9eb",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "login",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "login",
+            "description": "Process user login",
+            "start_state": "login_not_created",
+            "start_state_description": "Login not yet created",
+            "end_state": "login_created",
+            "end_state_description": "Login successfully created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "login",
+                        "description": "External processor for logging in",
+                        "calculation_nodes_tags": "c7bca287-eebe-11ef-a804-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
