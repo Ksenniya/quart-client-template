@@ -1,0 +1,67 @@
+{
+    "name": "Token Authentication Workflow:ENTITY_VERSION_VAR:ff98ffb4-eebf-11ef-86a9-40c2ba0ac9eb",
+    "description": "Workflow to authenticate and create a token.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "token:ENTITY_VERSION_VAR:ff98ffb4-eebf-11ef-86a9-40c2ba0ac9eb",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "token",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "authenticate",
+            "description": "Authenticate the user and create a token.",
+            "start_state": "token_not_created",
+            "start_state_description": "Token has not been created yet.",
+            "end_state": "token_created",
+            "end_state_description": "Token has been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "authenticate",
+                        "description": "Processes the authentication request.",
+                        "calculation_nodes_tags": "ff98ffb4-eebf-11ef-86a9-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
