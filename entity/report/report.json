@@ -1,0 +1,19 @@
+{
+    "status": "success",
+    "report": {
+        "average_price": 1500000,
+        "property_distribution": {
+            "Apartment": 40,
+            "Semi-Detached": 30
+        },
+        "summary_statistics": {
+            "average_bedrooms": 3,
+            "average_bathrooms": 2,
+            "average_square_meters": 150
+        },
+        "visualizations": {
+            "price_distribution_chart": "URL_to_chart",
+            "property_type_distribution_chart": "URL_to_chart"
+        }
+    }
+}
