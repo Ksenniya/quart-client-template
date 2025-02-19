@@ -78,7 +78,7 @@ async def generate_report(data: ReportRequest):
     # Store the report in local cache using the report ID
     local_cache[report_id] = report
 
-    return jsonify({"status": "success", "report": report})
+    return jsonify({"status": "success", "report_id": report_id})
 
 @app.route('/report/<report_id>', methods=['GET'])
 async def get_report(report_id):
