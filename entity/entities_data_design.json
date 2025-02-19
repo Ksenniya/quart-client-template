@@ -1,0 +1,52 @@
+{
+    "entities": [
+        {
+            "entity_name": "token",
+            "entity_data_example": {
+                "token": "your_bearer_token"
+            }
+        },
+        {
+            "entity_name": "environment",
+            "entity_data_example": {
+                "user_name": "test",
+                "build_id": "12345",
+                "status": "running",
+                "statistics": {
+                    "build_id": "12345",
+                    "duration": "10m",
+                    "success": true
+                }
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "entity_data_example": {
+                "repository_url": "http://example.com/repo.git",
+                "is_public": true,
+                "build_id": "67890",
+                "status": "queued",
+                "statistics": {
+                    "build_id": "67890",
+                    "duration": "15m",
+                    "success": false
+                }
+            }
+        },
+        {
+            "entity_name": "status",
+            "entity_data_example": {
+                "status": "running",
+                "build_id": "12345"
+            }
+        },
+        {
+            "entity_name": "statistic",
+            "entity_data_example": {
+                "build_id": "67890",
+                "duration": "15m",
+                "success": false
+            }
+        }
+    ]
+}
