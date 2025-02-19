@@ -1,0 +1,78 @@
+= London Houses Data Analysis Requirement
+== Introduction
+
+This document specifies the formal requirements for a system to download, analyze, and report on London Houses data. The system will retrieve data from a specified URL, process it using the Python pandas library, and generate a report based on the analysis.
+
+== Scope
+
+The system shall:
+* Download a CSV file containing London Houses data.
+* Load and analyze the data using pandas.
+* Generate and save an analysis report.
+
+== Data Source
+
+The data is available via an HTTP GET request at the following URL:
+
+GET https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv
+
+The CSV file includes the following columns:
+* Address
+* Neighborhood
+* Bedrooms
+* Bathrooms
+* Square Meters
+* Building Age
+* Garden
+* Garage
+* Floors
+* Property Type
+* Heating Type
+* Balcony
+* Interior Style
+* View
+* Materials
+* Building Status
+* Price (£)
+
+Example data rows:
+78 Regent Street,Notting Hill,2,3,179,72,No,No,3,Semi-Detached,Electric Heating,High-level Balcony,Industrial,Garden,Marble,Renovated,2291200 198 Oxford Street,Westminster,2,1,123,34,Yes,No,1,Apartment,Central Heating,High-level Balcony,Industrial,City,Laminate Flooring,Old,1476000 18 Regent Street,Soho,5,3,168,38,No,Yes,3,Semi-Detached,Central Heating,No Balcony,Industrial,Street,Wood,Renovated,1881600
+
+
+== Functional Requirements
+
+.**Data Download**
+**FR1.1**: The system shall download the CSV file from the specified URL using an HTTP GET request.
+**FR1.2**: The system shall verify that the download is successful and the file is not corrupted.
+
+.**Data Loading and Analysis**
+**FR2.1**: The system shall load the CSV file into a pandas DataFrame.
+**FR2.2**: The system shall validate the presence and integrity of the expected columns.
+**FR2.3**: The system shall perform data analysis to compute key statistics, such as:
+   * Average price of houses.
+   * Distribution of property types.
+   * Summary statistics for numerical fields (e.g., Bedrooms, Bathrooms, Square Meters).
+**FR2.4**: The system shall handle any data inconsistencies or missing values gracefully.
+
+.**Report Generation**
+**FR3.1**: The system shall generate a comprehensive report summarizing the analysis.
+**FR3.2**: The report shall include:
+   * Key metrics and statistical summaries.
+   * Visualizations (e.g., charts or graphs) where applicable.
+**FR3.3**: The system shall save the report to disk in a specified format (e.g., PDF or HTML).
+
+== Non-Functional Requirements
+
+* **NFR1**: The system shall be implemented using Python (version 3.7 or later).
+* **NFR2**: The system shall utilize the pandas library for data manipulation and analysis.
+* **NFR3**: The system shall be modular to facilitate future enhancements.
+* **NFR4**: The system shall include error handling for network failures, data inconsistencies, and any other potential issues.
+* **NFR5**: The system shall provide logging to assist in debugging and monitoring.
+
+== Acceptance Criteria
+
+* The CSV file is successfully downloaded from the provided URL.
+* The data is correctly loaded into a pandas DataFrame.
+* The analysis includes computation of key statistics and visualizations.
+* A report is generated and saved to disk in the agreed format.
+* The system handles errors and logs issues as specified.
