@@ -1,0 +1,35 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/reports",
+                        "description": "Create a new report.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    url = data.url\n    \n    if not url:\n        return jsonify({\"error\": \"URL is required.\"}), 400\n    \n    async with aiohttp.ClientSession() as session:\n        try:\n            async with session.get(url) as response:\n                if response.status != 200:\n                    return jsonify({\"error\": \"Failed to download data.\"}), 500\n                \n                content = await response.text()\n                # TODO: Validate and process the CSV content thoroughly\n                # Using io.StringIO to create a file-like object from string\n                df = pd.read_csv(io.StringIO(content))\n                \n                # Cache the DataFrame to simulate persistence\n                report_id = str(len(reports_cache) + 1)\n                reports_cache[report_id] = df\n                return DataDownloadResponse(message=\"Data downloaded successfully.\", report_id=report_id), 201\n        except Exception as e:\n            return jsonify({\"error\": str(e)}), 500\n",
+                        "action": "download_data",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_not_created",
+                                "end_state": "report_created",
+                                "action": "download_data",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    url = data.url\n    \n    if not url:\n        return jsonify({\"error\": \"URL is required.\"}), 400\n    \n    async with aiohttp.ClientSession() as session:\n        try:\n            async with session.get(url) as response:\n                if response.status != 200:\n                    return jsonify({\"error\": \"Failed to download data.\"}), 500\n                \n                content = await response.text()\n                # TODO: Validate and process the CSV content thoroughly\n                # Using io.StringIO to create a file-like object from string\n                df = pd.read_csv(io.StringIO(content))\n                \n                # Cache the DataFrame to simulate persistence\n                report_id = str(len(reports_cache) + 1)\n                reports_cache[report_id] = df\n                return DataDownloadResponse(message=\"Data downloaded successfully.\", report_id=report_id), 201\n        except Exception as e:\n            return jsonify({\"error\": str(e)}), 500\n",
+                                "description": "Create a new report.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/reports/<report_id>/download",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Generate a detailed report in PDF/HTML format\n    if report_id not in reports_cache:\n        return jsonify({\"error\": \"Report not found.\"}), 404\n    \n    # Placeholder report content (plain text for now)\n    report_content = f\"Report for ID {report_id}:\\n\"\n    report_content += str(reports_cache[report_id].describe())\n    \n    return report_content, 200, {'Content-Type': 'text/plain'}\n"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
