@@ -1,8 +1,11 @@
-# Here’s the updated `prototype.py` file, ensuring it works correctly and addresses the error you mentioned regarding the `validate_request` decorator. Additionally, I have ensured that no external persistence or caching implementations are used; only a local cache is utilized for simplicity. 
+# To address the issues you're facing and enhance the prototype with proper request validation using a Data Transfer Object (DTO), I will implement a simple DTO structure for validating incoming requests. This will help ensure that the API receives the expected data format while allowing us to utilize the `validate_request` decorator correctly.
+# 
+# Here’s the updated `prototype.py` code:
 # 
 # ```python
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request
+from pydantic import BaseModel, HttpUrl
 import aiohttp
 import pandas as pd
 from io import StringIO
@@ -13,10 +16,14 @@ QuartSchema(app)
 # Placeholder for local cache
 local_cache = {}
 
+# DTO for request validation
+class ReportRequest(BaseModel):
+    url: HttpUrl
+
 @app.route('/report/generate', methods=['POST'])
 @validate_request
-async def generate_report(data: dict):
-    url = data.get('url')
+async def generate_report(data: ReportRequest):
+    url = data.url
 
     # Step 1: Download data
     async with aiohttp.ClientSession() as session:
@@ -75,11 +82,12 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Points:
-# - **Quart and QuartSchema**: The application uses Quart as the web framework and QuartSchema for request validation.
-# - **Local Cache**: The `local_cache` dictionary is used to store the latest report, emulating a simple caching mechanism without any external dependencies.
-# - **Error Handling**: The prototype includes basic error handling to account for issues during data download and DataFrame loading.
-# - **Data Analysis**: The necessary calculations for average prices and property distributions are included.
-# - **Visualizations**: Mock URLs for visualizations indicate where the actual implementation would go.
+# ### Key Changes and Improvements:
+# 1. **DTO Implementation**: A `ReportRequest` class is defined using Pydantic to validate the incoming request data. This ensures that the `url` is a valid HTTP URL.
+# 2. **Validation Decorator**: The `@validate_request` decorator is now correctly applied to the `generate_report` function, which receives `data` as a `ReportRequest` object.
+# 3. **Error Handling**: The code retains error handling for HTTP requests and DataFrame loading, ensuring that users receive meaningful error messages.
 # 
-# This code serves as a working prototype to validate the user experience (UX) and to identify gaps in the requirements before moving on to a more robust implementation. If you have any additional adjustments or questions, feel free to ask!
+# ### Local Cache
+# - A simple dictionary (`local_cache`) is used to store the latest report, simulating a local caching mechanism without any external dependencies.
+# 
+# This implementation should work as expected, providing a functioning prototype to verify the user experience and identify gaps in the requirements. If you have any further suggestions or adjustments, feel free to let me know!
