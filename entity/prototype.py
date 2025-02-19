@@ -3,9 +3,10 @@
 # ### Updated `prototype.py`
 # 
 # ```python
+from dataclasses import dataclass
+
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request
-from pydantic import BaseModel, HttpUrl
 import aiohttp
 import pandas as pd
 from io import StringIO
@@ -17,12 +18,14 @@ QuartSchema(app)
 # Placeholder for local cache
 local_cache = {}
 
-# DTO for request validation
-class ReportRequest(BaseModel):
-    url: HttpUrl
+# DTO for request validation using Pydantic
+
+@dataclass
+class ReportRequest:
+    url: str
 
 @app.route('/report/generate', methods=['POST'])
-@validate_request
+@validate_request(ReportRequest)
 async def generate_report(data: ReportRequest):
     url = data.url
 
