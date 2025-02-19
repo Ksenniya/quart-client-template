@@ -1,8 +1,3 @@
-Below is the updated version of prototype.py with added request and response validation using QuartSchema’s @validate_request and @validate_response decorators. Note that we define dataclasses to capture the expected input and output primitives. For the analyze endpoint, the request model includes filters with two optional properties (property_type and neighborhood). In a real implementation you may need to adjust these models if the request structure changes.
-
-------------------------------------------------
-# prototype.py
-
 from dataclasses import dataclass
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request, validate_response
@@ -48,9 +43,8 @@ class DataAnalysisResponse:
 @app.route('/reports', methods=['POST'])
 @validate_request(DataDownloadRequest)
 @validate_response(DataDownloadResponse, 201)
-async def download_data():
-    data = await request.get_json()
-    url = data.get('url')
+async def download_data(data: DataDownloadRequest):
+    url = data.url
     
     if not url:
         return jsonify({"error": "URL is required."}), 400
@@ -73,41 +67,6 @@ async def download_data():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-@app.route('/reports/<report_id>/analyze', methods=['POST'])
-@validate_request(DataAnalysisRequest)
-@validate_response(DataAnalysisResponse, 200)
-async def analyze_data(report_id):
-    if report_id not in reports_cache:
-        return jsonify({"error": "Report not found."}), 404
-    
-    data = await request.get_json()
-    # The filters are validated by the dataclass; apply them as needed.
-    filters = data.get("filters", {})
-    property_type = filters.get("property_type")
-    neighborhood = filters.get("neighborhood")
-    
-    df = reports_cache[report_id]
-    
-    # TODO: Apply filters to DataFrame based on user input if specified
-    if property_type:
-        df = df[df['Property Type'] == property_type]
-    if neighborhood:
-        df = df[df['Neighborhood'] == neighborhood]
-    
-    # Compute some basic statistics
-    average_price = df['Price (£)'].mean() if not df.empty else 0.0
-    property_type_distribution = df['Property Type'].value_counts().to_dict() if 'Property Type' in df.columns else {}
-    
-    # TODO: Generate visualizations and include them in the report if needed
-    report_url = f"/reports/{report_id}/download"  # Placeholder link for report download
-    
-    return DataAnalysisResponse(
-        message="Analysis completed.",
-        report_url=report_url,
-        average_price=average_price,
-        property_type_distribution=property_type_distribution
-    ), 200
-
 @app.route('/reports/<report_id>/download', methods=['GET'])
 async def download_report(report_id):
     # TODO: Generate a detailed report in PDF/HTML format
@@ -122,11 +81,3 @@ async def download_report(report_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-
-------------------------------------------------
-
-Notes:
-• The DataDownloadRequest and DataDownloadResponse dataclasses capture the URL input and corresponding response.
-• The DataAnalysisRequest includes an AnalysisFilters dataclass for simple filtering.
-• GET /reports/<report_id>/download remains unvalidated since it serves as a file download endpoint.
-• TODO comments mark placeholders where additional details (such as CSV structure validation, advanced filtering, and enhanced report generation) are required.
