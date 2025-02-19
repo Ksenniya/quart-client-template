@@ -1,0 +1,40 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/report/generate",
+                        "description": "Create a new report.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # Step 6: Provide access to the report by ID\n    report = local_cache.get(report_id)\n    if report is None:\n        return jsonify({\"status\": \"error\", \"message\": \"Report not found.\"}), 404\n\n    return jsonify({\"status\": \"success\", \"report\": report})\n",
+                        "action": "get_report",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_not_created",
+                                "end_state": "report_created",
+                                "action": "get_report",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    # Step 6: Provide access to the report by ID\n    report = local_cache.get(report_id)\n    if report is None:\n        return jsonify({\"status\": \"error\", \"message\": \"Report not found.\"}), 404\n\n    return jsonify({\"status\": \"success\", \"report\": report})\n",
+                                "description": "Create a new report.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<id>",
+                        "description": "Retrieve a report by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/reports",
+                        "description": "Retrieve all reports entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}
