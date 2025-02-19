@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_name": "load",
+            "entity_data_example": {
+                "file_path": "/path/to/london_houses.csv"
+            }
+        },
+        {
+            "entity_name": "datum",
+            "entity_data_example": {
+                "file_path": "/path/to/london_houses.csv"
+            }
+        },
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "analysis_results": {
+                    "average_price": 2000000,
+                    "property_distribution": {
+                        "Apartment": 30,
+                        "Semi-Detached": 70
+                    }
+                },
+                "format": "PDF"
+            }
+        }
+    ]
+}
