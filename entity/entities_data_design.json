@@ -1,0 +1,98 @@
+{
+    "entities": [
+        {
+            "entity_name": "prototype_cyoda.py",
+            "entity_data_example": {
+                "entity/prototype.py": "from quart import Quart, request, jsonify\nfrom quart_schema import QuartSchema\nimport aiohttp\nimport asyncio\nfrom app_init.app_init import entity_service\n\napp = Quart(__name__)\nQuartSchema(app)\n\ndef mock_teamcity_api(endpoint, method='GET', json=None):\n    async def inner():\n        await asyncio.sleep(1)\n        if method == 'POST':\n            return {'build_id': 'mock_build_id'}\n        elif method == 'GET':\n            return {'status': 'in_progress', 'repository_url': 'http://....', 'is_public': 'true'}\n    return inner()\n\n@app.route('/auth/login', methods=['POST'])\nasync def login():\n    data = await request.get_json()\n    username = data.get('username')\n    password = data.get('password')\n    return jsonify({'token': 'mock_token', 'message': 'Login successful'}), 200\n\n@app.route('/environments', methods=['POST'])\nasync def create_env():\n    data = await request.get_json()\n    user_name = data.get('user_name')\n    env_config = data.get('env_config')\n    entity_service.add_item(token=token, entity_model=\"environments\", entity_version=ENTITY_VERSION, entity=data)\n    response = await mock_teamcity_api('/app/rest/buildQueue', method='POST', json={'user_name': user_name})\n    return jsonify(response), 201\n\n@app.route('/deployments', methods=['POST'])\nasync def deploy_app():\n    data = await request.get_json()\n    repository_url = data.get('repository_url')\n    is_public = data.get('is_public')\n    response = await mock_teamcity_api('/app/rest/buildQueue', method='POST', json={'repository_url': repository_url, 'is_public': is_public})\n    return jsonify(response), 201\n\n@app.route('/environments/<id>/status', methods=['GET'])\nasync def get_env_status(id):\n    response = await mock_teamcity_api(f'/app/rest/buildQueue/id:{id}', method='GET')\n    return jsonify(response), 200\n\n@app.route('/environments/<id>/statistics', methods=['GET'])\nasync def get_env_statistics(id):\n    response = await mock_teamcity_api(f'/app/rest/builds/id:{id}/statistics/', method='GET')\n    return jsonify(response), 200\n\n@app.route('/deployments/<id>/cancel', methods=['POST'])\nasync def cancel_user_app(id):\n    data = await request.get_json()\n    comment = data.get('comment')\n    readd_into_queue = data.get('readdIntoQueue')\n    response = await mock_teamcity_api(f'/app/rest/builds/id:{id}', method='POST', json={'comment': comment, 'readdIntoQueue': readd_into_queue})\n    return jsonify({'message': 'Build canceled successfully'}), 200\n\nif __name__ == '__main__':\n    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)"
+            }
+        },
+        {
+            "entity_name": "functional_requirement.md",
+            "entity_data_example": {
+                "functional_requirements": {
+                    "user_stories": [
+                        {
+                            "story": "User Authentication",
+                            "as_a": "user",
+                            "want": "to authenticate myself so that I can access the deployment features securely.",
+                            "api_endpoint": "POST /auth/login",
+                            "request": {
+                                "username": "string",
+                                "password": "string"
+                            },
+                            "response": {
+                                "token": "string",
+                                "message": "Login successful"
+                            }
+                        },
+                        {
+                            "story": "Create Environment",
+                            "as_a": "user",
+                            "want": "to create a deployment environment so that I can manage my applications.",
+                            "api_endpoint": "POST /environments",
+                            "request": {
+                                "user_name": "string",
+                                "env_config": "string"
+                            },
+                            "response": {
+                                "build_id": "mock_build_id",
+                                "message": "Environment created successfully"
+                            }
+                        },
+                        {
+                            "story": "Deploy Application",
+                            "as_a": "user",
+                            "want": "to deploy my application to a specified environment.",
+                            "api_endpoint": "POST /deployments",
+                            "request": {
+                                "repository_url": "string",
+                                "is_public": "boolean"
+                            },
+                            "response": {
+                                "build_id": "mock_build_id",
+                                "message": "Deployment initiated"
+                            }
+                        },
+                        {
+                            "story": "Get Environment Status",
+                            "as_a": "user",
+                            "want": "to check the status of my deployment environment.",
+                            "api_endpoint": "GET /environments/{id}/status",
+                            "response": {
+                                "status": "string",
+                                "repository_url": "string",
+                                "is_public": "boolean"
+                            }
+                        },
+                        {
+                            "story": "Get Environment Statistics",
+                            "as_a": "user",
+                            "want": "to retrieve statistics for my deployment environment.",
+                            "api_endpoint": "GET /environments/{id}/statistics",
+                            "response": {
+                                "statistics": "object"
+                            }
+                        },
+                        {
+                            "story": "Cancel Deployment",
+                            "as_a": "user",
+                            "want": "to cancel an ongoing deployment.",
+                            "api_endpoint": "POST /deployments/{id}/cancel",
+                            "request": {
+                                "comment": "string",
+                                "readdIntoQueue": "boolean"
+                            },
+                            "response": {
+                                "message": "Build canceled successfully"
+                            }
+                        }
+                    ]
+                },
+                "visual_representation": {
+                    "user_journey_diagram": "```mermaid\njourney\n    title User Journey for Deployment Application\n    section User Authentication\n      User logs in: 5: User\n      User receives token: 5: System\n    section Create Environment\n      User creates environment: 5: User\n      System stores environment: 5: System\n    section Deploy Application\n      User initiates deployment: 5: User\n      System processes deployment: 5: System\n    section Check Status\n      User requests status: 5: User\n      System returns status: 5: System\n    section Cancel Deployment\n      User cancels deployment: 5: User\n      System confirms cancellation: 5: System\n```",
+                    "sequence_diagram": "```mermaid\nsequenceDiagram\n    participant User\n    participant API\n    participant TeamCity\n\n    User->>API: POST /auth/login\n    API->>User: Returns token\n\n    User->>API: POST /environments\n    API->>TeamCity: Mock API call to create environment\n    TeamCity-->>API: Returns build_id\n    API->>User: Returns build_id\n\n    User->>API: POST /deployments\n    API->>TeamCity: Mock API call to deploy application\n    TeamCity-->>API: Returns build_id\n    API->>User: Returns deployment message\n\n    User->>API: GET /environments/{id}/status\n    API->>TeamCity: Mock API call to get status\n    TeamCity-->>API: Returns status\n    API->>User: Returns status\n\n    User->>API: POST /deployments/{id}/cancel\n    API->>TeamCity: Mock API call to cancel deployment\n    TeamCity-->>API: Returns cancellation confirmation\n    API->>User: Returns cancellation message\n```"
+                }
+            }
+        }
+    ]
+}
