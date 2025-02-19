@@ -1,0 +1,43 @@
+{
+    "entities": [
+        {
+            "entity_name": "auth",
+            "entity_data_example": {
+                "token": "Bearer <token>"
+            }
+        },
+        {
+            "entity_name": "environment",
+            "entity_data_example": {
+                "user_name": "test",
+                "build_id": "<id>",
+                "status": "pending"
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "entity_data_example": {
+                "repository_url": "http://....",
+                "is_public": true,
+                "build_id": "<id>",
+                "status": "pending"
+            }
+        },
+        {
+            "entity_name": "status",
+            "entity_data_example": {
+                "status": "success|failed",
+                "details": "..."
+            }
+        },
+        {
+            "entity_name": "statistic",
+            "entity_data_example": {
+                "statistics": {
+                    "duration": "10s",
+                    "success_rate": "100%"
+                }
+            }
+        }
+    ]
+}
