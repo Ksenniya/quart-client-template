@@ -1,0 +1,166 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "login",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/auth/login",
+                        "description": "Create a new login.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    return jsonify({\"token\": \"Bearer mock_token\"})\n",
+                        "action": "login",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "login_not_created",
+                                "end_state": "login_created",
+                                "action": "login",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    return jsonify({\"token\": \"Bearer mock_token\"})\n",
+                                "description": "Create a new login.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/login/<id>",
+                        "description": "Retrieve a login by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/logins",
+                        "description": "Retrieve all logins entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "environment",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/environments",
+                        "description": "Create a new environment.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    result = await entity_service.add_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        entity=data\n    )\n    return jsonify(result)\n",
+                        "action": "create_environment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "environment_not_created",
+                                "end_state": "environment_created",
+                                "action": "create_environment",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    result = await entity_service.add_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        entity=data\n    )\n    return jsonify(result)\n",
+                                "description": "Create a new environment.",
+                                "related_secondary_entities": [
+                                    "status",
+                                    "statistic"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/environment/<id>",
+                        "description": "Retrieve a environment by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": "",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    },
+                    {
+                        "endpoint": "/environments",
+                        "description": "Retrieve all environments entries.",
+                        "complete_code_for_action_derived_from_the_prototype": "",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/user-apps",
+                        "description": "Create a new user_app.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    result = await entity_service.add_item(\n        token=token,\n        entity_model=\"user-apps\",\n        entity_version=ENTITY_VERSION,\n        entity=data\n    )\n    return jsonify(result)\n",
+                        "action": "create_user_app",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "user_app_not_created",
+                                "end_state": "user_app_created",
+                                "action": "create_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    result = await entity_service.add_item(\n        token=token,\n        entity_model=\"user-apps\",\n        entity_version=ENTITY_VERSION,\n        entity=data\n    )\n    return jsonify(result)\n",
+                                "description": "Create a new user_app.",
+                                "related_secondary_entities": [
+                                    "status",
+                                    "statistic"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/user-apps/<int:id>",
+                        "description": "Retrieve user_app information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    return jsonify({\"message\": \"Not Implemented\"}), 501\n",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/environments/<int:id>/status",
+                        "description": "Retrieve status information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    result = await entity_service.get_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    return jsonify(result)\n"
+                    },
+                    {
+                        "endpoint": "/user-apps/<int:id>/status",
+                        "description": "Retrieve status information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    result = await entity_service.get_item(\n        token=token,\n        entity_model=\"user-apps\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    return jsonify(result)\n"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "statistic",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/environments/<int:id>/statistics",
+                        "description": "Retrieve statistic information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    result = await entity_service.get_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    return jsonify(result)\n"
+                    },
+                    {
+                        "endpoint": "/user-apps/<int:id>/statistics",
+                        "description": "Retrieve statistic information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    result = await entity_service.get_item(\n        token=token,\n        entity_model=\"user-apps\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    return jsonify(result)\n"
+                    }
+                ]
+            }
+        }
+    ]
+}
