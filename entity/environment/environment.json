@@ -1,0 +1,10 @@
+{
+    "user_name": "test",
+    "build_id": "12345",
+    "status": "running",
+    "statistics": {
+        "build_id": "12345",
+        "duration": "10m",
+        "success": true
+    }
+}
