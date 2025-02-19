@@ -1,0 +1,11 @@
+{
+    "report_id": "12345",
+    "message": "Data downloaded successfully.",
+    "filters": {
+        "property_type": "Apartment",
+        "neighborhood": "Westminster"
+    },
+    "report_url": "/reports/12345/download",
+    "content_type": "application/pdf",
+    "body": "Binary content of the report"
+}
