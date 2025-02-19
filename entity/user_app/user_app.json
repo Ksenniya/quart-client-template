@@ -1,0 +1,11 @@
+{
+    "repository_url": "http://example.com/repo.git",
+    "is_public": true,
+    "build_id": "67890",
+    "status": "queued",
+    "statistics": {
+        "build_id": "67890",
+        "duration": "15m",
+        "success": false
+    }
+}
