@@ -1,0 +1,203 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "auth",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/auth",
+                        "description": "Create a new auth.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    if \"token\" in data:\n        return jsonify({\"status\": \"authenticated\"}), 200\n    return jsonify({\"error\": \"Invalid token\"}), 401\n",
+                        "action": "authenticate",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "auth_not_created",
+                                "end_state": "auth_created",
+                                "action": "authenticate",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    if \"token\" in data:\n        return jsonify({\"status\": \"authenticated\"}), 200\n    return jsonify({\"error\": \"Invalid token\"}), 401\n",
+                                "description": "Create a new auth.",
+                                "related_secondary_entities": [
+                                    "status"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "status"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/auth/<id>",
+                        "description": "Retrieve a auth by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/auths",
+                        "description": "Retrieve all auths entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "environment",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/environments",
+                        "description": "Create a new environment.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    user_name = data.get(\"user_name\")\n    environments = await entity_service.get_items(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION\n    )\n    build_id = f\"env_build_{len(environments) + 1}\"\n    new_environment = {\"build_id\": build_id, \"user_name\": user_name, \"status\": \"pending\"}\n    await entity_service.add_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        entity=new_environment\n    )\n    async with aiohttp.ClientSession() as session:\n        await session.post(\"https://teamcity.cyoda.org/app/rest/buildQueue\", json={\n            \"buildType\": {\"id\": \"KubernetesPipeline_CyodaSaas\"},\n            \"properties\": {\"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": user_name},\n                {\"name\": \"user_defined_namespace\", \"value\": user_name}\n            ]}\n        })\n    return jsonify({\"build_id\": build_id}), 201\n",
+                        "action": "create_environment",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "environment_not_created",
+                                "end_state": "environment_created",
+                                "action": "create_environment",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    user_name = data.get(\"user_name\")\n    environments = await entity_service.get_items(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION\n    )\n    build_id = f\"env_build_{len(environments) + 1}\"\n    new_environment = {\"build_id\": build_id, \"user_name\": user_name, \"status\": \"pending\"}\n    await entity_service.add_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        entity=new_environment\n    )\n    async with aiohttp.ClientSession() as session:\n        await session.post(\"https://teamcity.cyoda.org/app/rest/buildQueue\", json={\n            \"buildType\": {\"id\": \"KubernetesPipeline_CyodaSaas\"},\n            \"properties\": {\"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": user_name},\n                {\"name\": \"user_defined_namespace\", \"value\": user_name}\n            ]}\n        })\n    return jsonify({\"build_id\": build_id}), 201\n",
+                                "description": "Create a new environment.",
+                                "related_secondary_entities": [
+                                    "status",
+                                    "statistic"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/environment/<id>",
+                        "description": "Retrieve a environment by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": "",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    },
+                    {
+                        "endpoint": "/environments",
+                        "description": "Retrieve all environments entries.",
+                        "complete_code_for_action_derived_from_the_prototype": "",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_app",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/user-apps",
+                        "description": "Create a new user_app.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    repository_url = data.get(\"repository_url\")\n    is_public = data.get(\"is_public\")\n    user_apps = await entity_service.get_items(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION\n    )\n    build_id = f\"user_app_build_{len(user_apps) + 1}\"\n    new_user_app = {\n        \"build_id\": build_id,\n        \"repository_url\": repository_url,\n        \"is_public\": is_public,\n        \"status\": \"pending\"\n    }\n    await entity_service.add_item(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION,\n        entity=new_user_app\n    )\n    async with aiohttp.ClientSession() as session:\n        await session.post(\"https://teamcity.cyoda.org/app/rest/buildQueue\", json={\n            \"buildType\": {\"id\": \"KubernetesPipeline_CyodaSaasUserEnv\"},\n            \"properties\": {\"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": \"TODO\"},\n                {\"name\": \"user_defined_namespace\", \"value\": \"TODO\"}\n            ]}\n        })\n    return jsonify({\"build_id\": build_id}), 201\n",
+                        "action": "create_user_app",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "user_app_not_created",
+                                "end_state": "user_app_created",
+                                "action": "create_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    repository_url = data.get(\"repository_url\")\n    is_public = data.get(\"is_public\")\n    user_apps = await entity_service.get_items(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION\n    )\n    build_id = f\"user_app_build_{len(user_apps) + 1}\"\n    new_user_app = {\n        \"build_id\": build_id,\n        \"repository_url\": repository_url,\n        \"is_public\": is_public,\n        \"status\": \"pending\"\n    }\n    await entity_service.add_item(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION,\n        entity=new_user_app\n    )\n    async with aiohttp.ClientSession() as session:\n        await session.post(\"https://teamcity.cyoda.org/app/rest/buildQueue\", json={\n            \"buildType\": {\"id\": \"KubernetesPipeline_CyodaSaasUserEnv\"},\n            \"properties\": {\"property\": [\n                {\"name\": \"user_defined_keyspace\", \"value\": \"TODO\"},\n                {\"name\": \"user_defined_namespace\", \"value\": \"TODO\"}\n            ]}\n        })\n    return jsonify({\"build_id\": build_id}), 201\n",
+                                "description": "Create a new user_app.",
+                                "related_secondary_entities": [
+                                    "status",
+                                    "statistic"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    },
+                    {
+                        "endpoint": "/user-apps/<string:id>/cancel",
+                        "description": "Create a new user_app.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    user_app = await entity_service.get_item(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    if user_app:\n        return jsonify({\"status\": \"canceled\"}), 200\n    return jsonify({\"error\": \"User app not found\"}), 404\n",
+                        "action": "cancel_user_app",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "user_app_not_created",
+                                "end_state": "user_app_created",
+                                "action": "cancel_user_app",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    user_app = await entity_service.get_item(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    if user_app:\n        return jsonify({\"status\": \"canceled\"}), 200\n    return jsonify({\"error\": \"User app not found\"}), 404\n",
+                                "description": "Create a new user_app.",
+                                "related_secondary_entities": [
+                                    "status",
+                                    "statistic"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/user_app/<id>",
+                        "description": "Retrieve a user_app by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": "",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    },
+                    {
+                        "endpoint": "/user_apps",
+                        "description": "Retrieve all user_apps entries.",
+                        "complete_code_for_action_derived_from_the_prototype": "",
+                        "related_secondary_entities": [
+                            "status",
+                            "statistic"
+                        ]
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "status",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/environments/<string:id>/status",
+                        "description": "Retrieve status information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    environment = await entity_service.get_item(\n        token=token,\n        entity_model=\"environments\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    if environment:\n        return jsonify({\"status\": environment[\"status\"], \"details\": \"...\"})\n    return jsonify({\"error\": \"Environment not found\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/user-apps/<string:id>/status",
+                        "description": "Retrieve status information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    user_app = await entity_service.get_item(\n        token=token,\n        entity_model=\"user_apps\",\n        entity_version=ENTITY_VERSION,\n        technical_id=id\n    )\n    if user_app:\n        return jsonify({\"status\": user_app[\"status\"], \"details\": \"...\"})\n    return jsonify({\"error\": \"User app not found\"}), 404\n"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "statistic",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/environments/<string:id>/statistics",
+                        "description": "Retrieve statistic information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    return jsonify({\"statistics\": {\"duration\": \"10s\", \"success_rate\": \"100%\"}})\n"
+                    },
+                    {
+                        "endpoint": "/user-apps/<string:id>/statistics",
+                        "description": "Retrieve statistic information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    return jsonify({\"statistics\": {\"duration\": \"10s\", \"success_rate\": \"100%\"}})\n"
+                    }
+                ]
+            }
+        }
+    ]
+}
