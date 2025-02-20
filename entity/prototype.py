@@ -1,4 +1,11 @@
-Below is an example prototype.py that meets the requirements. Keep in mind that this implementation uses an in‑memory cache (a simple Python dict) to simulate persistence, and any external API calls are made to placeholder URLs with TODO comments indicating where further details are needed.
+Below is an updated prototype.py implementing the requested changes. In this version we:
+
+• Import and use the validation decorators from quart_schema.  
+• Define a Company dataclass for POST (and PUT, if needed) endpoints.  
+• Decorate the POST /companies endpoint with both @validate_request and @validate_response.  
+• Leave GET endpoints without request body validation, except that endpoints accepting query parameters (if ever needed) will use @validate_querystring per the provided example.  
+
+Any sections that still need further detail (such as the external API URL or additional validations) include TODO comments.
 
 ------------------------------------------------------------
 #!/usr/bin/env python3
@@ -14,28 +21,39 @@ Notes:
 """
 
 import asyncio
+from dataclasses import dataclass, asdict
 import json
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 import aiohttp
 
 app = Quart(__name__)
-QuartSchema(app)  # Initialize QuartSchema (no @validate_request because data is dynamic)
+QuartSchema(app)  # Initialize QuartSchema (global registration)
 
-# In-memory "database" for companies
-# Key: businessId, Value: Company data (dict)
+# Define a dataclass for company data.
+@dataclass
+class Company:
+    companyName: str
+    businessId: str
+    companyType: str
+    registrationDate: str
+    status: str
+    lei: str
+
+# In‑memory "database" for companies.
+# Key: businessId, Value: Company (stored as a dict for easy JSON serialization)
 company_cache = {}
 
 # Preload with sample entity for testing purposes (as specified in functional_requirement.md)
-sample_company = {
-    "companyName": "Example Company",
-    "businessId": "1234567-8",
-    "companyType": "OY",
-    "registrationDate": "2020-01-01",
-    "status": "Active",
-    "lei": "LEI123456789"
-}
-company_cache[sample_company["businessId"]] = sample_company
+sample_company = Company(
+    companyName="Example Company",
+    businessId="1234567-8",
+    companyType="OY",
+    registrationDate="2020-01-01",
+    status="Active",
+    lei="LEI123456789"
+)
+company_cache[sample_company.businessId] = asdict(sample_company)
 
 
 @app.route('/companies', methods=['GET'])
@@ -43,6 +61,7 @@ async def get_companies():
     """
     GET /companies
     Returns all companies from the in‑memory cache.
+    No input validation needed as this endpoint does not expect a body.
     """
     return jsonify(list(company_cache.values())), 200
 
@@ -60,31 +79,30 @@ async def get_company(business_id: str):
 
 
 @app.route('/companies', methods=['POST'])
-async def create_company():
+@validate_request(Company)
+@validate_response(Company, 201)
+async def create_company(data: Company):
     """
     POST /companies
     Create a new company record and save it in the in‑memory cache.
-    Expected JSON body example:
+    The request is validated using the Company dataclass.
+    Example request JSON:
       {
           "companyName": "New Company",
           "businessId": "1112223-4",
-          "companyType": "OY",  # or other types
+          "companyType": "OY",
           "registrationDate": "YYYY-MM-DD",
-          "status": "Active/Inactive",
+          "status": "Active",
           "lei": "LEI...."
       }
     """
-    data = await request.get_json()
-    if not data or "businessId" not in data:
-        abort(400, description="Missing required field: businessId")
-
-    business_id = data["businessId"]
+    business_id = data.businessId
     if business_id in company_cache:
         abort(400, description=f"Company with businessId {business_id} already exists")
 
-    # TODO: Validate and process input data as needed
-    company_cache[business_id] = data
-    return jsonify(data), 201
+    # TODO: Additional input validations or processing logic can be added here.
+    company_cache[business_id] = asdict(data)
+    return asdict(data), 201
 
 
 async def fetch_external_analysis(business_id: str) -> dict:
@@ -104,7 +122,7 @@ async def fetch_external_analysis(business_id: str) -> dict:
                 result = await response.json()
                 return result
         except Exception as e:
-            # TODO: Add proper exception handling and logging
+            # TODO: Add proper exception handling and logging.
             return {"error": "Exception during external call", "message": str(e)}
 
 
@@ -113,34 +131,42 @@ async def analyze_company(business_id: str):
     """
     GET /companies/<business_id>/analyze
     Retrieve company data and simulate an external analysis call.
+    This endpoint does not require request body validation.
     """
     company = company_cache.get(business_id)
     if not company:
         abort(404, description=f"Company with businessId {business_id} not found")
     
-    # This is an example of using aiohttp to contact an external API
+    # Contact the external (mocked) API using aiohttp.
     analysis_result = await fetch_external_analysis(business_id)
     
-    # Combine company info with the analysis result into a response
+    # Combine company info with the analysis result into a response.
     response = {
         "company": company,
-        "analysis": analysis_result  # This is the mocked external analysis result
+        "analysis": analysis_result  # This is the mocked external analysis result.
     }
     return jsonify(response), 200
 
 
+# Example of a GET endpoint with querystring validation (if needed in future)
+# Commented out since none of our current GET endpoints requires query parameters.
+# @app.route("/search", methods=["GET"])
+# @validate_querystring(Company)
+# async def search_company(data: Company):
+#     # TODO: Implement search functionality based on query parameters.
+#     return jsonify(asdict(data)), 200
+
+
 if __name__ == '__main__':
     # Starting the Quart app according to the provided entry point.
-    # Note: threaded=True is included per the spec.
+    # Note: threaded=True is included per the specification.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-
 ------------------------------------------------------------
 
-Explanation of key points:
-1. The app uses Quart along with QuartSchema to allow for future schema validation if needed.
-2. A simple in‑memory dictionary (company_cache) simulates persistence.
-3. The /companies endpoints support GET (list all) and POST (create new).
-4. An additional endpoint /companies/<business_id>/analyze shows how to use aiohttp.ClientSession for an external call.
-5. All placeholders (e.g., external API URL and error handling) include TODO comments for further details.
+Explanation of changes:
+1. A Company dataclass is defined for use with request and response validation.
+2. The POST /companies endpoint now uses @validate_request(Company) and @validate_response(Company, 201).
+3. GET endpoints remain without request body validation according to the guidelines.
+4. A commented-out example demonstrates how to use @validate_querystring for GET endpoints that require query parameters.
 
-This prototype should serve as a starting point for verifying the UX and establishing any missing requirements.
+This prototype should help verify the UX and highlight any additional requirements for future robust implementation.
