@@ -1,4 +1,4 @@
-Below is the complete prototype.py implementation. Note that the external API calls and persistence are mocked using placeholders and in‑memory caches. You’ll see TODO comments where further detail is needed for a production-ready solution.
+Below is the revised prototype.py file with added request validations using quart-schema decorators. Note that for GET requests with query parameters we now use @validate_querystring, and for endpoints that do not require request validation (like the LEI enrichment endpoint) no decorator is added. In this example, we define a dataclass for the query parameters for the /companies endpoint.
 
 ------------------------------------------------------------
 #!/usr/bin/env python3
@@ -10,6 +10,7 @@ Endpoints:
    • Calls an external Finnish Companies Registry API to get company info.
    • Filters out companies that are not active.
    • Caches retrieved companies in memory for subsequent LEI lookup.
+   • Validates the query parameters using a dataclass and the @validate_querystring decorator.
 
 2. GET /companies/<id>/lei
    • Uses the in‑memory cache to ensure the company exists.
@@ -24,8 +25,9 @@ Notes:
 """
 
 import asyncio
+from dataclasses import dataclass
 from quart import Quart, request, jsonify, abort, Response
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_querystring  # Import validation functions
 import aiohttp
 
 app = Quart(__name__)
@@ -38,17 +40,21 @@ companies_cache = {}
 COMPANY_REGISTRY_API_URL = "https://api.finnishcompanies.example.com/companies?name="
 LEI_API_URL = "https://api.lei.example.com/lei/"  # e.g., LEI API expects: LEI_API_URL + <business_id>
 
+# Dataclass to validate query parameters for GET /companies request
+@dataclass
+class CompanyQuery:
+    name: str  # must be provided as query parameter
+
 # Utility function to simulate filtering active companies.
 def filter_active_companies(companies):
     # Assume each company dict contains "status" which is "Active" or "Inactive"
     return [company for company in companies if company.get("status", "").lower() == "active"]
 
 @app.route('/companies', methods=['GET'])
-async def get_companies():
-    # Retrieve query parameter 'name'
-    company_name = request.args.get("name")
-    if not company_name:
-        return jsonify({"error": "Missing required parameter 'name'"}), 400
+@validate_querystring(CompanyQuery)
+async def get_companies(data: CompanyQuery):
+    # The query parameter 'name' is now validated and passed as 'data'
+    company_name = data.name
 
     # Use aiohttp client to call external Finnish Companies Registry API
     async with aiohttp.ClientSession() as session:
@@ -121,10 +127,10 @@ if __name__ == '__main__':
 
 ------------------------------------------------------------
 
-Explanation of key points:
-• We use aiohttp.ClientSession to perform asynchronous HTTP requests.
-• The endpoint GET /companies fetches data from a mocked external API, filters out inactive companies, and caches active ones.
-• The endpoint GET /companies/<id>/lei verifies the presence of the company in our cache and then calls a mocked external LEI API.
-• All unclear/external requirements are marked with TODO comments for future development.
+Explanation of key updates:
+• Added a dataclass (CompanyQuery) for validating the GET request’s query parameter using @validate_querystring.
+• The /companies endpoint now accepts a validated input parameter (data: CompanyQuery), ensuring only requests with a valid 'name' parameter are processed.
+• The /companies/<id>/lei endpoint remains unvalidated since it does not require request parameters.
+• TODO comments remain where integration details (external API response parsing, rate limit handling, etc.) are to be filled in a production-ready solution.
 
-This prototype should allow you to verify the UX and help identify any gaps before a more thorough implementation.
+This updated prototype should now conform to the quart-schema validation examples provided while maintaining the intended user experience.
