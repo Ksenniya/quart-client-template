@@ -1,29 +1,36 @@
-Below is the updated prototype.py which now applies request validation for our GET endpoints. In this version the /companies endpoint uses a dataclass (CompaniesQuery) with the minimal required query parameter (“name”) plus an optional “format” parameter; the /companies/search endpoint uses CompaniesSearchQuery that allows for additional filtering. Wherever a placeholder or mock is used, a TODO comment is provided.
+Below is the fully functioning prototype.py file. This version uses only local (in‑memory) caching, applies request validation using quart‑schema, and uses aiohttp.ClientSession for HTTP calls. Note that the validate_querystring decorator now injects a parameter named query_args, so the route functions have been updated accordingly. Any mocks or placeholders include a TODO comment.
 
 ------------------------------------------------------------
-# prototype.py
+#!/usr/bin/env python3
+"""
+prototype.py
+
+A prototype for the Finnish Companies Data Retrieval and Enrichment Application.
+Uses Quart with QuartSchema and aiohttp.ClientSession for asynchronous HTTP calls.
+Local in‑memory cache is used and external API calls are simulated.
+"""
 
 from dataclasses import dataclass, asdict
-from quart import Quart, request, jsonify, Response
-from quart_schema import QuartSchema, validate_querystring  # Using querystring validation for GET endpoints
+from quart import Quart, jsonify, Response
+from quart_schema import QuartSchema, validate_querystring
 import aiohttp
-import asyncio
 import io
 import csv
 
 app = Quart(__name__)
-QuartSchema(app)  # attach QuartSchema
+QuartSchema(app)  # Attach QuartSchema
 
-# In-memory cache placeholder for persistence (mock)
-# TODO: Replace with a robust caching/persistence solution if needed
+# In‑memory cache placeholder for persistence (mock)
+# TODO: Replace with a robust persistence/caching solution if needed.
 in_memory_cache = {}
 
-# Dataclasses for request validation
 
+# Dataclasses for request validation
 @dataclass
 class CompaniesQuery:
     name: str
     format: str = "json"  # defaults to JSON if not specified
+
 
 @dataclass
 class CompaniesSearchQuery:
@@ -32,19 +39,20 @@ class CompaniesSearchQuery:
     location: str = None
     businessId: str = None
     companyForm: str = None
-    # TODO: Add more optional parameters if needed
+    # TODO: Add more optional parameters as needed
 
-# Helper function to convert list of dicts to CSV format
+
+# Helper function to convert list of dicts to CSV format.
 def convert_to_csv(data):
     if not data:
         return ""
-    
-    # Use StringIO for in-memory file representation
+    # Use StringIO for in‐memory file representation.
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=list(data[0].keys()))
     writer.writeheader()
     writer.writerows(data)
     return output.getvalue()
+
 
 async def fetch_finland_companies(name: str, extra_params: dict = None):
     """
@@ -57,13 +65,17 @@ async def fetch_finland_companies(name: str, extra_params: dict = None):
     if extra_params:
         params.update(extra_params)
 
-    # Use aiohttp.ClientSession for HTTP request
+    # We could use the in-memory cache here if desired.
+    cache_key = f"companies_{name}_{str(extra_params)}"
+    if cache_key in in_memory_cache:
+        return in_memory_cache[cache_key]
+
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(base_url, params=params, timeout=5) as resp:
                 if resp.status != 200:
                     # TODO: Add proper logging/error handling here.
-                    return []  # Returning empty list on error for prototype
+                    return []  # Returning empty list on error for prototype.
                 data = await resp.json()
                 # For prototype: if data is empty, simulate some sample data.
                 if not data:
@@ -85,17 +97,19 @@ async def fetch_finland_companies(name: str, extra_params: dict = None):
                             "lei": ""
                         }
                     ]
+                in_memory_cache[cache_key] = data
                 return data
         except Exception as e:
             # TODO: Add proper error logging/monitoring here.
             print(f"Error fetching Finnish companies: {e}")
             return []
 
+
 async def fetch_lei_for_company(business_id: str):
     """
     Enriches a company by retrieving its Legal Entity Identifier (LEI).
     For the prototype we simulate the external API call with a placeholder.
-    TODO: Replace the URL and logic to call the official LEI registry or another reliable financial data source.
+    TODO: Replace the URL and logic with a call to an official LEI registry or reliable financial data source.
     """
     lei_api_url = "https://api.fake-lei.com/lookup"  # Placeholder URL
     params = {"businessId": business_id}
@@ -114,20 +128,24 @@ async def fetch_lei_for_company(business_id: str):
             print(f"Error fetching LEI for businessId {business_id}: {e}")
             return "Not Available"
 
+
 @app.route("/companies", methods=["GET"])
 @validate_querystring(CompaniesQuery)
-async def get_companies(query: CompaniesQuery):
-    # Retrieve required parameters from validated query object.
-    name = query.name
-    output_format = query.format.lower() if query.format else "json"
-    
-    # Fetch companies data from the external Finnish Companies Registry API.
+async def get_companies(query_args: CompaniesQuery):
+    """
+    GET /companies requires a query parameter "name" and an optional "format" parameter.
+    It returns a list of active companies enriched with LEI data in JSON (default) or CSV format.
+    """
+    name = query_args.name
+    output_format = query_args.format.lower() if query_args.format else "json"
+
+    # Fetch companies data from the Finnish Companies Registry (placeholder simulation).
     companies_data = await fetch_finland_companies(name)
 
-    # Filter out inactive companies (FR-2), keeping only those with active status.
+    # Filter out inactive companies (only those with active status).
     active_companies = [company for company in companies_data if company.get("status", "").lower() == "active"]
 
-    # Enrich companies with LEI data (FR-3)
+    # Enrich companies with LEI data.
     for company in active_companies:
         business_id = company.get("businessId")
         if business_id:
@@ -136,30 +154,33 @@ async def get_companies(query: CompaniesQuery):
         else:
             company["lei"] = "Not Available"
 
-    # Determine output format (JSON or CSV) (FR-4)
+    # Return output in JSON or CSV as requested.
     if output_format == "csv":
         csv_output = convert_to_csv(active_companies)
         return Response(csv_output, mimetype="text/csv")
     else:
         return jsonify(active_companies)
 
+
 @app.route("/companies/search", methods=["GET"])
 @validate_querystring(CompaniesSearchQuery)
-async def search_companies(query: CompaniesSearchQuery):
-    # Convert validated dataclass to dict for extra parameters.
-    search_params = asdict(query)
+async def search_companies(query_args: CompaniesSearchQuery):
+    """
+    GET /companies/search requires a query parameter "name" and accepts extra filtering parameters.
+    It returns only active companies enriched with LEI data, in JSON (default) or CSV as requested.
+    """
+    # Convert the validated dataclass to a dict.
+    search_params = asdict(query_args)
     output_format = search_params.pop("format", "json").lower()
-    # Use the "name" parameter and any extra parameters provided.
     name = search_params.pop("name")
-    
-    # Filter out None values from the search parameters.
+
+    # Remove any parameters that are None.
     extra_params = {k: v for k, v in search_params.items() if v is not None}
-    
-    # Fetch companies using the provided query parameters.
+
     companies_data = await fetch_finland_companies(name, extra_params=extra_params)
 
     # Filter out inactive companies.
-    active_companies = [c for c in companies_data if c.get("status", "").lower() == "active"]
+    active_companies = [company for company in companies_data if company.get("status", "").lower() == "active"]
 
     # Enrich companies with LEI data.
     for company in active_companies:
@@ -176,6 +197,7 @@ async def search_companies(query: CompaniesSearchQuery):
     else:
         return jsonify(active_companies)
 
+
 # Entry point for running the app.
 if __name__ == '__main__':
     # Using threaded=True per the requirements.
@@ -184,10 +206,12 @@ if __name__ == '__main__':
 ------------------------------------------------------------
 
 How this prototype works:
-1. GET /companies requires a query parameter “name” (validated by CompaniesQuery) and an optional “format” parameter for output type.
-2. GET /companies/search uses CompaniesSearchQuery for validation and accepts additional optional parameters such as "location", "businessId", or "companyForm".
-3. Both endpoints fetch company data via a simulated external API call; only active companies are retained.
-4. Each active company is enriched with a LEI field via a simulated external API call.
-5. The output is rendered in JSON (default) or CSV if requested.
+1. A GET request to /companies requires a "name" query parameter (validated via CompaniesQuery) and an optional "format" parameter (json by default). It returns active companies (filtered out inactive ones) for which LEI data is enriched via a simulated API call.
+2. A GET request to /companies/search uses CompaniesSearchQuery for validation, accepts additional filtering parameters, and returns enriched active company data.
+3. The output can be returned in JSON (default) or CSV if the "format" query parameter is set to "csv".
+4. The external API calls are simulated with placeholder URLs and sample data; TODO comments highlight areas that need replacement for production.
 
-Remember: This prototype uses placeholder endpoints and simple in-memory caching. The mock external API calls (and related URLs) must be replaced with concrete implementations as requirements become clearer.
+Remember:
+• Replace placeholder API endpoints and add robust error logging.
+• The in‑memory cache is used only for this prototype; consider a more durable persistence solution in production.
+• The validate_querystring decorator now injects the validated data as query_args.
