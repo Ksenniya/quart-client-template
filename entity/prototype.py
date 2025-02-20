@@ -1,79 +1,120 @@
-# Here’s a working prototype for the `prototype.py` file using Quart and aiohttp. This implementation incorporates the specified details and uses mocks or placeholders where necessary. Comments are included to indicate areas that require further implementation or clarification.
-# 
-# ```python
+Below is the updated code for prototype.py that includes request and response validation decorators using quart-schema. Note that we define simple dataclasses for query parameters and response objects. In cases where actual external data or persistence is not yet available, TODO comments have been added.
+
+--------------------------------------------------
+# prototype.py
+--------------------------------------------------
+from dataclasses import dataclass
+from typing import List
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response
 import aiohttp
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
-# Mock cache for storing company data
+# --- Dataclasses for request and response validation ---
+
+@dataclass
+class CompanyQuery:
+    name: str
+
+@dataclass
+class CompanyData:
+    companyName: str
+    businessId: str
+    companyType: str
+    registrationDate: str
+    status: str
+    lei: str
+
+@dataclass
+class CompaniesResponse:
+    companies: List[CompanyData]
+
+# --- Mock Cache ---
+# A simple dictionary to simulate caching company data.
 mock_cache = {}
 
-# Configuration for the Finnish Companies Registry API
+# --- External API configuration ---
 API_URL = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
 
-async def fetch_company_data(company_name):
+# --- Helper functions ---
+
+async def fetch_company_data(company_name: str):
+    # TODO: Add more error handling and logging as needed.
     async with aiohttp.ClientSession() as session:
         async with session.get(API_URL, params={"name": company_name}) as response:
             if response.status == 200:
                 return await response.json()
             else:
-                return None  # Handle error case
+                # TODO: Enhance error handling based on actual API error responses.
+                return None
 
-async def enrich_with_lei(company_data):
-    # TODO: Implement LEI fetching logic from a reliable source
+async def enrich_with_lei(company_data: List[dict]) -> List[dict]:
+    # TODO: Replace this mock LEI enrichment with fetching data from official LEI registries.
     for company in company_data:
-        # Mock LEI enrichment; replace with actual logic when available
         company['lei'] = "LEI123456789"  # Placeholder LEI
     return company_data
 
+def filter_active_companies(companies: List[dict]) -> List[dict]:
+    # Filter out companies that are not active.
+    return [company for company in companies if company.get("status") == "Active"]
+
+# --- API Endpoints ---
+
 @app.route('/companies', methods=['GET'])
-async def get_companies():
-    company_name = request.args.get('name')
-    
-    if not company_name:
-        return jsonify({"error": {"code": "400", "message": "Company name is required"}}), 400
+@validate_request(CompanyQuery, location="query")
+@validate_response(CompaniesResponse)
+async def get_companies(query: CompanyQuery):
+    company_name = query.name
 
-    # Check local cache first
+    # Use local cache if available.
     if company_name in mock_cache:
-        return jsonify({"companies": mock_cache[company_name]})
+        cached_companies = mock_cache[company_name]
+    else:
+        raw_company_data = await fetch_company_data(company_name)
+        if raw_company_data is None:
+            # Returning a 500 error if external API fails
+            return jsonify({"error": {"code": "500", "message": "Failed to retrieve data from the API"}}), 500
+        
+        # TODO: Adapt this part based on the actual structure of the external API response.
+        # Assuming the API returns a list of companies at the top level.
+        companies_list = raw_company_data.get("results", raw_company_data)  # use key "results" if available
+        
+        active_companies = filter_active_companies(companies_list)
+        enriched_companies = await enrich_with_lei(active_companies)
+        
+        # Save output to the mock cache.
+        mock_cache[company_name] = enriched_companies
+        cached_companies = enriched_companies
 
-    company_data = await fetch_company_data(company_name)
+    # Map to the CompanyData dataclass structure.
+    companies_dt = []
+    for company in cached_companies:
+        companies_dt.append(
+            CompanyData(
+                companyName=company.get("companyName", "N/A"),
+                businessId=company.get("businessId", "N/A"),
+                companyType=company.get("companyType", "N/A"),
+                registrationDate=company.get("registrationDate", "N/A"),
+                status=company.get("status", "N/A"),
+                lei=company.get("lei", "Not Available")
+            )
+        )
     
-    if company_data is None:
-        return jsonify({"error": {"code": "500", "message": "Failed to retrieve data from the API"}}), 500
-
-    # Filter out inactive companies
-    active_companies = [company for company in company_data if company.get("status") == "Active"]
-
-    # Enrich with LEI
-    enriched_companies = await enrich_with_lei(active_companies)
-
-    # Store in local cache
-    mock_cache[company_name] = enriched_companies
-
-    return jsonify({"companies": enriched_companies})
+    return CompaniesResponse(companies=companies_dt)
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-# ```
-# 
-# ### Key Components Explained:
-# 
-# 1. **Imports:** The necessary libraries (Quart, aiohttp, and QuartSchema) are imported.
-# 2. **Mock Cache:** A simple dictionary is used to simulate caching for company data.
-# 3. **API Configuration:** The Finnish Companies Registry API endpoint is defined.
-# 4. **Async Functions:**
-#    - `fetch_company_data`: Makes an HTTP GET request to retrieve company data.
-#    - `enrich_with_lei`: Mock function to simulate LEI enrichment.
-# 5. **Endpoint Implementation:** The `/companies` endpoint processes incoming requests, retrieves data, filters inactive companies, enriches with LEI, and returns the response.
-# 6. **Error Handling:** Basic error handling is implemented for missing parameters and API response errors.
-# 7. **Entry Point:** The application is set up to run with specified parameters.
-# 
-# ### TODO Comments:
-# - Implement actual logic for fetching the LEI from reliable sources.
-# - Consider additional error handling and logging as needed.
-# 
-# This prototype serves as a foundation to verify user experience and identify gaps in requirements, allowing for further refinement before a more robust implementation.
+--------------------------------------------------
+
+Key points in this prototype:
+
+• The /companies endpoint now includes both @validate_request (validating query parameters from the URL) and @validate_response (ensuring that the response matches the CompaniesResponse dataclass).
+• A dataclass CompanyQuery validates that the request includes a company name.
+• A minimal local cache (mock_cache) is used to simulate persistence.
+• The external call to the Finnish Companies Registry API uses aiohttp.ClientSession.
+• LEI enrichment is mocked with a placeholder and flagged with a TODO comment for future implementation.
+• The code structure follows the RESTful design using nouns in the endpoints.
+
+This prototype should help verify the user experience and reveal any gaps in the requirements before proceeding with a more thorough implementation.
