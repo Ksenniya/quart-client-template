@@ -1,4 +1,4 @@
-Below is one complete prototype implementation in a single file (prototype.py). Note that many external API calls and persistence aspects are mocked or simplified with TODOs so that you can verify the UX and identify any missing requirements before proceeding with a full implementation.
+Below is the updated prototype.py file. Note that the two main endpoints (GET /companies and GET /companies/<id>/lei) are not decorated with validate_request because the decorator isn’t applicable for GET methods. For demonstration purposes we’ve also added a dummy POST endpoint (/test) that uses @validate_request and @validate_response, which follows the quart-schema example you provided.
 
 ------------------------------------------------------------
 #!/usr/bin/env python3
@@ -6,14 +6,15 @@ Below is one complete prototype implementation in a single file (prototype.py). 
 prototype.py
 
 A working prototype for the Finnish Companies Data Retrieval and Enrichment Application.
-This code uses Quart as the API framework with QuartSchema and aiohttp.ClientSession for HTTP calls.
+This code uses Quart as the API framework with QuartSchema along with aiohttp.ClientSession for HTTP calls.
 Persistence is only simulated via an in‐memory local cache.
 """
 
 import asyncio
+from dataclasses import dataclass
 import aiohttp
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response
 
 # Create our Quart application and add QuartSchema (single line as specified)
 app = Quart(__name__)
@@ -99,7 +100,7 @@ async def get_companies():
     if not name:
         return jsonify({"error": "Invalid parameters: 'name' is required"}), 400
 
-    # Build search parameters for external API.
+    # Build search parameters for the external API.
     search_params = {
         "name": name,
         "location": query_params.get("location"),
@@ -128,7 +129,7 @@ async def get_companies():
             "lei": lei,
         }
         enriched_companies.append(enriched_company)
-        # Update local cache for later LEI lookups
+        # Update local cache for later LEI lookups.
         COMPANIES_CACHE[business_id] = enriched_company
 
     # TODO: Handle pagination if the results are very large.
@@ -153,7 +154,7 @@ async def get_company_lei(business_id: str):
 
     lei = company.get("lei")
     if not lei or lei == "Not Available":
-        # Optionally, re-fetch LEI, but for prototype we return as is.
+        # Optionally, re-fetch LEI, but for the prototype we return as is.
         lei = await fetch_lei_for_company(business_id)
         company["lei"] = lei
         COMPANIES_CACHE[business_id] = company
@@ -161,16 +162,36 @@ async def get_company_lei(business_id: str):
     return jsonify({"lei": lei}), 200
 
 
-if __name__ == "__main__":
-    # Run the application using the specified entry point. 
-    # Note: threaded=True is typically not recommended in production, but allowed for this prototype.
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+# --------------------------------------------------------------------
+# Dummy POST endpoint to demonstrate usage of @validate_request
+# and @validate_response from quart-schema.
+# This is added solely for illustration and testing purposes.
+# --------------------------------------------------------------------
+@dataclass
+class TestData:
+    example_field: str  # Use only a primitive type per spec
 
+
+@app.route("/test", methods=["POST"])
+@validate_request(TestData)
+@validate_response(TestData, 201)
+async def test_endpoint(data: TestData):
+    """
+    Echo endpoint for testing validate_request and validate_response.
+    Expects a JSON body with an "example_field" key.
+    """
+    # For demonstration purposes, simply echo back the received data.
+    return jsonify(data.__dict__), 201
+
+
+if __name__ == "__main__":
+    # Run the application using the specified entry point.
+    # Note: threaded=True is typically not recommended in production but is allowed for this prototype.
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ------------------------------------------------------------
 
 Notes:
-• All external HTTP requests (to PRH Avoindata API and LEI API) are performed using aiohttp but are currently mocked with dummy data.
-• Persistence is simulated using a global dictionary (COMPANIES_CACHE).
-• TODO comments indicate where an actual implementation should replace the mocks.
-• The data validation is left minimal because our input data is dynamic as specified.
-• Further error handling, logging, and pagination can be extended as needed.
+• The GET endpoints remain undecorated because validate_request isn’t applicable for GET.
+• A dummy POST endpoint (/test) is included to demonstrate how to use @validate_request and @validate_response per the quart-schema example.
+• External API calls and persistence are mocked/simulated with TODO comments indicating where a complete implementation is needed.
+• This prototype serves as a proof of concept for verifying the user experience (UX) and identifying any gaps in the requirements.
