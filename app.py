@@ -9,7 +9,7 @@ from app_init.app_init import cyoda_token
 #please update this line to your entity
 from entity.company.api import api_bp_company
 from entity.lei.api import api_bp_lei
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +17,7 @@ app = Quart(__name__)
 QuartSchema(app)
 app.register_blueprint(api_bp_company, url_prefix='/api/company')
 app.register_blueprint(api_bp_lei, url_prefix='/api/lei')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():
