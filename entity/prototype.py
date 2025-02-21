@@ -1,20 +1,35 @@
-Below is an example prototype.py file implementing a basic Quart application. This prototype uses aiohttp.ClientSession for external HTTP requests and a local in‑memory cache for persistence. Note that external API calls and persistence are simplified with mocks and TODO comments for missing details.
-
---------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
+import csv
 import uuid
 from datetime import datetime
+from io import StringIO
+from dataclasses import dataclass
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # single-line integration per instructions
 import aiohttp
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
 
-# In‑memory cache for jobs
-jobs = {}  # Example structure: {job_id: {"status": "processing"/"completed", "requestedAt": ..., "result": ...}}
+# -------------------------------
+# Dataclasses for Request Validation
+
+# For POST /companies/search: only validating a required companyName.
+@dataclass
+class CompanySearch:
+    companyName: str
+
+# For GET /companies/results: validating query parameters.
+@dataclass
+class CompanyQuery:
+    searchId: str
+    format: str = "json"
+
+# -------------------------------
+# In-memory cache for jobs (acting as our persistence layer)
+jobs = {}  # {job_id: {"status": "processing"/"completed"/"error", "requestedAt": str, "result": dict, "error": str}}
 
 # -------------------------------
 # Helper Functions
@@ -23,15 +38,13 @@ async def fetch_company_data(company_name: str, filters: dict) -> list:
     """
     Query the Finnish Companies Registry API using aiohttp.
     For now, only query by company name is implemented.
-    TODO: Incorporate additional filters and error handling as necessary.
+    TODO: Incorporate additional filters and proper error handling.
     """
     url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
     params = {"name": company_name}
     # TODO: Add additional parameters from filters if provided
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as response:
-            # This prototype expects JSON response. 
-            # TODO: validate structure and handle errors.
             data = await response.json()
             # Assuming data structure contains a key 'results' with list of companies.
             return data.get("results", [])
@@ -39,12 +52,10 @@ async def fetch_company_data(company_name: str, filters: dict) -> list:
 async def fetch_lei(company: dict) -> str:
     """
     Fetch the Legal Entity Identifier (LEI) for a given company.
-    This is a placeholder function and uses a mock.
-    TODO: Integrate with an official LEI API or other reliable source.
+    This is a placeholder and returns a mock value.
+    TODO: Integrate with an official LEI API or other reliable data source.
     """
-    # Simulate network delay.
-    await asyncio.sleep(0.1)
-    # For demonstration, if the companyName length is even, return a fake LEI.
+    await asyncio.sleep(0.1)  # Simulate network delay.
     if len(company.get("companyName", "")) % 2 == 0:
         return "FAKELEI1234567890"
     else:
@@ -52,88 +63,89 @@ async def fetch_lei(company: dict) -> str:
 
 def filter_active_companies(companies: list) -> list:
     """
-    Filter the companies retrieving only active companies.
-    Here we assume that the company dictionary includes a 'businessStatus' field.
-    TODO: Adjust filter logic per actual response structure.
+    Filter companies to retain only active ones.
+    Assumes each company dict includes a 'businessStatus' field.
+    TODO: Adjust condition based on the actual API response structure.
     """
-    active_companies = []
+    active = []
     for company in companies:
-        # TODO: Update condition based on actual API field name and valid values.
         if company.get("businessStatus", "").lower() == "active":
-            active_companies.append(company)
-    return active_companies
+            active.append(company)
+    return active
 
 async def process_search(job_id: str, payload: dict):
     """
-    Background task to process search:
+    Background task to process the search:
       1. Query external companies API.
       2. Filter out inactive companies.
       3. Enrich each active company with LEI information.
-      4. Store the result in the jobs cache.
+      4. Store result in the in-memory jobs cache.
     """
     try:
+        # Extract search criteria. 'companyName' is validated via dataclass.
         company_name = payload.get("companyName", "")
-        filters = payload.get("filters", {})
-
-        # Step 1: Retrieve data from Finnish Companies Registry API.
+        filters = payload.get("filters", {})  # Additional filtering criteria.
+        
+        # Step 1: Retrieve company data.
         companies = await fetch_company_data(company_name, filters)
         
-        # Step 2: Filter out inactive companies.
+        # Step 2: Filter inactive companies.
         active_companies = filter_active_companies(companies)
         
-        # Step 3: Enrich with LEI.
-        enriched_companies = []
-        for company in active_companies:
-            lei = await fetch_lei(company)
-            # Build the final company model.
+        # Step 3: Enrich each active company with LEI.
+        enriched = []
+        for comp in active_companies:
+            lei = await fetch_lei(comp)
             enriched_company = {
-                "companyName": company.get("companyName", "Unknown"),
-                "businessId": company.get("businessId", "Unknown"),
-                "companyType": company.get("companyForm", "Unknown"),
-                "registrationDate": company.get("registrationDate", "Unknown"),
-                "status": "Active",  # since we filtered to active companies.
+                "companyName": comp.get("companyName", "Unknown"),
+                "businessId": comp.get("businessId", "Unknown"),
+                "companyType": comp.get("companyForm", "Unknown"),
+                "registrationDate": comp.get("registrationDate", "Unknown"),
+                "status": "Active",  # because they are filtered already.
                 "lei": lei
             }
-            enriched_companies.append(enriched_company)
+            enriched.append(enriched_company)
         
-        # Optional: simulate some processing delay
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.1)  # Simulate any further processing delay.
         
-        # Step 4: Store result in our local cache.
+        # Step 4: Store the processed result.
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["result"] = {
             "searchId": job_id,
-            "companies": enriched_companies
+            "companies": enriched
         }
     except Exception as e:
-        # TODO: Better error management and logging.
+        # TODO: Improve error management and logging.
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
-    
 
 # -------------------------------
 # API Endpoints
 
 @app.route('/companies/search', methods=['POST'])
-async def post_company_search():
+@validate_request(CompanySearch)
+@validate_response(dict, 202)
+async def post_company_search(data: CompanySearch):
     """
-    Accepts search criteria, triggers external API calls and enrichment.
-    Uses POST since business logic involves external data retrieval and calculations.
+    Accepts search criteria and triggers external API calls and data enrichment.
+    POST endpoint with business logic and external data retrieval.
+    Data is validated via the CompanySearch dataclass.
     """
+    # If additional fields beyond 'companyName' are provided, fetch the raw data.
     payload = await request.get_json()
-    if not payload or "companyName" not in payload:
-        return jsonify({"error": "Missing required field: companyName"}), 400
+    if not payload:
+        return jsonify({"error": "Invalid or missing JSON payload."}), 400
 
+    # Generate a unique job_id for the search.
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
     
-    # Store initial job details in local cache.
+    # Save job initial state into the in-memory cache.
     jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
     
-    # Fire and forget the processing task.
+    # Fire-and-forget asynchronous processing.
     asyncio.create_task(process_search(job_id, payload))
     
-    # Return the search ID and a message.
     return jsonify({
         "searchId": job_id,
         "status": "processing",
@@ -141,36 +153,32 @@ async def post_company_search():
     }), 202
 
 @app.route('/companies/results', methods=['GET'])
+@validate_querystring(CompanyQuery)
 async def get_company_results():
     """
     Retrieves stored search results.
-    Query parameters:
-      - searchId: identifier for the search job.
-      - format (optional): json (default) or csv.
+    GET endpoint accepts query parameters which are validated via the CompanyQuery dataclass.
     """
     search_id = request.args.get("searchId")
     output_format = request.args.get("format", "json").lower()
+    
     if not search_id:
         return jsonify({"error": "Missing searchId query parameter"}), 400
-
-    # Check if job exists.
+    
     job = jobs.get(search_id)
     if job is None:
         return jsonify({"error": "Invalid searchId"}), 404
 
-    # If processing not complete, return status.
+    # If the processing is not complete, report the current status.
     if job["status"] != "completed":
         return jsonify({"searchId": search_id, "status": job["status"]}), 202
-
+    
     result = job.get("result", {})
     
-    # Handle CSV output if requested. This is a simple conversion.
+    # If CSV is requested, convert the result to CSV format.
     if output_format == "csv":
-        from io import StringIO
-        import csv
         si = StringIO()
         cw = csv.writer(si)
-        # Write headers.
         headers = ["companyName", "businessId", "companyType", "registrationDate", "status", "lei"]
         cw.writerow(headers)
         for company in result.get("companies", []):
@@ -182,14 +190,13 @@ async def get_company_results():
                 company.get("status"),
                 company.get("lei")
             ])
-        response = app.response_class(si.getvalue(), mimetype='text/csv')
-        return response
-
-    # Default JSON output.
+        return app.response_class(si.getvalue(), mimetype='text/csv')
+    
+    # Default to JSON output.
     return jsonify(result), 200
 
 # -------------------------------
-# Mermaid Diagram Representation (for documentation purposes)
+# Mermaid Diagram Representation (documentation purposes only)
 mermaid_diagram = """
 sequenceDiagram
     participant Client as Client App
@@ -214,10 +221,13 @@ sequenceDiagram
     API-->>Client: Return final search result (JSON or CSV)
 """
 
-# Entry point
+# -------------------------------
+# Entry Point
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 
---------------------------------------------------
+# End of prototype.py
 
-This code should serve as a working prototype for verifying the UX and identifying any requirement gaps. Adjustments and detailed error handling can be added in future iterations when the full requirements are clarified.
+---------------------------------------------------------------------
+
+This prototype now uses @validate_request for POST and @validate_querystring for GET in accordance with the quart-schema examples. All persistence uses an in-memory cache, and external API calls are simulated with aiohttp and placeholder logic. Comments marked with TODO indicate areas for further enhancement.
