@@ -1,0 +1,121 @@
+Hello! i'd like to build an app that manages deployment and env configuration for multiple users.
+
+
+The application should have the following api:
+
+For all auth via Bearer token
+POST /deploy/cyoda-env
+{
+    "user_name": "test"
+}
+
+Action:
+POST https://teamcity.cyoda.org/app/rest/buildQueue
+{
+    "buildType": {
+        "id": "KubernetesPipeline_CyodaSaas"
+    },
+    "properties": {
+        "property": [
+            {
+                "name": "user_defined_keyspace",
+                "value": user_name
+            },
+            {
+                "name": "user_defined_namespace",
+                "value": user_name
+            }
+        ]
+    }
+}
+it will return build id
+
+POST /deploy/user_app
+{
+    "repository_url": "http://....",
+    "is_public": "true",
+}
+
+Action:
+POST https://teamcity.cyoda.org/app/rest/buildQueue
+{
+    "buildType": {
+        "id": "KubernetesPipeline_CyodaSaasUserEnv"
+    },
+    "properties": {
+        "property": [
+            {
+                "name": "user_defined_keyspace",
+                "value": user_name
+            },
+            {
+                "name": "user_defined_namespace",
+                "value": user_name
+            }
+        ]
+    }
+}
+it will return build id
+
+GET /deploy/cyoda-env/status/$id
+{
+    "repository_url": "http://....",
+    "is_public": "true"
+}
+
+Action:
+GET https://teamcity.cyoda.org/app/rest/buildQueue/id:build_id
+
+
+GET /deploy/cyoda-env/statistics/$id
+{
+    "repository_url": "http://....",
+    "is_public": "true"
+}
+Action:
+GET https://teamcity.cyoda.org/app/rest/builds/id:build_id/statistics/
+
+
+GET /deploy/user_app/status/$id
+{
+    "repository_url": "http://....",
+    "is_public": "true"
+}
+
+Action:
+GET https://teamcity.cyoda.org/app/rest/buildQueue/id:build_id
+
+
+GET /deploy/user_app/statistics/$id
+{
+    "repository_url": "http://....",
+    "is_public": "true"
+}
+
+
+
+
+
+
+
+
+
+
+Action:
+GET https://teamcity.cyoda.org/app/rest/builds/id:build_id/statistics/
+
+POST /deploy/cancel/user_app/$id
+{
+    "repository_url": "http://....",
+    "is_public": "true",
+}
+
+
+Action:
+POST https://teamcity.cyoda.org/app/rest/builds/id:99405
+{
+    "comment": "Canceling a queued build",
+    "readdIntoQueue": false
+}
+
+U can improve this api to comply with RESTful
