@@ -1,0 +1,15 @@
+{
+    "entities": [
+        {
+            "entity_name": "companies",
+            "entity_data_example": {
+                "companyName": "Example Company",
+                "businessId": "1234567-8",
+                "companyType": "Limited Liability Company",
+                "registrationDate": "2022-01-01",
+                "status": "Active",
+                "lei": "MOCK_LEI_1234567-8"
+            }
+        }
+    ]
+}
