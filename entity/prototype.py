@@ -1,4 +1,11 @@
-Below is the final version of prototype.py. This file implements the two endpoints using Quart with quart-schema for validation of query parameters (for GET /companies) and uses local in‑memory caches (no external persistence). Note that the GET endpoint with query parameters does not accept any validated arguments; instead, validated data is retrieved via await request.get_query().
+Below is the final, fully functioning prototype.py. In this version:
+
+• We use only local (in‑memory) caches for persistence (no SQLAlchemy, external caches, etc.).  
+• For GET /companies, we validate query parameters using quart-schema’s @validate_querystring decorator. Because GET endpoints cannot have a request body, the decorator simply validates the query string; the validated data is accessed via await request.get_query() (without passing any unexpected keyword arguments to the view function).  
+• For GET /companies/<businessId>/lei, no query validation is needed.  
+• TODO comments mark where real external API calls, location filtering, and pagination should be implemented.
+
+Below is the complete code:
 
 ------------------------------------------------
 #!/usr/bin/env python3
@@ -6,8 +13,13 @@ Below is the final version of prototype.py. This file implements the two endpoin
 Prototype for Finnish Companies Data Retrieval and Enrichment Application.
 
 Endpoints:
-  • GET /companies – search companies with query string validation.
-  • GET /companies/<businessId>/lei – return the LEI for a specific company.
+  • GET /companies – Returns active companies enriched with their LEI.
+    Validates query string parameters:
+      - name (string, required)
+      - location (string, optional)
+      - businessId (string, optional)
+      - page (integer, default=1)
+  • GET /companies/<businessId>/lei – Returns the LEI for a specific company.
 """
 
 import asyncio
@@ -19,14 +31,13 @@ import aiohttp
 app = Quart(__name__)
 QuartSchema(app)  # required single line configuration
 
-# In-memory caches for this prototype (no external persistence)
-lei_cache = {}         # Cache for LEI responses (keyed by businessId)
-companies_cache = {}   # TODO: Implement caching for companies search if needed later.
+# Local in-memory caches (no external persistence)
+lei_cache = {}        # Cache for LEI responses (keyed by businessId)
+companies_cache = {}  # TODO: Optionally cache companies search results if needed later
 
-# Global aiohttp session object
+# Global aiohttp session (used for external API calls, simulated here)
 aiohttp_session = None
 
-# Set up the aiohttp session on startup and close it on shutdown.
 @app.before_serving
 async def create_aiohttp_session():
     global aiohttp_session
@@ -50,7 +61,7 @@ async def fetch_companies_from_registry(name: str, location: str, businessId: st
     """
     # Simulate network latency
     await asyncio.sleep(0.1)
-    # Dummy dataset for simulation purposes.
+    # Dummy dataset for demonstration purposes.
     dummy_data = [
         {
             "companyName": "Example Company",
@@ -67,28 +78,28 @@ async def fetch_companies_from_registry(name: str, location: str, businessId: st
             "status": "Inactive"
         }
     ]
-    # Filter by businessId if specified.
+    # Filter by businessId if provided.
     if businessId:
         dummy_data = [comp for comp in dummy_data if comp['businessId'] == businessId]
     # Filter by name (simple substring case-insensitive match).
     dummy_data = [comp for comp in dummy_data if name.lower() in comp['companyName'].lower()]
-    # TODO: Implement location filtering properly when the external API supports it.
-    # TODO: Implement a proper pagination mechanism based on page and page size.
+    # TODO: Implement location filtering properly when external API details are available.
+    # TODO: Implement proper pagination based on the 'page' parameter.
     return dummy_data
 
 async def fetch_lei_from_external_api(businessId: str):
     """
-    Simulate an async call to a LEI external API.
+    Simulate an async call to an external LEI API.
     Uses a local in-memory cache to store responses.
-    TODO: Replace URL and request details with the actual LEI API.
+    TODO: Replace this simulation with the actual LEI API details.
     """
-    # Check for a cached LEI response.
+    # Check local cache first.
     if businessId in lei_cache:
         return lei_cache[businessId]
 
-    # Simulate an external API call delay.
+    # Simulate external API call delay.
     await asyncio.sleep(0.05)
-    # Dummy LEI generation for demonstration purposes.
+    # Generate a dummy LEI for demonstration purposes.
     dummy_lei = f"LEI-{businessId.replace('-', '')}"
     lei_cache[businessId] = dummy_lei
     return dummy_lei
@@ -99,33 +110,35 @@ async def search_companies():
     """
     GET /companies endpoint.
     Validates query parameters:
-      - name (string, required)
-      - location (string, optional)
-      - businessId (string, optional)
+      - name (required)
+      - location (optional)
+      - businessId (optional)
       - page (integer, default=1)
-    This endpoint returns active companies enriched with their LEI.
-    Note: The validated query arguments are retrieved via await request.get_query().
+    Returns active companies enriched with their LEI.
+    Note: For GET requests with query parameters, the validated data is accessed via:
+          validated_query = await request.get_query()
+          (Do not attempt to pass validated data as function arguments.)
     """
-    # Retrieve validated query parameters from the request.
+    # Get the validated query parameters.
     validated_query: CompaniesQuery = await request.get_query()
     name = validated_query.name
     location = validated_query.location
     businessId = validated_query.businessId
     page = validated_query.page
 
-    # Fetch companies from the Finnish Companies Registry (simulated).
+    # Retrieve companies (simulation)
     companies = await fetch_companies_from_registry(name, location, businessId, page)
 
-    # Filter to include only active companies.
+    # Filter to keep only active companies.
     active_companies = [comp for comp in companies if comp.get('status') == 'Active']
 
-    # Asynchronously enrich each active company with its LEI.
+    # Enrich each active company with its LEI asynchronously.
     lei_tasks = [fetch_lei_from_external_api(comp['businessId']) for comp in active_companies]
     leis = await asyncio.gather(*lei_tasks)
     for comp, lei in zip(active_companies, leis):
         comp['lei'] = lei
 
-    # For prototype purposes, returning all active companies without detailed pagination.
+    # Return results (for now, pagination details are simplified).
     response = {
         "results": active_companies,
         "total": len(active_companies),
@@ -137,8 +150,8 @@ async def search_companies():
 async def get_company_lei(businessId: str):
     """
     GET /companies/<businessId>/lei endpoint.
-    Returns the LEI for the provided businessId.
-    No query string validation is needed.
+    Returns the LEI for the specified businessId.
+    No query validation is required for this endpoint.
     """
     lei = await fetch_lei_from_external_api(businessId)
     response = {
@@ -153,9 +166,8 @@ if __name__ == '__main__':
 ------------------------------------------------
 
 Notes:
-• We use @validate_querystring with the CompaniesQuery dataclass for the GET /companies endpoint. The validated data is accessed via await request.get_query(), which avoids passing unexpected keyword arguments.
-• The GET /companies/<businessId>/lei endpoint does not require query validation.
-• Local in‑memory dictionaries are used for caching LEI responses and (potentially) companies search results.
-• TODO comments indicate where real integrations (external APIs, pagination, filtering) should replace the simulated behavior during full implementation.
+• The GET /companies endpoint makes use of @validate_querystring(CompaniesQuery) to validate query parameters. The validated data is retrieved via await request.get_query() so that no unexpected function arguments are supplied.  
+• Local in‑memory dictionaries are used for caching LEI data; no external persistence is used.  
+• TODO comments mark where real integrations (e.g., external API calls and pagination logic) should be implemented when more details are available.
 
-This prototype should now work as expected and reflect all of the user suggestions.
+This prototype now reflects all user suggestions and should work as expected.
