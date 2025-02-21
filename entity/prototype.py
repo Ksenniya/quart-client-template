@@ -1,12 +1,23 @@
-Below is an example prototype.py that implements the design as specified. Note that external API calls are made using aiohttp.ClientSession, persistence is mocked with a local in‑memory dictionary, and any ambiguous behavior (such as the structure of the external API responses) is marked with TODO comments.
-
-------------------------------------------------
 #!/usr/bin/env python3
+"""
+Prototype implementation for the Finnish Companies Data Retrieval and Enrichment Application.
+
+Notes:
+• External API calls are performed with aiohttp.ClientSession.
+• Persistence is mocked with an in‑memory cache (entity_jobs).
+• Decorators for request/response validation using quart-schema are applied.
+  WORKAROUND: Due to an issue in quart-schema, for GET endpoints the validation decorator (@validate_querystring)
+  is placed first and the endpoint function does not accept the validated model as an argument.
+  For POST endpoints, the order is: route, then @validate_request, then @validate_response.
+• TODO comments denote areas where further clarification or real implementations are required.
+"""
+
 import asyncio
 import uuid
 from datetime import datetime
-from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from dataclasses import dataclass
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 import aiohttp
 
 app = Quart(__name__)
@@ -15,21 +26,36 @@ QuartSchema(app)  # one-line integration of QuartSchema
 # In‑memory persistence cache for demonstration only.
 entity_jobs = {}  # key: job_id, value: job details
 
+# Data models for validation
+
+@dataclass
+class CompanySearch:
+    name: str
+    # TODO: Add additional filters (e.g., location, companyForm) if needed, using only primitives
+
+@dataclass
+class CompanySearchResponse:
+    searchId: str
+    status: str
+
+@dataclass
+class PaginationQuery:
+    page: int = 1
+    pageSize: int = 100
+
 # ------------------------------
-# Asynchronous processing task
+# Asynchronous processing task.
 # ------------------------------
 async def process_entity(job: dict, request_data: dict):
-    # Create an aiohttp session for external calls
     async with aiohttp.ClientSession() as session:
         try:
             # Build URL for the Finnish Companies Registry API using the provided company name.
             base_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
-            # TODO: Expand URL building if additional filters are provided in request_data["additionalFilters"]
             name = request_data.get("name", "")
+            # TODO: Expand URL building if additional filters are provided in request_data.
             url = f"{base_url}?name={name}"
-            
             async with session.get(url) as resp:
-                # TODO: Adapt handling if the external API returns non-200 codes.
+                # TODO: Adapt error handling if external API returns non-200 codes.
                 companies_data = await resp.json()
         except Exception as e:
             job["status"] = "failed"
@@ -38,16 +64,16 @@ async def process_entity(job: dict, request_data: dict):
 
         # Prepare list to store enriched company data.
         results = []
-        # TODO: Adjust key names based on actual API response schema.
+        # TODO: Adjust key names based on the actual API response schema.
         for company in companies_data.get("results", []):
             # Filter: Only consider companies marked as active.
-            # TODO: Adjust the condition based on the actual field defining active/inactive status.
+            # TODO: Adjust condition based on the actual field defining active/inactive status.
             if company.get("status", "").lower() != "active":
                 continue
 
-            # Fetch LEI data for each active company.
             business_id = company.get("businessId", "")
-            lei_url = f"https://mock-lei-api.com/api/lei?businessId={business_id}"  # Placeholder URL
+            # Placeholder URL for LEI data enrichment.
+            lei_url = f"https://mock-lei-api.com/api/lei?businessId={business_id}"  # TODO: Replace with a real LEI API endpoint
 
             try:
                 async with session.get(lei_url) as lei_resp:
@@ -58,7 +84,7 @@ async def process_entity(job: dict, request_data: dict):
                     else:
                         company["lei"] = "Not Available"
             except Exception:
-                company["lei"] = "Not Available"  # In case of errors, mark as not available
+                company["lei"] = "Not Available"  # In case of errors, mark LEI as not available
 
             results.append({
                 "companyName": company.get("companyName", "Unknown"),
@@ -69,7 +95,7 @@ async def process_entity(job: dict, request_data: dict):
                 "lei": company.get("lei")
             })
 
-        # Save the processing result in our in-memory job.
+        # Save the processing result in our in‑memory job.
         job["results"] = results
         job["status"] = "completed"
         job["completedAt"] = datetime.utcnow().isoformat()
@@ -78,12 +104,10 @@ async def process_entity(job: dict, request_data: dict):
 # POST Endpoint: Trigger data processing and enrichment.
 # ------------------------------
 @app.route('/companies/search', methods=['POST'])
-async def search_companies():
-    request_data = await request.get_json()
-    if not request_data or "name" not in request_data:
-        # Input validation minimal since data is dynamic.
-        return jsonify({"error": "missing required field 'name'"}), 400
-
+@validate_request(CompanySearch)          # For POST endpoints, validation comes after route decorator.
+@validate_response(CompanySearchResponse, 200)
+async def search_companies(data: CompanySearch):
+    # 'data' is an instance of CompanySearch.
     # Create a unique job id and mark the job as processing.
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
@@ -91,21 +115,22 @@ async def search_companies():
 
     # Fire-and-forget background processing task.
     # Using create_task so that the POST returns immediately.
-    asyncio.create_task(process_entity(entity_jobs[job_id], request_data))
+    asyncio.create_task(process_entity(entity_jobs[job_id], {"name": data.name}))
+    # TODO: Pass additional filters from 'data' to process_entity if available.
 
-    # Return the job details (identifier and status)
-    return jsonify({"searchId": job_id, "status": "processing"})
+    return CompanySearchResponse(searchId=job_id, status="processing")
 
 # ------------------------------
 # GET Endpoint: Retrieve processed results.
 # ------------------------------
+@validate_querystring(PaginationQuery)  # WORKAROUND: Must be placed first for GET requests (do not pass as function argument).
 @app.route('/companies/result/<string:search_id>', methods=['GET'])
-async def get_companies_result(search_id):
+async def get_companies_result(search_id: str):
     job = entity_jobs.get(search_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
-    # Basic pagination parameters.
+    # Use standard approach to access query parameters - validated via decorator.
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("pageSize", 100))
@@ -115,13 +140,11 @@ async def get_companies_result(search_id):
     results = job.get("results", [])
     total_results = len(results)
     total_pages = (total_results + page_size - 1) // page_size
-
-    # Slicing the result for the current page.
     start_index = (page - 1) * page_size
     end_index = start_index + page_size
     paginated_results = results[start_index:end_index]
 
-    return jsonify({
+    response = {
         "searchId": search_id,
         "results": paginated_results,
         "pagination": {
@@ -131,18 +154,11 @@ async def get_companies_result(search_id):
             "totalResults": total_results
         },
         "status": job.get("status")
-    })
+    }
+    return jsonify(response)
 
 # ------------------------------
 # Entry point
 # ------------------------------
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-
-------------------------------------------------
-
-Notes:
-• External API calls are implemented using aiohttp.ClientSession. Adjust URL parameters and response handling based on the actual APIs.
-• Persistence is implemented as an in‑memory dictionary (entity_jobs). This is solely for demonstration.
-• TODO comments indicate areas where integration with real external data and more precise filtering logic is needed.
-• The processing task uses asyncio.create_task to fire and forget the enrichment process so that the POST endpoint returns quickly, enabling UX testing of asynchronous behavior.
