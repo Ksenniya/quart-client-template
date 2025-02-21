@@ -1,0 +1,27 @@
+{
+    "entities": [
+        {
+            "entity_name": "companies",
+            "entity_data_example": {
+                "companyName": "string",
+                "location": "string",
+                "businessId": "string",
+                "registrationDateStart": "string",
+                "registrationDateEnd": "string",
+                "requestId": "string",
+                "status": "string",
+                "message": "string",
+                "data": [
+                    {
+                        "companyName": "string",
+                        "businessId": "string",
+                        "companyType": "string",
+                        "registrationDate": "string",
+                        "status": "string",
+                        "lei": "string"
+                    }
+                ]
+            }
+        }
+    ]
+}
