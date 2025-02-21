@@ -1,91 +1,95 @@
-Below is an example prototype.py file that implements a working prototype. In this code the POST endpoint performs external API calls (using aiohttp.ClientSession) to the Finnish Companies Registry and a placeholder for LEI enrichment. A simple in-memory dictionary serves as our local cache for job results. Where the external calls or processing details are not final, a TODO comment is provided.
+Below is an updated prototype.py that uses dataclasses along with the quart-schema decorators. Note that we use simple dataclasses with only primitive types for validation. For the POST endpoint we’ve defined a request and response schema, whereas the GET endpoint (which uses a path parameter only) does not require additional validation.
 
---------------------------------------------------
+----------------------------------------------------------------
 # prototype.py
 
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response  # and validate_querystring if needed
 import aiohttp
 import asyncio
 import uuid
 import time
 
 app = Quart(__name__)
-QuartSchema(app)  # add QuartSchema
+QuartSchema(app)  # initialize QuartSchema
 
-# Simple in-memory persistence for jobs (job_id -> result)
+# In-memory job storage: job_id -> result
 job_results = {}
 
-# Constants for external API endpoints (using provided details)
+# External API endpoint constants
 PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3"
 COMPANY_ENDPOINT = f"{PRH_API_BASE}/companies"
-
-# Placeholder URL for LEI lookup - TODO: replace with a real endpoint if available
+# Placeholder for LEI lookup endpoint (to be replaced with a real endpoint)
 LEI_API_BASE = "https://example.com/lei"  # TODO: Integrate with an actual LEI data source
 
+# --- Dataclass Definitions for Validation ---
+
+@dataclass
+class CompanyQueryRequest:
+    companyName: str
+    outputFormat: str = "json"  # json or csv
+
+@dataclass
+class QueryResponse:
+    jobId: str
+    status: str
+    requestedAt: str
+
+# --- Helper functions ---
 
 async def get_prh_company_data(company_name: str):
     """
-    Call the Finnish Companies Registry API using aiohttp.
+    Make an http GET request to the Finnish Companies Registry API using aiohttp.
     """
-    params = {
-        "name": company_name
-    }
+    params = {"name": company_name}
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(COMPANY_ENDPOINT, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    return data  # Assuming this returns a list/dict of companies
+                    return data  # TODO: Adjust based on the actual response structure.
                 else:
-                    # TODO: Improve error handling based on specific API response details.
+                    # TODO: Improve error handling based on specific API responses.
                     return {"error": f"PRH API returned status {resp.status}"}
         except Exception as e:
-            # TODO: Log exception
+            # TODO: Log exception details.
             return {"error": str(e)}
-
 
 async def get_lei_for_company(company):
     """
-    Retrieve the LEI for a given company.
-    For now, we use a placeholder response. Replace with real logic as necessary.
+    Retrieve the LEI for the given company.
+    This is a placeholder implementation.
     """
-    # TODO: Replace with an actual request to a LEI API.
+    # TODO: Replace with an actual API call to a trusted LEI source.
     async with aiohttp.ClientSession() as session:
         try:
-            # Here we simulate an API call with a dummy request.
-            # For example: GET LEI_API_BASE?businessId=<company_businessId>
-            # Using a dummy sleep to simulate network delay.
+            # Simulate a network call delay.
             await asyncio.sleep(0.1)
-            # TODO: Implement actual API call and parse result.
-            # This is a placeholder that always returns a mock LEI.
+            # TODO: Implement actual external call logic here.
             return "MOCK_LEI_12345"
         except Exception:
             return "Not Available"
 
-
-async def process_query(job_id, payload):
+async def process_query(job_id: str, payload: dict):
     """
-    Process the company search, filtering and LEI enrichment.
+    Retrieve company data, filter inactive companies, enrich with LEI and cache the output.
     """
     company_name = payload.get("companyName")
     if not company_name:
         job_results[job_id] = {"status": "failed", "error": "companyName is required"}
         return
 
-    # 1. Retrieve company data from PRH API.
+    # 1. Retrieve data from the Finnish Companies Registry API
     prh_data = await get_prh_company_data(company_name)
-    
-    # Check for API error (assuming error key on failure)
     if isinstance(prh_data, dict) and prh_data.get("error"):
         job_results[job_id] = {"status": "failed", "error": prh_data["error"]}
         return
 
-    # TODO: Adjust retrieval based on the actual structure of prh_data.
-    companies = prh_data.get("results", [])  # Assuming results key contains the company data list
+    # TODO: Adjust this extraction based on the actual API response structure
+    companies = prh_data.get("results", [])
 
-    # 2. Filter out inactive companies.
-    # Assuming each company has a field "status" where "Active" signifies an active company.
+    # 2. Filter out inactive companies – assuming 'status' field holds the value.
     active_companies = [c for c in companies if c.get("status", "").lower() == "active"]
 
     # 3. Enrich each active company with LEI data.
@@ -102,56 +106,53 @@ async def process_query(job_id, payload):
         }
         enriched_companies.append(enriched_company)
 
-    # Populate result cache with processed output
+    # Store the final result in the in-memory cache
     job_results[job_id] = {
         "status": "completed",
         "completedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "results": enriched_companies
     }
 
+# --- Endpoints ---
 
 @app.route('/companies/query', methods=['POST'])
-async def company_query():
+@validate_request(CompanyQueryRequest)  # This should be the second decorator in POST endpoints.
+@validate_response(QueryResponse, 202)
+async def company_query(data: CompanyQueryRequest):
     """
-    POST endpoint that performs external API queries, filtering and enrichment.
+    POST endpoint that triggers external API calls, filtering and enrichment.
     """
-    try:
-        payload = await request.get_json()
-    except Exception as e:
-        return jsonify({"error": "Invalid JSON payload", "details": str(e)}), 400
-
-    # Create a unique jobId
+    # Create a unique job ID and store initial processing state.
     job_id = str(uuid.uuid4())
+    requested_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    job_results[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    # Set initial job status as processing
-    job_results[job_id] = {"status": "processing", "requestedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    # Fire and forget the processing task.
+    asyncio.create_task(process_query(job_id, data.__dict__))
 
-    # Launch the processing in the background
-    asyncio.create_task(process_query(job_id, payload))
-
-    return jsonify({
-        "jobId": job_id,
-        "status": "processing",
-        "requestedAt": job_results[job_id]["requestedAt"]
-    }), 202
-
+    return QueryResponse(jobId=job_id, status="processing", requestedAt=requested_at), 202
 
 @app.route('/companies/result/<job_id>', methods=['GET'])
-async def get_result(job_id):
+async def get_result(job_id: str):
     """
-    GET endpoint to retrieve final results using the job id.
+    GET endpoint that returns the processed results for the given job ID.
     """
     result = job_results.get(job_id)
     if not result:
         return jsonify({"error": "Job ID not found"}), 404
 
-    # If processing is still underway, return status
     return jsonify({"jobId": job_id, **result})
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 
---------------------------------------------------
+----------------------------------------------------------------
 
-This prototype uses aiohttp for making HTTP requests and follows the specified endpoint design. The external API calls and persistence use mocks and in-memory storage with TODO comments indicating areas that require a proper implementation prior to final deployment.
+In this prototype:
+• The POST endpoint (/companies/query) uses @validate_request with the CompanyQueryRequest dataclass and @validate_response with QueryResponse.
+• The GET endpoint (/companies/result/<job_id>) does not perform body validation as it only uses a path parameter.
+• Wherever a detail remains uncertain (e.g., structure of the PRH API response and LEI API lookup), TODO comments have been added.
+• aiohttp.ClientSession is used for making external HTTP requests.
+• In-memory caching (job_results dictionary) serves as a placeholder for persistence.
+
+This should let you verify the user experience and highlight any further requirements.
