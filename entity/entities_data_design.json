@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_name": "job",
+            "entity_data_example": {
+                "job_id": "string",
+                "status": "string",
+                "requestedAt": "string",
+                "results": null,
+                "companyName": "string",
+                "page": 1,
+                "outputFormat": "string"
+            }
+        }
+    ]
+}
