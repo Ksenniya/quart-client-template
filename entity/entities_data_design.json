@@ -1,0 +1,15 @@
+{
+    "entities": [
+        {
+            "entity_name": "link",
+            "entity_data_example": {
+                "id": "12345",
+                "type": "link_type",
+                "rel": "link_relationship",
+                "title": "Link Title",
+                "href": "https://example.com/link",
+                "hreflang": "en"
+            }
+        }
+    ]
+}
