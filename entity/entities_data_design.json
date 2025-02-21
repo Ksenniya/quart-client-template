@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_name": "companies_search",
+            "entity_data_example": {
+                "status": "string",
+                "requestedAt": "string",
+                "searchId": "string",
+                "result": {
+                    "companies": [
+                        {
+                            "companyName": "string",
+                            "businessId": "string",
+                            "companyType": "string",
+                            "registrationDate": "string",
+                            "status": "string",
+                            "lei": "string"
+                        }
+                    ]
+                },
+                "error": "string"
+            }
+        }
+    ]
+}
