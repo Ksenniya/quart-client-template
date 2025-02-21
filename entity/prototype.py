@@ -1,15 +1,16 @@
-Below is the prototype.py file that implements a working prototype using Quart, QuartSchema, aiohttp for external HTTP calls, and a simple in‑memory cache for persistence. Remember that many parts (such as the actual Finnish Companies Registry URL and the LEI service URL) are mocked/simulated. Wherever a more robust implementation is needed, you’ll see a TODO comment.
+Below is the updated prototype.py with added Quart Schema validation. In this version, we define a dataclass CompanyQueryParams (using only primitives) to validate the query parameters for the GET /companies endpoint. We use the decorator @validate_querystring from quart_schema (note the order: the validation decorator comes first, then the route decorator). For any POST/PUT endpoints (if added later), you would use @validate_request. Please review the TODO comments for additional enhancements later.
 
 ------------------------------------------------------------
 #!/usr/bin/env python3
 """
 Prototype for Finnish Companies Data Retrieval and Enrichment Application.
-This prototype exposes a GET /companies endpoint, which:
-  • Searches companies by name (and optionally other filters)
+
+This prototype exposes a GET /companies endpoint which:
+  • Searches companies by name (and optional filters)
   • Filters out inactive companies
   • Enriches each active company with its Legal Entity Identifier (LEI)
-  
-External calls are currently mocked using aiohttp.ClientSession with placeholder URLs.
+
+External API calls are currently mocked using aiohttp.ClientSession with placeholder URLs.
 Persistence is simulated using a local in-memory cache.
 """
 
@@ -17,13 +18,27 @@ import asyncio
 import aiohttp
 import logging
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_querystring  # For GET requests, use validate_querystring
+from dataclasses import dataclass
+from typing import Optional
 
-# Create the Quart app instance
+# Create the Quart app instance and initialize QuartSchema
 app = Quart(__name__)
-QuartSchema(app)  # required line for QuartSchema usage
+QuartSchema(app)
 
-# Setup a very simple in-memory cache for persistence (mock)
+# Define a dataclass for query parameters validation for GET /companies
+@dataclass
+class CompanyQueryParams:
+    name: str  # required
+    location: Optional[str] = None
+    businessId: Optional[str] = None
+    companyForm: Optional[str] = None
+    mainBusinessLine: Optional[str] = None
+    registrationDateStart: Optional[str] = None  # Expected in YYYY-MM-DD format
+    registrationDateEnd: Optional[str] = None    # Expected in YYYY-MM-DD format
+    page: Optional[int] = None
+
+# Setup a very simple in‑memory cache for persistence (mock)
 local_lei_cache = {}  # { businessId: lei }
 
 # Setup logging for debugging purposes
@@ -36,12 +51,11 @@ async def fetch_companies_from_registry(params: dict) -> list:
     Fetch companies from the external Finnish Companies Registry.
     Uses aiohttp to execute an HTTP GET request.
     NOTE: This is a placeholder for the actual API call.
-    
+
     TODO: Replace the URL with the actual Finnish Companies Registry endpoint.
-    TODO: Handle pagination and proper parameter mapping.
+          Handle pagination and proper parameter mapping.
     """
-    # For now, we simulate an external API call with hardcoded sample data.
-    # In a real implementation, you would use params to filter the search.
+    # Simulated response with sample data
     simulated_response = [
         {
             "companyName": "Example Company",
@@ -75,9 +89,9 @@ async def get_lei(business_id: str) -> str:
     """
     Fetch the Legal Entity Identifier (LEI) for a company.
     Uses aiohttp to execute an HTTP GET request.
-    
+
     If the LEI has been previously fetched, returns the cached version.
-    
+
     TODO: Replace the URL with the actual LEI enrichment service endpoint.
     """
     # Check if already cached
@@ -85,7 +99,7 @@ async def get_lei(business_id: str) -> str:
         logger.debug("Returning cached LEI for business_id %s", business_id)
         return local_lei_cache[business_id]
 
-    # For prototype purposes, we simulate a network call for LEI enrichment
+    # For prototype purposes, simulate a network call for LEI enrichment
     async with aiohttp.ClientSession() as session:
         # TODO: Replace with the actual LEI endpoint
         url = "https://api.example.lei/enrich"
@@ -94,18 +108,18 @@ async def get_lei(business_id: str) -> str:
             async with session.get(url, params=params) as resp:
                 if resp.status != 200:
                     logger.warning("Non-200 response from LEI service for business_id %s", business_id)
-                    pass  # For the prototype, we continue even on error
-                # In a real implementation, parse the response JSON:
+                    # For the prototype, we continue even on error
+                # In a real implementation, extract the LEI from the response:
                 # data = await resp.json()
                 # lei = data.get("lei")
-                # For now, simulate a LEI value:
+                # Here we simulate a LEI value:
                 lei = "LEI" + business_id.replace("-", "")
         except Exception as e:
             logger.error("Error fetching LEI for business_id %s: %s", business_id, e)
             # TODO: Handle exception appropriately
             lei = "UNKNOWN_LEI"
     
-    # Cache the result
+    # Cache the result for subsequent calls
     local_lei_cache[business_id] = lei
     logger.debug("Caching LEI for business_id %s: %s", business_id, lei)
     return lei
@@ -138,26 +152,26 @@ async def enrich_single_company(company: dict):
         logger.warning("No businessId provided for company: %s", company.get("companyName"))
 
 
+# The GET /companies endpoint.
+# NOTE: For GET requests with query parameters, we use @validate_querystring with our dataclass.
+@validate_querystring(CompanyQueryParams)
 @app.route("/companies", methods=["GET"])
 async def get_companies():
     """
     GET /companies Endpoint.
-    
-    Expects a query parameter "name" along with optional filtering fields.
-    Retrieves companies from Finnish Companies Registry, filters out inactive companies,
+
+    Expects query parameters validated by CompanyQueryParams.
+    Retrieves companies from the Finnish Companies Registry, filters out inactive companies,
     enriches active companies with LEI and returns a JSON list of results.
-    
+
     Responses:
       200: JSON list of companies.
-      400: Bad Request for missing parameters.
+      400: Bad Request for missing/invalid parameters.
       500: Internal Server Error for unexpected issues.
     """
     try:
-        # Extract query parameters
+        # Access validated query parameters via the standard request.args interface.
         query_params = request.args.to_dict()
-        if "name" not in query_params or not query_params["name"]:
-            return jsonify({"error": "Missing required parameter: name"}), 400
-
         logger.debug("Received query_params: %s", query_params)
         
         # Fetch companies data from external registry (simulated)
@@ -167,15 +181,28 @@ async def get_companies():
         active_companies = [c for c in companies if c.get("status", "").lower() == "active"]
         logger.debug("Filtered active companies: %s", active_companies)
         
-        # Enrich active companies with LEI information by fetching from an external service
+        # Enrich active companies with LEI information by fetching from an external service.
         await enrich_companies_with_lei(active_companies)
         
-        # Prepare final result. Note: For prototype purposes we only return active companies.
+        # For this prototype, return only active companies.
         return jsonify(active_companies), 200
 
     except Exception as e:
         logger.exception("Unexpected error in GET /companies")
         return jsonify({"error": "An unexpected error occurred"}), 500
+
+
+# Example endpoint without validation (if needed).
+@app.route("/companies/<string:id>/lei", methods=["GET"])
+async def get_company_lei(id: str):
+    """
+    GET /companies/<id>/lei Endpoint.
+    
+    Returns the cached LEI for the company with given id.
+    No validation is added as per the requirements.
+    """
+    lei = local_lei_cache.get(id, "LEI_NOT_FOUND")
+    return jsonify({"businessId": id, "lei": lei}), 200
 
 
 # Entry point to run the Quart app
@@ -185,10 +212,10 @@ if __name__ == '__main__':
 ------------------------------------------------------------
 
 Notes:
-• The external API calls (the Finnish Companies Registry and the LEI enrichment service) are simulated. Replace the placeholder URLs and response handling with appropriate logic once their details are available.
-• Persistence is handled by a simple dictionary (local_lei_cache), which is only suitable for this prototype.
-• No data input validations (beyond checking for a required “name” query parameter) have been added; the use of QuartSchema is included as requested, but no request validation decorators are applied.
-• The code uses asyncio.gather to perform LEI fetches concurrently.
-• Logging provides insight into the internal workflow for debugging and UX verification.
-
-This prototype should support the UX review and help identify any additional gaps before proceeding with a more thorough implementation.
+• The GET /companies endpoint is decorated with @validate_querystring(CompanyQueryParams) to enforce parameter validation.
+• We continue using the standard request.args interface to access query data inside the view function.
+• POST and PUT endpoints in the future should use @validate_request with an appropriate dataclass for body validation.
+• External API URLs and error-handling strategies remain as placeholders to be updated during further development.
+• Persistence is simulated via a simple in‑memory cache.
+  
+This updated code adheres to the guidelines for using quart-schema’s validation decorators while keeping the prototype simple for UX verification and requirement gathering.
