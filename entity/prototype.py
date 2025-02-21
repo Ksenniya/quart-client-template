@@ -1,23 +1,34 @@
-Below is a working prototype (prototype.py) using Quart, aiohttp, and an in-memory cache. This version uses mocks (with corresponding TODO comments) for external API calls and persistence, and initiates asynchronous processing via asyncio.create_task.
+Below is the updated prototype.py with validation decorators added. Note that for POST endpoints the order of decorators is as follows (route first, then validate_request, then validate_response) as a workaround for a known issue in quart-schema. For GET endpoints with parameters you must use the standard approach (accessing query params from request.args). Additional TODO comments mark mocks and placeholders.
 
-------------------------------------------------
+------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import uuid
 import datetime
+from dataclasses import dataclass
 from quart import Quart, jsonify, request, abort
-from quart_schema import QuartSchema  # Include QuartSchema(app) as required
+from quart_schema import QuartSchema, validate_request, validate_response  # Also use validate_querystring if needed
 import aiohttp
 
 app = Quart(__name__)
-QuartSchema(app)  # Single-line integration per requirements
+QuartSchema(app)  # single-line integration per requirements
+
+# Dataclasses for validation
+@dataclass
+class CompanySearchRequest:
+    companyName: str  # Required field, using only primitives
+
+@dataclass
+class JobResponse:
+    jobId: str
+    message: str
 
 # In-memory store for job status and processed results
 entity_jobs = {}
 
 # Constants for external APIs
 PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
-# TODO: Provide actual URL or API key for the LEI lookup service.
+# TODO: Provide actual URL or authentication details for the LEI lookup service.
 LEI_API_BASE = "https://example.com/lei-lookup"  # Placeholder URL
 
 async def fetch_companies(company_name: str) -> list:
@@ -26,16 +37,16 @@ async def fetch_companies(company_name: str) -> list:
     async with aiohttp.ClientSession() as session:
         async with session.get(PRH_API_BASE, params=params) as resp:
             if resp.status != 200:
-                # TODO: Enhance error handling
+                # TODO: Improve error handling based on PRH API errors.
                 return []
             data = await resp.json()
-            # Assuming data format is { "results": [ { company data }, ... ] }
+            # Assuming data format is similar to { "results": [ { company data }, ... ] }
             return data.get("results", [])  # Placeholder extraction
 
 async def fetch_lei(company_info: dict) -> str:
     """Fetch LEI for a company using an external LEI lookup service."""
-    # TODO: Replace this with a real API call if available. Currently a mock.
-    # For demonstration, assume that if company name length is even, we find an LEI.
+    # TODO: Replace this mock with a real API call.
+    # For demonstration, assume if the length of companyName is even, an LEI is found.
     if len(company_info.get("companyName", "")) % 2 == 0:
         return "MOCK-LEI-1234567890"
     return "Not Available"
@@ -44,18 +55,18 @@ async def process_entity(job_id: str, search_payload: dict):
     """Process the company search: fetch companies, filter and enrich with LEI."""
     # Record start time for job processing
     entity_jobs[job_id]["requestedAt"] = datetime.datetime.utcnow().isoformat()
-    
+
     # 1. Fetch companies from PRH API
     company_name = search_payload.get("companyName", "")
     companies = await fetch_companies(company_name)
 
     # 2. Filter out inactive companies.
-    # TODO: Check the actual key for business status. Using "status" and value "Active" as placeholder.
+    # TODO: Verify the actual key and values indicating active status.
     active_companies = [
         company for company in companies
         if company.get("status", "").lower() == "active"
     ]
-    
+
     # 3. For each active company, lookup the LEI.
     results = []
     for company in active_companies:
@@ -65,7 +76,7 @@ async def process_entity(job_id: str, search_payload: dict):
             "businessId": company.get("businessId", "N/A"),
             "companyType": company.get("companyType", "N/A"),
             "registrationDate": company.get("registrationDate", "N/A"),
-            "status": "Active",  # Since we filtered inactive companies out
+            "status": "Active",  # We filtered out inactive companies already
             "lei": lei,
         }
         results.append(enriched)
@@ -73,41 +84,46 @@ async def process_entity(job_id: str, search_payload: dict):
     # 4. Save the processed results in our in-memory cache
     entity_jobs[job_id]["results"] = results
     entity_jobs[job_id]["status"] = "completed"
-    
+
+# POST endpoint: all external fetching, filtering, enrichment are done here.
+# Workaround: For POST endpoints, the route decorator must be first,
+# then validate_request and validate_response, as per quart-schema known issue.
 @app.route("/api/companies/search", methods=["POST"])
-async def search_companies():
-    data = await request.get_json()
-    if not data or "companyName" not in data:
-        abort(400, description="Missing required field: companyName")
-    
-    # Create a unique job identifier and store initial job data
+@validate_request(CompanySearchRequest)  # This decorator must follow the route decorator.
+@validate_response(JobResponse, 201)
+async def search_companies(data: CompanySearchRequest):
+    # The validated payload is received as 'data'
+    # Create a unique job identifier and store initial job data in our in-memory cache.
     job_id = str(uuid.uuid4())
     entity_jobs[job_id] = {"status": "processing", "requestedAt": None, "results": None}
-    
+
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data))
-    
+    # TODO: Consider logging or exception handling for background tasks.
+    asyncio.create_task(process_entity(job_id, data.__dict__))
+
     # Return the job id so that client can poll for results.
     return jsonify({
         "jobId": job_id,
         "message": "Search initiated. Use jobId to poll for results."
-    })
+    }), 201
 
+# GET endpoint: used for retrieving results via job_id.
+# Since GET requests do not contain a body, no validation decorators are needed.
 @app.route("/api/companies/<job_id>", methods=["GET"])
 async def get_search_results(job_id):
     job = entity_jobs.get(job_id)
     if not job:
         abort(404, description="Job not found")
-    
-    # If processing is still underway, indicate that
+
+    # If processing is still underway, indicate that.
     if job["status"] != "completed":
         return jsonify({
             "jobId": job_id,
             "status": job["status"],
             "message": "Processing. Please check back later."
         })
-    
-    # Return the completed results
+
+    # Return the completed results.
     return jsonify({
         "jobId": job_id,
         "completed": True,
@@ -116,11 +132,11 @@ async def get_search_results(job_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-------------------------------------------------
+------------------------------------------
 
-Comments on the prototype:
-• The external APIs (Finnish Companies Registry and LEI lookup) are invoked in asynchronous functions. Both use aiohttp.ClientSession.
-• The persistence is mocked using the entity_jobs dictionary. 
-• Each time a POST is received, a new job is created, then processed in the background.
-• TODO comments indicate where additional implementation details (error handling, actual LEI lookup, etc.) are required.
-• This prototype is intended to verify the UX and highlight any gaps before a full implementation.
+Notes:
+• The dataclasses CompanySearchRequest and JobResponse are used for request and response validation.
+• For POST endpoints, the order is: @app.route, then @validate_request, then @validate_response.
+• GET endpoints access parameters via request.args (or path parameters), so no validation decorators are applied.
+• TODO comments indicate areas where a more robust solution or real external API implementation is needed.
+• This prototype uses an in-memory dictionary (entity_jobs) to mock persistence.
