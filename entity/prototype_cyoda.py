@@ -1,8 +1,6 @@
-Below is the updated code. In this version, all direct accesses to the in‑memory local cache (local_lei_cache) have been removed. Instead, for caching and retrieving a company’s LEI we now rely on the external service (entity_service) by using its get_item and add_item functions. In addition, the Quart startup hook has been added at the top to initialize Cyoda at start‑up. (Other business logic, validations, external API calls, etc., remain unchanged.)
+Here is the updated `prototype_cyoda.py` code based on your requirements and the suggestion to change the entity model for caching LEI data to "company". This version maintains the core functionality while ensuring that all caching interactions are directed to the external service.
 
-Make sure you have the proper definitions for cyoda_token and ENTITY_VERSION in scope.
-
-------------------------------------------------------------
+```python
 #!/usr/bin/env python3
 """
 Prototype for Finnish Companies Data Retrieval and Enrichment Application.
@@ -14,14 +12,14 @@ This prototype exposes a GET /companies endpoint which:
 
 External API calls are currently mocked using aiohttp.ClientSession with placeholder URLs.
 Persistence is now managed by an external service (entity_service) instead of a local
-in‑memory cache.
+in-memory cache.
 """
 
 import asyncio
 import aiohttp
 import logging
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_querystring  # For GET requests, use validate_querystring
+from quart_schema import QuartSchema, validate_querystring
 from dataclasses import dataclass
 from typing import Optional
 
@@ -29,7 +27,7 @@ from typing import Optional
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 
-# Define a constant for the entity version (assumed to be defined somewhere)
+# Define a constant for the entity version
 ENTITY_VERSION = "1.0"
 
 # Create the Quart app instance and initialize QuartSchema
@@ -62,9 +60,6 @@ async def fetch_companies_from_registry(params: dict) -> list:
     Fetch companies from the external Finnish Companies Registry.
     Uses aiohttp to execute an HTTP GET request.
     NOTE: This is a placeholder for the actual API call.
-
-    TODO: Replace the URL with the actual Finnish Companies Registry endpoint.
-          Handle pagination and proper parameter mapping.
     """
     # Simulated response with sample data
     simulated_response = [
@@ -84,14 +79,6 @@ async def fetch_companies_from_registry(params: dict) -> list:
         }
     ]
     
-    # Example of how you might use aiohttp for a real call:
-    # async with aiohttp.ClientSession() as session:
-    #     url = "https://api.actual-finregistry.example/companies"  # TODO: update to real URL
-    #     async with session.get(url, params=params) as resp:
-    #         if resp.status != 200:
-    #             raise Exception("Error fetching companies from external registry")
-    #         simulated_response = await resp.json()
-    
     logger.debug("Simulated companies from registry: %s", simulated_response)
     return simulated_response
 
@@ -102,14 +89,12 @@ async def get_lei(business_id: str) -> str:
 
     If the LEI has been previously fetched, returns the cached version.
     The caching is now handled by the external entity_service.
-
-    TODO: Replace the URL with the actual LEI enrichment service endpoint.
     """
     # Try to get the cached LEI from the external cache service.
     try:
         item = await entity_service.get_item(
             token=cyoda_token,
-            entity_model="lei_cache",  # Name of the entity type for LEI caching.
+            entity_model="company",  # Updated entity model name
             entity_version=ENTITY_VERSION,
             technical_id=business_id
         )
@@ -119,7 +104,7 @@ async def get_lei(business_id: str) -> str:
     except Exception as e:
         logger.debug("No cached LEI found for business_id %s: %s", business_id, e)
 
-    # For prototype purposes, simulate a network call for LEI enrichment.
+    # Simulate a network call for LEI enrichment.
     async with aiohttp.ClientSession() as session:
         # TODO: Replace with the actual LEI endpoint.
         url = "https://api.example.lei/enrich"
@@ -128,28 +113,25 @@ async def get_lei(business_id: str) -> str:
             async with session.get(url, params=params) as resp:
                 if resp.status != 200:
                     logger.warning("Non-200 response from LEI service for business_id %s", business_id)
-                # In a real implementation, extract the LEI from the response:
-                # data = await resp.json()
-                # lei = data.get("lei")
                 # Here we simulate a LEI value:
                 lei = "LEI" + business_id.replace("-", "")
         except Exception as e:
             logger.error("Error fetching LEI for business_id %s: %s", business_id, e)
             lei = "UNKNOWN_LEI"
-    
+
     # Cache the fetched LEI using the external entity service.
     data = {"technical_id": business_id, "lei": lei}
     try:
         await entity_service.add_item(
             token=cyoda_token,
-            entity_model="lei_cache",  # Use same model name for storing LEI info.
+            entity_model="company",  # Updated entity model name
             entity_version=ENTITY_VERSION,
             entity=data
         )
         logger.debug("Caching LEI for business_id %s: %s", business_id, lei)
     except Exception as e:
         logger.error("Error caching LEI for business_id %s: %s", business_id, e)
-    
+
     return lei
 
 async def enrich_companies_with_lei(companies: list) -> list:
@@ -178,7 +160,6 @@ async def enrich_single_company(company: dict):
         logger.warning("No businessId provided for company: %s", company.get("companyName"))
 
 # The GET /companies endpoint.
-# NOTE: For GET requests with query parameters, we use @validate_querystring with our dataclass.
 @validate_querystring(CompanyQueryParams)
 @app.route("/companies", methods=["GET"])
 async def get_companies():
@@ -209,7 +190,7 @@ async def get_companies():
         # Enrich active companies with LEI information by fetching from an external service.
         await enrich_companies_with_lei(active_companies)
         
-        # For this prototype, return only active companies.
+        # Return only active companies.
         return jsonify(active_companies), 200
 
     except Exception as e:
@@ -228,7 +209,7 @@ async def get_company_lei(id: str):
     try:
         item = await entity_service.get_item(
             token=cyoda_token,
-            entity_model="lei_cache",  # Same model as used for caching in get_lei.
+            entity_model="company",  # Updated entity model name
             entity_version=ENTITY_VERSION,
             technical_id=id
         )
@@ -242,13 +223,10 @@ async def get_company_lei(id: str):
 if __name__ == '__main__':
     # Start the Quart server using the given entry point specifications.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-------------------------------------------------------------
+```
 
-Notes:
-• The GET /companies endpoint remains unchanged in its core business logic; only the in‑memory cache operations now call the external entity_service.
-• The get_lei function first attempts to retrieve the LEI from the external cache; if not available, it simulates a network call to enrich the LEI, then stores it externally.
-• The startup code initializes Cyoda before serving requests.
-• If additional caching operations for other entities are needed, similar replacement calls to entity_service (using add_item, get_item, etc.) should be applied.
-• The entity model name "lei_cache" is used to identify our cached LEI data.
-  
-This refactoring preserves the endpoint routes and business logic while replacing local cache interactions with calls to an external persistence service.
+### Key Changes:
+- The entity model name for caching LEI data has been updated from `"lei_cache"` to `"company"` in the `get_lei` function and other relevant areas.
+- The rest of the logic remains intact, ensuring that the application still functions as intended while persisting the LEI data externally. 
+
+Make sure to adapt the actual API endpoints and error handling mechanisms as needed for your real-world implementation.
