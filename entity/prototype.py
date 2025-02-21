@@ -1,24 +1,42 @@
-Below is an example prototype.py file that implements the design using Quart with aiohttp for asynchronous HTTP requests and an in-memory cache for job persistence. In this implementation, external calls are simulated with placeholders that include TODO comments where additional work or validation is required.
+Below is the updated prototype.py file. This version uses dataclasses to define the expected input (for POST) and output (for response validation) models. Note that for GET endpoints, no decorator is applied for body validation since GET requests do not include a request body. Also, because of a current issue with decorator ordering in quart-schema, we place validation decorators as follows (for POST: first the route, then @validate_request, then @validate_response). Each mock or placeholder is marked with a TODO comment.
 
 -------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response
+# Note: For GET requests with query parameters, the library requires the validation
+# decorator to be placed first—but since our GET endpoint here only uses path parameters,
+# we don't need any validation decorator.
 
 app = Quart(__name__)
-# Add QuartSchema (we use it without @validate_request because the input data is dynamic)
+# Adding QuartSchema. NOTE: For POST endpoints, the route decorator must come first, then @validate_request.
 QuartSchema(app)
+
+# Dataclass for the incoming POST payload.
+@dataclass
+class CompanyQuery:
+    company_name: str
+    registration_date_start: str = ""  # Expected format yyyy-mm-dd; empty string if not provided.
+    registration_date_end: str = ""    # Expected format yyyy-mm-dd; empty string if not provided.
+    page: int = 1
+
+# Dataclass for the response of a job request.
+@dataclass
+class JobResponse:
+    job_id: str
+    status: str
 
 # In-memory storage for query jobs.
 jobs = {}  # { job_id: { "status": "processing"/"done"/"failed", "requestedAt": ..., "results": [...] } }
 
 # Async function to process company data: query the PRH API, filter, and enrich with LEI data.
-async def process_entity(job_id, data):
+async def process_entity(job_id, data: dict):
     company_name = data.get("company_name")
     registration_date_start = data.get("registration_date_start")
     registration_date_end = data.get("registration_date_end")
@@ -72,7 +90,7 @@ async def process_entity(job_id, data):
     jobs[job_id]["completedAt"] = datetime.utcnow().isoformat()
 
 # Helper function that simulates fetching LEI details from an external service.
-async def fetch_lei(company):
+async def fetch_lei(company: dict) -> str:
     # TODO: Replace with an actual call to a LEI provider API when available.
     async with aiohttp.ClientSession() as session:
         # Simulate a delay that might occur when calling an external service.
@@ -84,20 +102,26 @@ async def fetch_lei(company):
         else:
             return None
 
-# Endpoint to initiate the query processing.
+# POST endpoint to initiate the query processing.
+# WORKAROUND: For POST requests, due to a quart-schema issue, the route decorator must come first,
+# followed by @validate_request and then the @validate_response decorator.
 @app.route("/companies/query", methods=["POST"])
-async def companies_query():
-    data = await request.get_json()
-    # TODO: Add more robust input validation if needed.
+@validate_request(CompanyQuery)
+@validate_response(JobResponse, 200)
+async def companies_query(data: CompanyQuery):
+    # Convert dataclass to dict.
+    data_dict = data.__dict__
     job_id = str(uuid.uuid4())
     jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     # Fire and forget the background processing task.
-    asyncio.create_task(process_entity(job_id, data))
-    return jsonify({"job_id": job_id, "status": "processing"})
+    asyncio.create_task(process_entity(job_id, data_dict))
+    # Return the job_id and status using the validated JobResponse model.
+    return JobResponse(job_id=job_id, status="processing")
 
-# Endpoint to retrieve the result of a previously submitted query.
+# GET endpoint to retrieve the result of a previously submitted query.
+# No validation decorator is needed for GET requests without a request body.
 @app.route("/companies/result/<job_id>", methods=["GET"])
-async def companies_result(job_id):
+async def companies_result(job_id: str):
     job = jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -118,9 +142,10 @@ if __name__ == '__main__':
 -------------------------------------------------
 
 Notes:
-• This prototype uses an in-memory dictionary (jobs) to store query jobs and results.
-• External API calls use aiohttp.ClientSession. Real endpoints should include robust error handling and data validation.
-• The async processing (via asyncio.create_task) allows the POST endpoint to return a job_id immediately.
-• Replace the TODO comments with actual validations and integration details as the specification evolves.
+• The POST endpoint now uses @validate_request and @validate_response with appropriate ordering (route first for POST).
+• For GET requests without a body (only a path parameter), no validation is applied.
+• Mocks and placeholder logic are marked with TODO comments for future enhancements.
+• This prototype uses aiohttp.ClientSession for external HTTP requests and an in-memory jobs dictionary for persistence.
+• The workaround comments explain the decorator ordering issues in quart-schema.
 
-This working prototype should help verify the UX and expose any gaps for further refinement.
+This prototype should help verify the UX and highlight any gaps before proceeding with a more robust implementation.
