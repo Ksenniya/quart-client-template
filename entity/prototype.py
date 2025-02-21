@@ -1,5 +1,12 @@
+Below is the updated prototype.py with validation decorators added. Note that for POST endpoints the route decorator comes first, then the @validate_request and @validate_response decorators (this is a workaround for a known issue in quart-schema where the order matters). For GET endpoints with query parameters, the validation decorator is placed before the route decorator, and the function does not accept the validated argument (it must retrieve parameters via request.args).
+
+------------------------------
+# prototype.py
+
+from dataclasses import dataclass
+from typing import Optional
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # Minimal schema integration
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 import aiohttp
 import asyncio
 import uuid
@@ -7,6 +14,19 @@ import datetime
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
+
+# Data classes for validation
+@dataclass
+class IngestPayload:
+    # Example input for POST /ingest-links. Both fields are optional.
+    filter: Optional[str] = None
+    force: Optional[bool] = None
+
+@dataclass
+class LinkQuery:
+    # Example query parameters for GET /links endpoint.
+    page: Optional[int] = 1
+    pageSize: Optional[int] = 20
 
 # Global in-memory "database" mocks for persistence and jobs
 LINKS = {}            # key: link_id, value: link data dict
@@ -90,14 +110,14 @@ async def process_ingestion(job_id):
     JOBS[job_id]["completedAt"] = datetime.datetime.utcnow().isoformat()
 
 # POST endpoint to ingest links (triggers external API calls and processing)
+# NOTE: For POST endpoints, we place the route decorator first, then validation decorators,
+# which is a known workaround for the quart-schema library issue.
 @app.route('/ingest-links', methods=['POST'])
-async def ingest_links():
-    # Optionally parse incoming JSON if needed (currently dynamic data)
-    # TODO: Validate any input parameters if specified in future requirements.
-    try:
-        data = await request.get_json()  # not used directly, placeholder for future use
-    except Exception:
-        data = {}
+@validate_request(IngestPayload)    # Validate the request body (if provided)
+@validate_response(dict, 202)       # Validate the response; here we use dict as generic type.
+async def ingest_links(data: IngestPayload):
+    # The validated data is available as "data", though it's not currently used.
+    # TODO: Use validated payload fields if necessary.
     
     # Create a job entry for asynchronous processing
     job_id = str(uuid.uuid4())
@@ -114,15 +134,20 @@ async def ingest_links():
     # Return 202 Accepted with job id information.
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
-# GET endpoint to retrieve all stored Link Entities
+# GET endpoint to retrieve all stored Link Entities with query parameters validation.
+# For GET endpoints, the validation decorator is placed before the route decorator
+# and we do not pass the validated object as function argument.
+@validate_querystring(LinkQuery)  # Workaround: validation decorator must be first for GET requests
 @app.route('/links', methods=['GET'])
 async def get_links():
-    # Optional query parameters (e.g., pagination) can be added
-    # TODO: Implement pagination if needed.
+    # Retrieve query parameters using request.args (the validated values are not automatically injected).
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('pageSize', 20, type=int)
+    # TODO: Implement real pagination if needed.
     results = list(LINKS.values())
     return jsonify({"results": results, "total": len(results)}), 200
 
-# GET endpoint to retrieve a specific Link Entity by its id
+# GET endpoint to retrieve a specific Link Entity by its id (no validation needed)
 @app.route('/links/<int:link_id>', methods=['GET'])
 async def get_link(link_id: int):
     link = LINKS.get(link_id)
@@ -130,8 +155,7 @@ async def get_link(link_id: int):
         return jsonify({"error": "Link not found"}), 404
     return jsonify(link), 200
 
-# (Optional) GET endpoint to check the status of an ingestion job.
-# This endpoint was not in the original specification, but added as a helper.
+# (Optional) GET endpoint to check the status of an ingestion job (no validation needed)
 @app.route('/jobs/<job_id>', methods=['GET'])
 async def get_job(job_id: str):
     job = JOBS.get(job_id)
@@ -144,6 +168,10 @@ if __name__ == '__main__':
 
 # End of prototype.py
 
-# TODO: In a production implementation, replace in-memory persistence with a robust database or cache.
-# TODO: Add proper error handling, timeout management, and input validation.
-# TODO: Consider implementing retries and logging finer details of external API interactions.
+# TODO:
+# - In a production implementation, replace in-memory persistence with a robust database or cache.
+# - Add proper error handling, timeout management, and input validation.
+# - Consider implementing retries and logging finer details of external API interactions.
+------------------------------
+
+This prototype now uses @validate_request and @validate_response for the POST endpoint and @validate_querystring for the GET endpoint with query parameters, following the correct decorator order per the known workaround in quart-schema.
