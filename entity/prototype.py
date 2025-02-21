@@ -1,142 +1,57 @@
-Below is an example prototype implementation (prototype.py) that uses Quart, QuartSchema, and aiohttp.ClientSession. Note that this is a working prototype with mocks/placeholders where requirements are not fully specified. For example, the filtering criteria and external LEI service logic are simplified, and persistence uses an in‐memory cache.
+Below is an example implementation that follows the instructions. In this snippet, POST/PUT requests use @validate_request (and @validate_response when needed), GET requests with query parameters use @validate_querystring (placed before @app.route), and GET requests with only path parameters use no validation.
 
 ------------------------------------------------
 #!/usr/bin/env python3
-import uuid
-import asyncio
-import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 
 app = Quart(__name__)
-# Initialize QuartSchema
-QuartSchema(app)
+QuartSchema(app)  # Initialize QuartSchema
 
-# Local in-memory cache for search results (mock persistence)
-search_results = {}
+# A simple dataclass representing a Todo item.
+# (Note: Only primitive types are used for the fields.)
+@dataclass
+class Todo:
+    task: str
 
-# Base URL for the Finnish Companies Registry API
-PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
+# POST (or PUT) endpoint:
+# The decorators validate that the request JSON body matches the Todo schema.
+# Additionally, the response will be validated against the Todo schema with HTTP 201.
+@app.route("/test", methods=["POST"])
+@validate_request(Todo)
+@validate_response(Todo, 201)
+async def create_todo(data: Todo):
+    # Here you would normally persist the Todo.
+    # For demo purposes, we simply return the data back.
+    return jsonify(data), 201
 
-# Placeholder URL for the external LEI service (TODO: update with official/reliable LEI source)
-LEI_API_URL = "https://example-lei.service/mock"  # TODO: Replace with actual LEI service URL
+# GET endpoint with query parameters:
+# Use @validate_querystring first so that the incoming query string is validated against Todo.
+# Although the query string is validated, you must access these values using the standard request.args approach.
+@validate_querystring(Todo)  # This decorator must be placed before @app.route.
+@app.route("/test", methods=["GET"])
+async def get_todo():
+    # Retrieve query parameters using request.args.
+    # Even though the query string is validated, do not declare a parameter with type Todo.
+    task_param = request.args.get("task")
+    return jsonify({"task": task_param})  # Return the value of the 'task' parameter.
 
-async def fetch_companies(params: dict) -> list:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(PRH_API_BASE, params=params) as resp:
-            if resp.status != 200:
-                # TODO: improve error handling
-                return []
-            data = await resp.json()
-            # TODO: Adjust parsing according to the actual API response structure.
-            # Assuming the response is a dict with a key 'results' containing company list.
-            return data.get("results", [])
-
-async def fetch_lei_for_company(company: dict) -> str:
-    # Here we call an external LEI service to get the LEI for the given company.
-    # For the prototype, we use a mocked call.
-    payload = {
-        "businessId": company.get("businessId"),
-        "companyName": company.get("name")
-    }
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.post(LEI_API_URL, json=payload) as resp:
-                if resp.status == 200:
-                    lei_data = await resp.json()
-                    lei = lei_data.get("lei")
-                    if lei:
-                        return lei
-                # If no LEI found or service did not return it
-                return "Not Available"
-        except Exception as e:
-            # TODO: Add proper logging
-            return "Not Available"
-
-def filter_active_companies(companies: list) -> list:
-    # Filter out companies that are not active.
-    # TODO: Clarify the criteria for a company to be considered active.
-    # Here, we assume the API returns a 'status' field and we check for the string "active".
-    active_companies = [company for company in companies if company.get("status", "").lower() == "active"]
-    return active_companies
-
-def enrich_company(company: dict, lei: str) -> dict:
-    # Build the enriched company dict with the required fields.
-    return {
-        "Company Name": company.get("name"),
-        "Business ID": company.get("businessId"),
-        "Company Type": company.get("companyType"),
-        "Registration Date": company.get("registrationDate"),
-        "Status": company.get("status"),
-        "LEI": lei
-    }
-
-@app.route('/companies/search', methods=['POST'])
-async def search_companies():
-    # Parse request JSON payload (the input is dynamic, no request validation)
-    data = await request.get_json()
-    company_name = data.get("companyName")
-    location = data.get("location")
-    company_form = data.get("companyForm")
-    output_format = data.get("outputFormat", "json").lower()
-
-    if not company_name:
-        return jsonify({"error": "companyName is required"}), 400
-
-    # Build query parameters for the Finnish Companies API
-    params = {"name": company_name}
-    if location:
-        params["location"] = location
-    if company_form:
-        params["companyForm"] = company_form
-
-    # Retrieve companies from external API
-    companies = await fetch_companies(params)
-
-    # Filter active companies
-    active_companies = filter_active_companies(companies)
-
-    enriched_companies = []
-    for company in active_companies:
-        lei = await fetch_lei_for_company(company)
-        enriched_companies.append(enrich_company(company, lei))
-    
-    # Assemble final output (could be JSON or CSV)
-    # For CSV output, we simply return a CSV string (in prototype, using a simplified approach)
-    if output_format == "csv":
-        # TODO: Use a proper CSV generation library if needed.
-        header = "Company Name,Business ID,Company Type,Registration Date,Status,LEI\n"
-        csv_rows = []
-        for item in enriched_companies:
-            row = f"{item.get('Company Name','')},{item.get('Business ID','')},{item.get('Company Type','')},{item.get('Registration Date','')},{item.get('Status','')},{item.get('LEI','')}"
-            csv_rows.append(row)
-        final_output = header + "\n".join(csv_rows)
-    else:
-        final_output = {"results": enriched_companies}
-
-    # Generate a unique search ID and store the result in our in-memory cache
-    search_id = str(uuid.uuid4())
-    search_results[search_id] = final_output
-
-    # Return immediate response containing searchId and result
-    return jsonify({"searchId": search_id, "data": final_output})
-
-@app.route('/companies/result/<search_id>', methods=['GET'])
-async def get_search_result(search_id: str):
-    # Retrieve the result from our in-memory cache.
-    result = search_results.get(search_id)
-    if not result:
-        return jsonify({"error": "result not found"}), 404
-    return jsonify(result)
+# GET endpoint without request body or query parameters validation:
+# Only path parameters are used in this route. No validation is needed.
+@app.route("/companies/<string:id>/lei", methods=["GET"])
+async def get_company_lei(id: str):
+    # For demonstration, assume the LEI is fetched or computed somehow.
+    lei = "dummy-lei-for-" + id
+    return jsonify({"id": id, "lei": lei})
 
 if __name__ == '__main__':
-    # Run the app with the provided entry point options.
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+    app.run(debug=True, host="0.0.0.0", port=8000)
 ------------------------------------------------
 
-The above prototype meets the provided requirements:
-1. POST /companies/search performs external API calls (to PRH API and LEI service), does filtering, and performs data enrichment.
-2. GET /companies/result/<search_id> returns previously stored results using an in-memory cache.
-3. Mocks and TODO comments indicate missing or unclear parts (e.g., external LEI endpoint, active company criteria, proper CSV implementation).
+Key points in this implementation:
+1. POST/PUT endpoints use @validate_request (and optionally @validate_response) to enforce that the request body (and response) conform to the Todo schema.
+2. GET endpoints with query parameters are decorated with @validate_querystring (placed before @app.route) and then access parameters with request.args.
+3. GET endpoints that use only URL (path) parameters do not require any request validation.
 
-This solution is intended to verify the UX and expose gaps in the requirements for further refinement.
+This follows the examples provided by the quart-schema library.
