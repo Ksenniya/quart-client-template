@@ -1,0 +1,80 @@
+= Ingestion and Combined Link Entities Requirement Specification
+
+== Overview
+
+The system shall ingest data from two external APIs that provide hydrometric station information. It will extract link objects from both responses, combine them, and store each unique link in a persistent Link Entity.
+
+== Data Sources
+
+=== Hydrometric Monitoring Stations Collection
+
+* **Endpoint:**  
+  `https://api.weather.gc.ca/collections/hydrometric-stations?f=json&lang=en-CA`
+* **Response Characteristics:**  
+  Returns a JSON object that includes metadata such as `id`, `title`, `description`, and a `links` array containing link objects (e.g., type, rel, title, href, hreflang).
+
+=== Hydrometric Monitoring Stations Items
+
+* **Endpoint:**  
+  `https://api.weather.gc.ca/collections/hydrometric-stations/items?f=json&lang=en-CA&limit=10&additionalProp1=%7B%7D&skipGeometry=false&offset=0`
+* **Response Characteristics:**  
+  Returns a GeoJSON FeatureCollection. Each feature in the `features` array contains a `properties` object, which in turn contains its own `links` array with similar link objects.
+
+== Functional Requirements
+
+=== Data Retrieval
+
+. The system shall perform a GET request to the **Collection** endpoint to retrieve station metadata.
+. The system shall perform a GET request to the **Items** endpoint to retrieve individual station details.
+
+=== Link Extraction
+
+. From the **Collection** endpoint response, the system shall extract the `links` array.
+. From the **Items** endpoint response, the system shall iterate over each feature in the `features` array and extract any `links` arrays found within the `properties` object.
+
+=== Link Combination and Normalization
+
+. The system shall combine the link objects from both data sources into a unified collection.
+. Each link object shall be normalized into a Link Entity containing the following attributes:
+  * **type**
+  * **rel**
+  * **title**
+  * **href**
+  * **hreflang** (if available)
+. The system shall check for duplicates (e.g., based on the `href` or a combination of attributes) and ensure that each unique link is stored only once or merged appropriately.
+
+=== Persistence
+
+. The system shall persist each normalized Link Entity into the designated data store.
+. The persistence mechanism shall support idempotency to avoid duplicate records during repeated ingestions.
+
+=== Error Handling & Logging
+
+. The system shall log any errors encountered during API requests, data extraction, or persistence.
+. If one API fails or returns invalid data, the system shall continue processing the other API and include error details in the log for further investigation.
+
+== Non-Functional Requirements
+
+* **Performance:**  
+  The ingestion process should complete within an acceptable time frame to not delay downstream processes.
+* **Reliability:**  
+  The process must be resilient to intermittent network issues or API failures.
+* **Scalability:**  
+  The design should allow for additional endpoints or data sources in the future without significant changes to the extraction logic.
+
+== Acceptance Criteria
+
+1. **Successful Data Fetching:**  
+   When the ingestion process is triggered, data is successfully fetched from both the collection and items endpoints.
+2. **Link Extraction & Combination:**  
+   All link objects from both endpoints are correctly extracted, combined, and normalized into Link Entities.
+3. **Deduplication:**  
+   The system stores only unique Link Entities, with duplicates merged or skipped.
+4. **Data Persistence:**  
+   Link Entities are persisted in the data store and can be retrieved for further use.
+5. **Error Logging:**  
+   Any errors during the ingestion process are logged, and a failure in one API does not halt the entire process.
+
+== Conclusion
+
+This specification outlines the process for ingesting, processing, and storing combined link information from the provided API endpoints.
