@@ -1,6 +1,3 @@
-Below is one complete refactored version of the Quart app. In this update the POST endpoint now passes a workflow function (named process_companies_search) as an extra parameter when calling entity_service.add_item. That workflow function is applied to the job record (the “entity”) before it is persisted. In this example the workflow function simply adds a flag (“workflowProcessed”) to the entity before storage. (In your actual environment you can perform any pre‐persistence processing as required.)
-
-────────────────────────────────────────────────────────────
 #!/usr/bin/env python3
 import asyncio
 import csv
@@ -39,9 +36,8 @@ class CompanyQuery:
     format: str = "json"
 
 # -------------------------------
-# Remove in-memory jobs cache.
-# All "job" data is now saved and retrieved using the external entity_service.
-# We use the job entity model "companies_search" for these records.
+# All job data is stored via the external entity_service.
+# The job entity model "companies_search" is used.
 
 # -------------------------------
 # Helper Functions
@@ -54,7 +50,7 @@ async def fetch_company_data(company_name: str, filters: dict) -> list:
     """
     url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
     params = {"name": company_name}
-    # TODO: Add additional parameters from filters if provided
+    # (Optionally merge filters into params)
     async with aiohttp.ClientSession() as session:
         async with session.get(url, params=params) as response:
             data = await response.json()
@@ -94,16 +90,14 @@ async def process_search(job_id: str, payload: dict):
       4. Update the job record via entity_service.
     """
     try:
-        # Extract search criteria. 'companyName' is validated via the dataclass.
+        # Extract search criteria (validated via dataclass).
         company_name = payload.get("companyName", "")
-        filters = payload.get("filters", {})  # Additional filtering criteria.
-        
+        filters = payload.get("filters", {})  # Additional filtering criteria if provided
+
         # Step 1: Retrieve company data.
         companies = await fetch_company_data(company_name, filters)
-        
         # Step 2: Filter inactive companies.
         active_companies = filter_active_companies(companies)
-        
         # Step 3: Enrich each active company with LEI.
         enriched = []
         for comp in active_companies:
@@ -113,14 +107,14 @@ async def process_search(job_id: str, payload: dict):
                 "businessId": comp.get("businessId", "Unknown"),
                 "companyType": comp.get("companyForm", "Unknown"),
                 "registrationDate": comp.get("registrationDate", "Unknown"),
-                "status": "Active",  # since they are filtered already.
+                "status": "Active",  # already filtered
                 "lei": lei
             }
             enriched.append(enriched_company)
-        
-        await asyncio.sleep(0.1)  # Simulate any further processing delay.
-        
-        # Step 4: Update the processed result via entity_service.
+
+        await asyncio.sleep(0.1)  # simulate further processing delay
+
+        # Step 4: Update the job record with complete results.
         updated_job = {
             "status": "completed",
             "result": {
@@ -136,7 +130,7 @@ async def process_search(job_id: str, payload: dict):
             meta={}
         )
     except Exception as e:
-        # In case of error, update job record accordingly.
+        # Update the job record in case of an error.
         updated_job = {
             "status": "error",
             "error": str(e)
@@ -150,13 +144,12 @@ async def process_search(job_id: str, payload: dict):
         )
 
 # -------------------------------
-# New Workflow Function
+# Workflow Function
 def process_companies_search(entity: dict) -> dict:
     """
-    Workflow function that is applied to the entity before it is persisted via
-    entity_service.add_item. In this example, it adds a flag to the entity.
-    More complex processing logic (or even synchronous validation/transformation)
-    can be added here as per business requirements.
+    Workflow function applied to the entity before persistence.
+    In this example, it adds an attribute 'workflowProcessed' to mark the entity as processed.
+    You can expand or modify this function to change state, or even add auxiliary entities using a different entity_model (avoid recursion on the same model).
     """
     entity["workflowProcessed"] = True
     return entity
@@ -170,10 +163,8 @@ def process_companies_search(entity: dict) -> dict:
 async def post_company_search(data: CompanySearch):
     """
     Accepts search criteria and triggers external API calls and data enrichment.
-    POST endpoint with business logic and external data retrieval.
     Data is validated via the CompanySearch dataclass.
     """
-    # If additional fields beyond 'companyName' are provided, fetch the raw data.
     payload = await request.get_json()
     if not payload:
         return jsonify({"error": "Invalid or missing JSON payload."}), 400
@@ -183,21 +174,21 @@ async def post_company_search(data: CompanySearch):
         "status": "processing",
         "requestedAt": requested_at
     }
-    # Create the job record using the entity_service add_item method.
-    # Notice the additional workflow function that will process the record before persisting.
+
+    # Create the job record with the workflow function applied before persistence.
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies_search",
         entity_version=ENTITY_VERSION,  # always use this constant
         entity=job_record,  # the validated job record data
-        workflow=process_companies_search
+        workflow=process_companies_search  # apply workflow to entity before saving
     )
-    
-    # Fire-and-forget asynchronous processing.
+
+    # Fire-and-forget asynchronous background processing.
     asyncio.create_task(process_search(job_id, payload))
     
     return jsonify({
-        "searchId": job_id,  # added id so that the user can query data by id
+        "searchId": job_id,
         "status": "processing",
         "requestedAt": requested_at
     }), 202
@@ -207,15 +198,15 @@ async def post_company_search(data: CompanySearch):
 async def get_company_results():
     """
     Retrieves stored search results.
-    GET endpoint accepts query parameters which are validated via the CompanyQuery dataclass.
+    GET endpoint accepts query parameters validated via the CompanyQuery dataclass.
     """
     search_id = request.args.get("searchId")
     output_format = request.args.get("format", "json").lower()
-    
+
     if not search_id:
         return jsonify({"error": "Missing searchId query parameter"}), 400
-    
-    # Retrieve the job record from the external entity_service.
+
+    # Retrieve the job record from entity_service.
     job = entity_service.get_item(
         token=cyoda_token,
         entity_model="companies_search",
@@ -225,13 +216,13 @@ async def get_company_results():
     if job is None:
         return jsonify({"error": "Invalid searchId"}), 404
 
-    # If the processing is not complete, report the current status.
+    # If the job is not yet completed, return current status.
     if job.get("status") != "completed":
         return jsonify({"searchId": search_id, "status": job.get("status")}), 202
-    
+
     result = job.get("result", {})
-    
-    # If CSV is requested, convert the result to CSV format.
+
+    # If CSV format requested, convert response to CSV.
     if output_format == "csv":
         si = StringIO()
         cw = csv.writer(si)
@@ -248,7 +239,7 @@ async def get_company_results():
             ])
         return app.response_class(si.getvalue(), mimetype='text/csv')
     
-    # Default to JSON output.
+    # Default JSON output.
     return jsonify(result), 200
 
 # -------------------------------
@@ -283,9 +274,10 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 
 # End of file
-────────────────────────────────────────────────────────────
 
-In this refactored code:
-1. The new workflow function process_companies_search is defined. It’s a simple example that flags the entity. You can extend the logic as needed.
-2. The POST endpoint now calls entity_service.add_item with the new workflow parameter.
-3. All other business logic (fetching company details, filtering, enrichment, and output formatting) remains unchanged, with the jobs being stored and updated via the external entity_service.
+/*
+Key changes made:
+1. The POST endpoint now includes a workflow function (process_companies_search) as an argument to entity_service.add_item. This function is applied to the job entity before it is persisted.
+2. The workflow function demonstrates how you might alter the entity (here adding a 'workflowProcessed' flag). You may expand this function to include additional processing or to create auxiliary entities (with a different entity_model).
+3. All business logic (fetching company details, filtering, enrichment, and CSV/JSON output) remains intact with job records managed via the external entity_service.
+*/
