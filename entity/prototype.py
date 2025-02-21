@@ -1,4 +1,4 @@
-Below is an example prototype.py that uses Quart and aiohttp. This prototype follows the finalized API design and uses a local in-memory dictionary (jobs) as a mock persistence layer. Any areas where the requirements are unclear (such as exact response structure from external APIs or the real LEI lookup) have been marked with TODO comments.
+Below is the revised prototype.py file. It now includes the validate_request, validate_response, and validate_querystring decorators based on the quart‑schema library. Note that for GET requests the validation decorator is placed first, while for POST requests it comes after the route decorator. This is a workaround for a known issue in the quart‑schema library so that validations work as expected.
 
 -------------------------------------------------
 #!/usr/bin/env python3
@@ -6,19 +6,42 @@ import asyncio
 import uuid
 import datetime
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
-# In-memory store for job results
+# In-memory store for job results (mock persistence)
 jobs = {}
+
+# Data models for validation (only primitives as per guidelines)
+@dataclass
+class EnrichRequest:
+    companyName: str
+    # Optional filters; additional fields added as needed
+    location: str = None
+    businessId: str = None
+    registrationDateStart: str = None
+    registrationDateEnd: str = None
+
+@dataclass
+class EnrichResponse:
+    requestId: str
+    status: str
+    message: str
+    # Data field is dynamic; skipping detailed validation (TODO if needed)
+    data: str = None
+
+@dataclass
+class EnrichQuery:
+    requestId: str
 
 async def fetch_company_data(company_name: str, filters: dict) -> dict:
     """
     Query the Finnish Companies Registry API.
-    TODO: Adjust request parameters and response parsing based on actual API contract.
+    TODO: Adjust request parameters and response parsing based on the actual API contract.
     """
     url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
     # Build query parameters: mandatory company name with any provided filters
@@ -28,21 +51,19 @@ async def fetch_company_data(company_name: str, filters: dict) -> dict:
         async with session.get(url, params=params) as resp:
             if resp.status == 200:
                 data = await resp.json()
-                # TODO: Adapt the parsing based on actual API response structure.
+                # TODO: Adapt parsing based on the actual API response structure.
                 return data
             else:
-                # Log error and return empty companies list
-                # TODO: Add proper error handling/logging.
+                # TODO: Improve error handling/logging
                 return {"companies": []}
 
 async def fetch_lei(company: dict) -> str:
     """
     Fetch the Legal Entity Identifier (LEI) for the given company.
     This is currently a mock implementation.
-    TODO: Replace with a real external call to official LEI registries or reliable data sources.
+    TODO: Replace with a real external call to an official LEI registry or a reliable data source.
     """
     await asyncio.sleep(0.1)  # Simulate network delay
-    # A simple mock: if company has a name, return a fake LEI; otherwise, return "Not Available"
     if company.get("companyName"):
         return "MOCK_LEI_123456789"
     return "Not Available"
@@ -52,12 +73,13 @@ async def process_entity(job_id: str, criteria: dict):
     Process the entity by retrieving, filtering, and enriching company data.
     """
     company_name = criteria.get("companyName")
-    filters = criteria.get("filters", {})
+    # Build filters from available keys (excluding companyName)
+    filters = {k: v for k, v in criteria.items() if k != "companyName" and v is not None}
     # Retrieve data from the Finnish Companies Registry
     companies_response = await fetch_company_data(company_name, filters)
-    # Assuming companies_response contains a "companies" key with a list of companies.
     companies = companies_response.get("companies", [])
-    # Filter out inactive companies. Assuming "status" field indicates business status.
+    
+    # Filter out inactive companies; assuming "status" indicates business status.
     active_companies = [comp for comp in companies if comp.get("status", "").lower() == "active"]
     
     enriched_companies = []
@@ -73,38 +95,43 @@ async def process_entity(job_id: str, criteria: dict):
         }
         enriched_companies.append(enriched_company)
     
-    # Update the job in the local cache once processing is complete
+    # Update the job in local cache once processing is complete
     jobs[job_id] = {
         "status": "completed",
         "requestedAt": datetime.datetime.utcnow().isoformat(),
         "data": enriched_companies
     }
 
+# POST endpoint: route decorator comes first, then validate_request, then validate_response.
 @app.route("/companies/enrich", methods=["POST"])
-async def enrich_companies():
+@validate_request(EnrichRequest)  # For POST endpoints, validation comes after route decorator.
+@validate_response(EnrichResponse, 200)
+async def enrich_companies(data: EnrichRequest):
     """
-    Endpoint that accepts search criteria, processes external API calls, and triggers data enrichment.
-    It returns immediately with a job ID while processing occurs in the background.
+    Accepts search criteria and triggers external API calls for enrichment.
+    Returns immediately with a job ID while processing occurs in the background.
     """
-    criteria = await request.get_json()
+    # Create a job id and store initial job state in the in-memory cache.
     job_id = str(uuid.uuid4())
-    # Store initial job state in the in-memory cache.
     jobs[job_id] = {"status": "processing", "requestedAt": datetime.datetime.utcnow().isoformat()}
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, criteria))
+    # Fire-and-forget processing task.
+    asyncio.create_task(process_entity(job_id, data.__dict__))
     
     response = {
         "requestId": job_id,
         "status": "processing",
         "message": "Job started",
-        "data": []  # Initially empty; real data will be available via GET /companies/results.
+        "data": ""  # Data will be available via GET /companies/results.
     }
     return jsonify(response)
 
+# GET endpoint: validation decorator comes first (workaround for GET validation issue)
+@validate_querystring(EnrichQuery)  # For GET, this decorator is placed first.
 @app.route("/companies/results", methods=["GET"])
 async def get_results():
     """
-    Endpoint to retrieve results from a previously started enrich job using the requestId.
+    Retrieves enriched company results of a previously initiated job using the requestId.
+    (Access parameters via standard request.args since GET requests cannot have a body.)
     """
     job_id = request.args.get("requestId")
     if not job_id:
@@ -125,4 +152,9 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 -------------------------------------------------
 
-This prototype uses aiohttp for asynchronous HTTP requests to external APIs, mocks persistence with a local dictionary, and leverages Quart for the web framework. The placeholders marked with TODO should be revisited once the detailed requirements (such as exact API responses and external data source endpoints) are confirmed.
+Notes:
+1. For the POST endpoint (/companies/enrich) the route decorator is placed first followed by @validate_request and @validate_response. This ordering is a workaround to ensure proper operation as described in the quart‑schema documentation.
+2. For the GET endpoint (/companies/results) the @validate_querystring decorator is placed before the route decorator as required.
+3. Mocks and TODO comments have been inserted where external data sources or persistence details need to be implemented.
+
+This prototype should help in verifying the user experience (UX) and in identifying gaps in the requirements before proceeding further.
