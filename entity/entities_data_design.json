@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_name": "transactions",
+            "entity_data_example": {
+                "transactionId": "string",
+                "amount": 0.0,
+                "type": "string",
+                "timestamp": "string"
+            }
+        },
+        {
+            "entity_name": "orders",
+            "entity_data_example": {
+                "orderId": "string",
+                "transactionId": "string",
+                "reviewStatus": "string",
+                "requestedAt": "string",
+                "reviewTimestamp": "string"
+            }
+        }
+    ]
+}
