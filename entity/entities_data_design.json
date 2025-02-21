@@ -1,0 +1,54 @@
+{
+    "entities": [
+        {
+            "entity_name": "user",
+            "entity_data_example": {
+                "username": "string",
+                "email": "string",
+                "password": "string"
+            }
+        },
+        {
+            "entity_name": "post",
+            "entity_data_example": {
+                "title": "string",
+                "topics": [
+                    "string"
+                ],
+                "body": "string",
+                "user_id": "string",
+                "upvotes": 0,
+                "downvotes": 0,
+                "created_at": "string (ISO 8601 format)"
+            }
+        },
+        {
+            "entity_name": "comment",
+            "entity_data_example": {
+                "body": "string",
+                "post_id": "string",
+                "user_id": "string",
+                "upvotes": 0,
+                "downvotes": 0,
+                "created_at": "string (ISO 8601 format)"
+            }
+        },
+        {
+            "entity_name": "image",
+            "entity_data_example": {
+                "post_id": "string",
+                "user_id": "string",
+                "data_bytes": "string (latin1 encoded)",
+                "uploaded_at": "string (ISO 8601 format)"
+            }
+        },
+        {
+            "entity_name": "job",
+            "entity_data_example": {
+                "status": "string",
+                "requestedAt": "string (ISO 8601 format)",
+                "data": {}
+            }
+        }
+    ]
+}
