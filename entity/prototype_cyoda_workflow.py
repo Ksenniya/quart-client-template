@@ -1,56 +1,60 @@
-Below is one complete updated version that moves the “fire‐and‐forget” background logic completely into the workflow function. In other words, the POST controller now just receives and minimally packages the data, and then delegates all asynchronous processing (job id assignment, timestamping, scheduling the processing task) to the workflow function. This makes the controller lighter and frees it from excessive logic.
-
-Note that in the workflow function (named here process_companies for the “companies” entity_model) you are allowed to modify the entity (for example, add new timestamps or attributes) before it is persisted. You then schedule an asynchronous task (via asyncio.create_task) to run the real processing (process_entity). Also note that you CANNOT call entity_service.add_item/update/delete on the current entity inside the workflow function – you only modify the incoming dictionary.
-
-Below is the complete code:
+Below is the complete, self‐contained refactored application. In this version every piece of logic (data enrichment, error handling, background processing, job‐state updates, etc.) is encapsulated in its proper function. The controller is now very lean, simply packaging the incoming request and deferring all asynchronous tasks to the workflow function (process_companies). In addition, we’ve added additional error checking and comments to avoid subtle pitfalls. Note that any update to the current entity is done by directly modifying its attributes (or via a simulated “direct_update” function); you must not call add_item/update_item on the same entity to avoid recursion. 
 
 ──────────────────────────────
 #!/usr/bin/env python3
 import asyncio
 import uuid
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import aiohttp
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request, validate_response
 
-# Import constant and cyoda startup/init facilities.
+# Import configuration, initialization, and entity service.
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 
 app = Quart(__name__)
-# Adding QuartSchema.
+# Enable validation and schema support.
 QuartSchema(app)
 
-# Startup hook.
+# ------------------------------------------------------------------------------
+# Startup / Initialization
+# ------------------------------------------------------------------------------
 @app.before_serving
 async def startup():
+    # Initialize cyoda with the provided token.
     await init_cyoda(cyoda_token)
 
-# Dataclass for the incoming POST payload.
+# ------------------------------------------------------------------------------
+# Dataclasses for incoming request and for response
+# ------------------------------------------------------------------------------
 @dataclass
 class CompanyQuery:
     company_name: str
-    registration_date_start: str = ""  # Expected format yyyy-mm-dd; empty string if not provided.
-    registration_date_end: str = ""    # Expected format yyyy-mm-dd; empty string if not provided.
+    registration_date_start: str = ""  # Expected format yyyy-mm-dd; empty if not provided.
+    registration_date_end: str = ""    # Expected format yyyy-mm-dd; empty if not provided.
     page: int = 1
 
-# Dataclass for the response of a job request.
 @dataclass
 class JobResponse:
     job_id: str
     status: str
 
-# Async function to process company data: query the PRH API, filter, and enrich with LEI data.
-async def process_entity(job_id: str, query_data: dict, requested_at: str):
+# ------------------------------------------------------------------------------
+# Processing functions
+# ------------------------------------------------------------------------------
+
+# This function simulates processing of company data by calling an external API
+# (Finnish Companies Registry in this example), filtering and enriching the results.
+async def process_entity(job_id: str, query_data: dict, requested_at: str) -> None:
     company_name = query_data.get("company_name")
     registration_date_start = query_data.get("registration_date_start")
     registration_date_end = query_data.get("registration_date_end")
     page = query_data.get("page", 1)
-    
-    # Build query parameters for the Finnish Companies Registry API.
+
     prh_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
     params = {"name": company_name, "page": page}
     if registration_date_start:
@@ -60,30 +64,34 @@ async def process_entity(job_id: str, query_data: dict, requested_at: str):
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(prh_url, params=params) as resp:
+            async with session.get(prh_url, params=params, timeout=10) as resp:
+                if resp.status != 200:
+                    raise Exception(f"Unexpected status code {resp.status}")
                 prh_data = await resp.json()
-                # TODO: Adapt the parsing of prh_data based on the actual API response format.
     except Exception as e:
-        # If an error occurs, modify the entity directly.
-        # Note: We cannot call entity_service.update_item on the same entity here.
-        # Instead, set an error flag which can be recognized when this entity is later re-read.
-        # For this example, we set status and error details.
-        entity_error = {
+        # In case of error, modify the job state directly.
+        # We simulate a direct update so that any subsequent retrieval reflects the error state.
+        error_update = {
             "status": "failed",
             "error": f"Error fetching data from PRH: {str(e)}",
-            "completedAt": datetime.utcnow().isoformat()
+            "completedAt": datetime.utcnow().isoformat(),
         }
-        # Update the current entity data – the updated state will be persisted.
-        # (Assume the persistence mechanism picks up the modification made in the workflow.)
-        # In a real-world scenario, you might choose to persist this update via a separate service call.
-        # Here we simply modify the entity state.
-        entity_service.direct_update(entity_model="companies", technical_id=job_id, changes=entity_error)
+        # We call a simulated direct_update function on the entity_service.
+        try:
+            entity_service.direct_update(
+                entity_model="companies",
+                technical_id=job_id,
+                changes=error_update
+            )
+        except Exception as update_error:
+            # If the direct update fails, log it; in production you might use a proper logging framework.
+            print(f"Critical update failure for job {job_id}: {str(update_error)}")
         return
 
-    # Assume that the response contains a key "results" listing companies.
+    # Assume that prh_data contains a key "results" listing companies.
     companies = prh_data.get("results", [])
-    # If no companies were returned, create a dummy record for demo purposes.
     if not companies:
+        # If no data was returned, create a dummy record.
         companies = [{
             "company_name": "Demo Company",
             "business_id": "1234567-8",
@@ -91,95 +99,131 @@ async def process_entity(job_id: str, query_data: dict, requested_at: str):
             "registration_date": "2020-01-01",
             "status": "Active"
         }]
-    
-    # Filter out companies that are not active.
+
+    # Filter only active companies.
     active_companies = [c for c in companies if c.get("status", "").lower() == "active"]
-    
+
     enriched_results = []
-    # Enrich each active company with LEI data.
+    # Enrich each active company by obtaining LEI details.
     for company in active_companies:
         lei = await fetch_lei(company)
-        # Add the LEI information to the company record.
+        # Add the fetched LEI; if nothing is returned use a default value.
         company["lei"] = lei if lei else "Not Available"
         enriched_results.append(company)
-    
-    # Prepare the update for the job entity.
+
+    # Prepare updates to the job entity.
     job_update = {
         "status": "done",
         "results": enriched_results,
         "completedAt": datetime.utcnow().isoformat()
     }
-    # Update the job entity.
-    # Again, you are not allowed to use entity_service.add/update on the current entity inside the workflow.
-    # So we simulate a direct update (e.g. via an internal interface) that persists the changes made.
-    entity_service.direct_update(entity_model="companies", technical_id=job_id, changes=job_update)
+    try:
+        entity_service.direct_update(
+            entity_model="companies",
+            technical_id=job_id,
+            changes=job_update
+        )
+    except Exception as update_error:
+        print(f"Critical update failure during final update for job {job_id}: {str(update_error)}")
 
-# Helper function that simulates fetching LEI details from an external service.
+# Helper function to simulate fetching LEI details from an external service.
 async def fetch_lei(company: dict) -> str:
-    # TODO: Replace with an actual call to a LEI provider API when available.
-    async with aiohttp.ClientSession() as session:
-        # Simulate a delay that might occur when calling an external service.
-        await asyncio.sleep(1)
-        business_id = company.get("business_id", "")
-        # Dummy logic: return a fake LEI if the business_id ends with an even digit.
-        if business_id and business_id[-1] in "02468":
-            return "LEI-" + business_id
-        else:
-            return None
+    try:
+        async with aiohttp.ClientSession() as session:
+            # Simulate delay for external API call.
+            await asyncio.sleep(1)
+            business_id = company.get("business_id", "")
+            # Dummy logic: if last digit of business_id is even, return a fake LEI.
+            if business_id and business_id[-1] in "02468":
+                return "LEI-" + business_id
+    except Exception as e:
+        print(f"Failed to fetch LEI for company {company.get('company_name', '')}: {str(e)}")
+    return None
 
-# Workflow function for companies.
-# This function is applied asynchronously before persisting the job entity.
-# It may add or modify attributes on the entity and schedule asynchronous tasks.
+# ------------------------------------------------------------------------------
+# Workflow function: executed asynchronously before persisting the job.
+# ------------------------------------------------------------------------------
 async def process_companies(entity: dict) -> dict:
-    # In this workflow function we move logic that was previously in the endpoint.
-    # For example, if not already preset, assign a unique job id and creation timestamp.
-    if "job_id" not in entity:
-        entity["job_id"] = str(uuid.uuid4())
+    """
+    The workflow function for companies:
+      • Ensures required attributes are present (job_id, timestamps).
+      • Modifies the entity state as required.
+      • Schedules the background processing task via process_entity.
+      • Returns the modified entity.
+    Note: Do not call entity_service.add_item/update_item for the same entity.
+    """
+    # Ensure the job has a unique identifier.
+    if "job_id" not in entity or not entity["job_id"]:
+        new_job_id = str(uuid.uuid4())
+        entity["job_id"] = new_job_id
+    else:
+        new_job_id = entity["job_id"]
+
+    # Set timestamps if not already provided.
+    now_iso = datetime.utcnow().isoformat()
     if "createdAt" not in entity:
-        entity["createdAt"] = datetime.utcnow().isoformat()
+        entity["createdAt"] = now_iso
     if "requestedAt" not in entity:
-        # For clarity we can alias createdAt as requestedAt.
-        entity["requestedAt"] = entity["createdAt"]
-    
-    # Optionally, mark this entity as still processing.
+        entity["requestedAt"] = now_iso
+
+    # Set initial job status.
     entity["status"] = "processing"
     
-    # Schedule an asynchronous background task to process the job.
-    asyncio.create_task(process_entity(entity["job_id"], entity.get("query", {}), entity["requestedAt"]))
-    
-    # Return the modified entity. These modifications will be persisted.
+    # It is a good idea to validate that mandatory data exists in the entity.
+    if "query" not in entity:
+        entity["status"] = "failed"
+        entity["error"] = "Missing query data in the job entity"
+        entity["completedAt"] = now_iso
+        return entity
+
+    # Schedule the background processing task.
+    try:
+        asyncio.create_task(process_entity(
+            job_id=new_job_id,
+            query_data=entity.get("query", {}),
+            requested_at=entity["requestedAt"]
+        ))
+    except Exception as e:
+        # Update the entity state immediately if scheduling fails.
+        entity["status"] = "failed"
+        entity["error"] = f"Failed to schedule background task: {str(e)}"
+        entity["completedAt"] = datetime.utcnow().isoformat()
     return entity
 
-# POST endpoint to initiate the query processing.
-# The controller is now as minimal as possible;
-# It delegates all asynchronous/processing logic to the workflow function process_companies.
+# ------------------------------------------------------------------------------
+# Endpoints
+# ------------------------------------------------------------------------------
+
+# POST endpoint to initiate a company query.
+# The controller only prepares the job record and calls entity_service.add_item with the workflow.
 @app.route("/companies/query", methods=["POST"])
 @validate_request(CompanyQuery)
 @validate_response(JobResponse, 200)
 async def companies_query(data: CompanyQuery):
-    # Convert the dataclass to a dictionary.
-    query_data = data.__dict__
-    # Build a minimal job record.
+    # Convert incoming dataclass to dict.
+    query_data = asdict(data)
+    
+    # Build the job record with minimal required fields.
     job = {
         "query": query_data,
-        # status, timestamps and job_id will be set by the workflow function.
+        # job_id, timestamps, and status will be added/modified in the workflow function.
     }
-    # Add the job using the external entity service, passing in the workflow function.
-    # The workflow function handle asynchronous tasks and modify the entity state as needed.
+    # Call add_item; the workflow function (process_companies) will be invoked asynchronously
+    # to enrich the entity state and schedule background processing.
     stored_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies",
         entity_version=ENTITY_VERSION,
         entity=job,
-        workflow=process_companies  # workflow function applied before persistence.
+        workflow=process_companies  # Workflow function applied before persistence.
     )
-    # Return initial response.
+    # Return a minimal response.
     return JobResponse(job_id=stored_id, status="processing")
 
-# GET endpoint to retrieve a previously submitted query result.
+# GET endpoint to retrieve a previously submitted job result.
 @app.route("/companies/result/<job_id>", methods=["GET"])
 async def companies_result(job_id: str):
-    # Retrieve the job entity using the external entity_service.
+    # Retrieve the job entity via the external service.
     job = entity_service.get_item(
         token=cyoda_token,
         entity_model="companies",
@@ -189,10 +233,15 @@ async def companies_result(job_id: str):
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
+    # Prepare response based on the job's status.
     if job.get("status") == "processing":
         return jsonify({"job_id": job_id, "status": "processing"})
     elif job.get("status") == "failed":
-        return jsonify({"job_id": job_id, "status": "failed", "error": job.get("error")}), 500
+        return jsonify({
+            "job_id": job_id,
+            "status": "failed",
+            "error": job.get("error")
+        }), 500
     else:
         return jsonify({
             "job_id": job_id,
@@ -201,20 +250,21 @@ async def companies_result(job_id: str):
             "metadata": {"completedAt": job.get("completedAt")}
         })
 
+# ------------------------------------------------------------------------------
+# Main: Run the application.
+# ------------------------------------------------------------------------------
 if __name__ == '__main__':
+    # threaded=True is used here; in production consider an ASGI server.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ──────────────────────────────
 
-Key points in this refactoring:
+Explanation of key details and safeguards:
 
-1. The POST endpoint is now very lean. It accepts the incoming request, converts it to a plain dictionary, and calls entity_service.add_item – passing the workflow function process_companies.
+1. The POST endpoint is now very simple; it simply creates a minimal job record and calls entity_service.add_item with process_companies as its workflow.
+2. In process_companies the entity is enriched with a unique job_id, timestamps, and a “processing” status. It also verifies that the mandatory “query” attribute is present.
+3. The workflow then uses asyncio.create_task to schedule the process_entity function that performs external API calls, filtering and enrichment.
+4. process_entity is robust against HTTP errors or exceptions. It modifies the entity state by means of a simulated direct_update (which you must implement inside entity_service) so that the updated state is visible later.
+5. Error conditions (both in scheduling the task and during processing) are backed up by directly changing the entity state rather than calling add_item/update_item.
+6. Any asynchronous tasks (fire-and-forget) are handled completely in the workflow, freeing the controller from responsibility.
 
-2. The workflow function (process_companies) is responsible for:
-   • Enriching the entity with a unique job_id, timestamps, and setting initial attributes.
-   • Scheduling an asynchronous task (fire‑and‑forget) to call process_entity.
-
-3. The processing function (process_entity) and the helper fetch_lei remain as before. They simulate calling an external API, filtering, and enriching the results.
-
-4. Note that if an error occurs within process_entity, the code shows an example of “direct_update” to modify the current entity state. (This is a placeholder for any mechanism that picks up changes to the entity – note that within the workflow function you are not allowed to call entity_service.add_item/update on the same entity.)
-
-This approach cleanly separates controller logic from processing logic and shows how any asynchronous tasks can be entirely offloaded to the workflow function.
+This complete application should be adapted as needed to your environment and updated to use a real implementation of entity_service.direct_update if not already present.
