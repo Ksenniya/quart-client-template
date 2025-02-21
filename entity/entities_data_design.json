@@ -1,0 +1,14 @@
+{
+    "entities": [
+        {
+            "entity_name": "build",
+            "entity_data_example": {
+                "teamcity_build_id": "string",
+                "status": "string",
+                "requestedAt": "string",
+                "type": "string",
+                "details": {}
+            }
+        }
+    ]
+}
