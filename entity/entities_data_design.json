@@ -1,0 +1,26 @@
+{
+    "entities": [
+        {
+            "entity_name": "cyoda_env_deployment",
+            "entity_data_example": {
+                "build_id": "string",
+                "username": "string",
+                "status": "string",
+                "requested_at": "string",
+                "statistics": {}
+            }
+        },
+        {
+            "entity_name": "user_app_deployment",
+            "entity_data_example": {
+                "build_id": "string",
+                "username": "string",
+                "repository_url": "string",
+                "is_public": "boolean",
+                "status": "string",
+                "requested_at": "string",
+                "statistics": {}
+            }
+        }
+    ]
+}
