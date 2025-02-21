@@ -1,4 +1,4 @@
-Below is the updated prototype.py file. In this version, we’ve defined a dataclass (CompaniesQuery) for validating the GET /companies query parameters and decorated the endpoint with @validate_querystring. Note that GET endpoints with query validation should not receive any validated parameters as function arguments; instead, you retrieve them by calling await request.get_query(). For the /companies/<businessId>/lei endpoint no query validation is applied.
+Below is the final version of prototype.py. This file implements the two endpoints using Quart with quart-schema for validation of query parameters (for GET /companies) and uses local in‑memory caches (no external persistence). Note that the GET endpoint with query parameters does not accept any validated arguments; instead, validated data is retrieved via await request.get_query().
 
 ------------------------------------------------
 #!/usr/bin/env python3
@@ -19,7 +19,7 @@ import aiohttp
 app = Quart(__name__)
 QuartSchema(app)  # required single line configuration
 
-# In-memory cache mocks for persistence
+# In-memory caches for this prototype (no external persistence)
 lei_cache = {}         # Cache for LEI responses (keyed by businessId)
 companies_cache = {}   # TODO: Implement caching for companies search if needed later.
 
@@ -72,7 +72,7 @@ async def fetch_companies_from_registry(name: str, location: str, businessId: st
         dummy_data = [comp for comp in dummy_data if comp['businessId'] == businessId]
     # Filter by name (simple substring case-insensitive match).
     dummy_data = [comp for comp in dummy_data if name.lower() in comp['companyName'].lower()]
-    # TODO: Implement location filtering properly when external API supports it.
+    # TODO: Implement location filtering properly when the external API supports it.
     # TODO: Implement a proper pagination mechanism based on page and page size.
     return dummy_data
 
@@ -82,13 +82,13 @@ async def fetch_lei_from_external_api(businessId: str):
     Uses a local in-memory cache to store responses.
     TODO: Replace URL and request details with the actual LEI API.
     """
-    # Check for cached LEI response.
+    # Check for a cached LEI response.
     if businessId in lei_cache:
         return lei_cache[businessId]
 
-    # Simulate an external API call.
+    # Simulate an external API call delay.
     await asyncio.sleep(0.05)
-    # Dummy LEI generation (for demonstration purposes).
+    # Dummy LEI generation for demonstration purposes.
     dummy_lei = f"LEI-{businessId.replace('-', '')}"
     lei_cache[businessId] = dummy_lei
     return dummy_lei
@@ -103,7 +103,8 @@ async def search_companies():
       - location (string, optional)
       - businessId (string, optional)
       - page (integer, default=1)
-    The endpoint returns active companies enriched with their LEI.
+    This endpoint returns active companies enriched with their LEI.
+    Note: The validated query arguments are retrieved via await request.get_query().
     """
     # Retrieve validated query parameters from the request.
     validated_query: CompaniesQuery = await request.get_query()
@@ -115,7 +116,7 @@ async def search_companies():
     # Fetch companies from the Finnish Companies Registry (simulated).
     companies = await fetch_companies_from_registry(name, location, businessId, page)
 
-    # Filter and keep only active companies.
+    # Filter to include only active companies.
     active_companies = [comp for comp in companies if comp.get('status') == 'Active']
 
     # Asynchronously enrich each active company with its LEI.
@@ -137,7 +138,7 @@ async def get_company_lei(businessId: str):
     """
     GET /companies/<businessId>/lei endpoint.
     Returns the LEI for the provided businessId.
-    No query string validation needed.
+    No query string validation is needed.
     """
     lei = await fetch_lei_from_external_api(businessId)
     response = {
@@ -152,7 +153,9 @@ if __name__ == '__main__':
 ------------------------------------------------
 
 Notes:
-• We use @validate_querystring with the CompaniesQuery dataclass for the GET /companies endpoint.
-• For validated GET endpoints, do not pass the validated data as a function argument—instead, retrieve it via await request.get_query().
-• The /companies/<businessId>/lei endpoint has no query parameters so no decoration is added.
-• As before, external API calls and persistence use simulated behavior with TODO comments for future enhancements.
+• We use @validate_querystring with the CompaniesQuery dataclass for the GET /companies endpoint. The validated data is accessed via await request.get_query(), which avoids passing unexpected keyword arguments.
+• The GET /companies/<businessId>/lei endpoint does not require query validation.
+• Local in‑memory dictionaries are used for caching LEI responses and (potentially) companies search results.
+• TODO comments indicate where real integrations (external APIs, pagination, filtering) should replace the simulated behavior during full implementation.
+
+This prototype should now work as expected and reflect all of the user suggestions.
