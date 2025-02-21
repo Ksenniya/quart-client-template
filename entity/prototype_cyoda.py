@@ -1,6 +1,6 @@
-You're correct that if we do not have a way to add companies to our local cache or the external service, we won't be able to retrieve any company data. Given your request to use only local cache without external persistence or SQLAlchemy, we'll need to incorporate a simple local in-memory cache for storing companies.
+Thank you for your clarification! Based on your request, we will modify the prototype to ingest company data from an external data source instead of adding it manually through a POST request. The code will include functionality to fetch company data from an external service and populate the local cache with that data.
 
-Below is the modified `prototype_cyoda.py` code that allows adding companies to a local cache and retrieving them through the provided endpoints. Note that while we will have methods to add companies, the code will remain focused on the GET requests as per your earlier examples.
+Below is the fully functioning `prototype_cyoda.py` code that incorporates this functionality:
 
 ### Full Implementation of `prototype_cyoda.py`
 
@@ -30,12 +30,12 @@ import csv
 import aiohttp
 from dataclasses import dataclass
 from quart import Quart, request, jsonify, Response
-from quart_schema import QuartSchema, validate_querystring  # Using validate_querystring for GET endpoints
+from quart_schema import QuartSchema, validate_querystring
 
 # Import external service functions and supporting variables.
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import entity_service, cyoda_token
+from app_init.app_init import cyoda_token
 
 app = Quart(__name__)
 # Initialize Quart Schema for request/response validation
@@ -45,9 +45,38 @@ QuartSchema(app)
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
+    await ingest_data()  # Ingest data from external source at startup
 
 # Local in-memory cache for companies
 companies_cache = []
+
+async def ingest_data():
+    """
+    Ingest company data from an external data source.
+    This function simulates fetching data and populating the local cache.
+    """
+    # Simulated URL for external data source
+    external_api_url = "http://external-data-source.com/companies"  # Placeholder URL
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(external_api_url) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    for company in data:
+                        # Assuming the external data source returns a list of company dictionaries
+                        companies_cache.append({
+                            "companyName": company.get("companyName"),
+                            "businessId": company.get("businessId"),
+                            "companyType": company.get("companyType"),
+                            "registrationDate": company.get("registrationDate"),
+                            "status": company.get("status"),
+                            "lei": company.get("lei", None),
+                        })
+                else:
+                    print(f"Failed to fetch data: {resp.status}")
+        except Exception as e:
+            print(f"Error fetching data: {e}")
 
 # Define dataclasses for querystring validation.
 @dataclass
@@ -61,26 +90,6 @@ class CompaniesQuery:
 @dataclass
 class LeiQuery:
     businessId: str  # businessId is required for LEI lookup
-
-# Function to add companies to the in-memory cache (for demonstration purposes)
-@app.route("/companies", methods=["POST"])
-async def add_company():
-    """
-    POST /companies
-    - Adds a company to the local cache.
-    """
-    data = await request.get_json()
-    company = {
-        "companyName": data.get("companyName"),
-        "businessId": data.get("businessId"),
-        "companyType": data.get("companyType"),
-        "registrationDate": data.get("registrationDate"),
-        "status": data.get("status"),
-        "lei": data.get("lei", None),  # Allow LEI to be None
-    }
-    
-    companies_cache.append(company)
-    return jsonify({"message": "Company added", "company": company}), 201
 
 # GET /companies endpoint.
 @validate_querystring(CompaniesQuery)  # This decorator validates querystring parameters before route handling.
@@ -182,10 +191,12 @@ if __name__ == '__main__':
 ```
 
 ### Key Changes and Features
-1. **Local Cache**: Introduced a `companies_cache` list to store company data locally.
-2. **Adding Companies**: Added a `POST /companies` endpoint that allows adding company records to the local cache.
-3. **Retrieving Companies**: The `GET /companies` endpoint retrieves companies from the local cache and applies filters based on the query parameters.
-4. **LEI Lookup**: The `GET /companies/lei` endpoint checks the local cache for the LEI and falls back to an external lookup if necessary.
-5. **Error Handling**: Basic error handling is included for missing parameters and no results found.
+1. **Data Ingestion**: The `ingest_data` function fetches company data from an external data source at startup and populates the local cache.
+2. **Local Cache**: The `companies_cache` list is used to store company data retrieved from the external source.
+3. **GET Endpoints**: The `GET /companies` and `GET /companies/lei` endpoints retrieve and filter data from the local cache as before.
 
-This prototype allows for both adding and retrieving companies while maintaining all previous functionality. If you have any additional requests or modifications, feel free to ask!
+### Note
+- The URL for the external data source (`http://external-data-source.com/companies`) is a placeholder and should be replaced with the actual URL of the external API you intend to use.
+- The response structure from the external API is assumed to be a list of company dictionaries. Adjust the ingestion logic as needed based on the actual response format.
+
+This prototype should now fully support ingesting data from an external source while maintaining the ability to retrieve and filter that data locally. If you have any further requests or adjustments, please let me know!
