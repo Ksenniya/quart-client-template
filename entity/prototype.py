@@ -1,4 +1,10 @@
-Below is an example implementation for prototype.py. It uses Quart with QuartSchema and aiohttp for external HTTP calls, along with an in‑memory cache for persistence. Note that many parts (such as proper token validation, detailed error handling, and real persistence) are marked with TODO comments for later refinement:
+Below is an updated prototype.py that adds validation to each endpoint. Note that for POST endpoints the decorators are applied in this order:
+
+ – First: the route declaration  
+ – Second: @validate_request  
+ – Third: @validate_response  
+
+This ordering is a workaround for an existing issue with quart‑schema (see comment below). All request bodies are now validated against simple dataclasses that use only primitives.
 
 -------------------------------------------------------
 #!/usr/bin/env python3
@@ -6,14 +12,57 @@ import asyncio
 import datetime
 import uuid
 
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # one-line initialization as required
+from quart_schema import QuartSchema, validate_request, validate_response  # See comment below
 import aiohttp
 
 app = Quart(__name__)
 QuartSchema(app)
 
-# In‑memory cache to simulate persistence. Keyed by build_id.
+# NOTE: For POST endpoints, the decorator order is:
+#   @app.route(...)       [first]
+#   @validate_request(...) [second]
+#   @validate_response(...)[third]
+# This is a workaround for a known issue with quart-schema.
+
+# ----- Data Models for Validation -----
+
+@dataclass
+class CyodaEnvRequest:
+    user_name: str
+
+@dataclass
+class DeployResponse:
+    build_id: str
+    message: str
+
+@dataclass
+class BuildStatusRequest:
+    build_id: str
+
+@dataclass
+class BuildStatusResponse:
+    status: str
+    details: dict  # Using a dict; TODO: refine type when requirements are clearer.
+
+@dataclass
+class StatisticsResponse:
+    duration: str
+    resources: str
+
+@dataclass
+class UserAppRequest:
+    repository_url: str
+    is_public: bool
+    user_name: str
+
+@dataclass
+class CancelResponse:
+    message: str
+    build_id: str
+
+# ----- In-Memory Persistence (Mock) -----
 builds_cache = {}
 
 def current_timestamp():
@@ -21,7 +70,7 @@ def current_timestamp():
     return datetime.datetime.utcnow().isoformat() + "Z"
 
 def validate_bearer_token():
-    """A dummy token validator. TODO: implement real token validation."""
+    """Dummy token validator. TODO: implement real token validation."""
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         return False
@@ -29,60 +78,56 @@ def validate_bearer_token():
     # TODO: Validate token properly.
     return True
 
+# ----- External Call to TeamCity (Mock/Placeholder) -----
 async def call_teamcity(endpoint: str, payload: dict) -> dict:
     """
-    Calls the external TeamCity API. Returns a JSON response.
-    TODO: Adjust error handling and response parsing based on real API docs.
+    Calls the external TeamCity API. Returns the JSON response.
+    TODO: Enhance error handling and adjust for real API response details.
     """
     url = f"https://teamcity.cyoda.org{endpoint}"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=payload) as resp:
-                # TODO: Check HTTP status code and adjust error handling.
                 response_data = await resp.json()
                 return response_data
     except Exception as e:
-        # Use a mock response as fallback.
         print(f"Error calling TeamCity: {e}")
+        # Fallback mock response.
         return {"build_id": str(uuid.uuid4())}
 
 async def process_build(build_id: str, deployment_type: str):
     """
-    Simulates processing of a build.
-    TODO: Replace with the actual async processing logic.
+    Simulates asynchronous processing of a build.
+    TODO: Replace with actual logic.
     """
-    # Simulate processing delay
-    await asyncio.sleep(5)
+    await asyncio.sleep(5)  # Simulated delay.
     builds_cache[build_id]["status"] = "finished"
     builds_cache[build_id]["details"] = {
         "info": f"{deployment_type} deployment completed successfully"
     }
 
+# ----- Endpoints ----- 
+
 @app.route("/api/v1/deploy/cyoda-env", methods=["POST"])
-async def deploy_cyoda_env():
+@validate_request(CyodaEnvRequest)
+@validate_response(DeployResponse, 201)
+async def deploy_cyoda_env(data: CyodaEnvRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
-
-    data = await request.get_json()
-    user_name = data.get("user_name")
-    if not user_name:
-        return jsonify({"error": "Missing user_name"}), 400
 
     payload = {
         "buildType": {"id": "KubernetesPipeline_CyodaSaas"},
         "properties": {
             "property": [
-                {"name": "user_defined_keyspace", "value": user_name},
-                {"name": "user_defined_namespace", "value": user_name}
+                {"name": "user_defined_keyspace", "value": data.user_name},
+                {"name": "user_defined_namespace", "value": data.user_name}
             ]
         }
     }
 
-    # Call external API (TeamCity) to enqueue the build.
     tc_response = await call_teamcity("/app/rest/buildQueue", payload)
-    build_id = tc_response.get("build_id", str(uuid.uuid4()))  # Fallback to a mock ID.
+    build_id = tc_response.get("build_id", str(uuid.uuid4()))  # Fallback to mock ID
 
-    # Save build info locally.
     builds_cache[build_id] = {
         "status": "processing",
         "requestedAt": current_timestamp(),
@@ -90,65 +135,57 @@ async def deploy_cyoda_env():
         "details": {}
     }
 
-    # Fire and forget the processing task.
+    # Fire and forget task.
     asyncio.create_task(process_build(build_id, "cyoda-env"))
 
-    return jsonify({"build_id": build_id, "message": "Deployment started"})
+    return DeployResponse(build_id=build_id, message="Deployment started"), 201
 
 @app.route("/api/v1/deploy/cyoda-env/status", methods=["POST"])
-async def status_cyoda_env():
+@validate_request(BuildStatusRequest)
+@validate_response(BuildStatusResponse, 200)
+async def status_cyoda_env(data: BuildStatusRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = await request.get_json()
-    build_id = data.get("build_id")
-    if not build_id or build_id not in builds_cache:
+    if data.build_id not in builds_cache:
         return jsonify({"error": "Invalid or unknown build_id"}), 400
 
-    build_info = builds_cache[build_id]
-    return jsonify({"status": build_info["status"], "details": build_info["details"]})
+    build_info = builds_cache[data.build_id]
+    return BuildStatusResponse(status=build_info["status"], details=build_info["details"]), 200
 
 @app.route("/api/v1/deploy/cyoda-env/statistics", methods=["POST"])
-async def statistics_cyoda_env():
+@validate_request(BuildStatusRequest)
+@validate_response(StatisticsResponse, 200)
+async def statistics_cyoda_env(data: BuildStatusRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
-
-    data = await request.get_json()
-    build_id = data.get("build_id")
-    if not build_id or build_id not in builds_cache:
+    if data.build_id not in builds_cache:
         return jsonify({"error": "Invalid or unknown build_id"}), 400
 
     # TODO: Replace with real statistics computation.
-    statistics = {"duration": "5 minutes", "resources": "N/A"}
-    return jsonify({"statistics": statistics})
+    stats = StatisticsResponse(duration="5 minutes", resources="N/A")
+    return stats, 200
 
 @app.route("/api/v1/deploy/user-app", methods=["POST"])
-async def deploy_user_app():
+@validate_request(UserAppRequest)
+@validate_response(DeployResponse, 201)
+async def deploy_user_app(data: UserAppRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
-
-    data = await request.get_json()
-    repository_url = data.get("repository_url")
-    is_public = data.get("is_public")
-    user_name = data.get("user_name")
-    if not repository_url or is_public is None or not user_name:
-        return jsonify({"error": "Missing parameters"}), 400
 
     payload = {
         "buildType": {"id": "KubernetesPipeline_CyodaSaasUserEnv"},
         "properties": {
             "property": [
-                {"name": "user_defined_keyspace", "value": user_name},
-                {"name": "user_defined_namespace", "value": user_name}
+                {"name": "user_defined_keyspace", "value": data.user_name},
+                {"name": "user_defined_namespace", "value": data.user_name}
             ]
         }
     }
 
-    # Call external API (TeamCity) for user app deployment.
     tc_response = await call_teamcity("/app/rest/buildQueue", payload)
     build_id = tc_response.get("build_id", str(uuid.uuid4()))
 
-    # Save build info locally.
     builds_cache[build_id] = {
         "status": "processing",
         "requestedAt": current_timestamp(),
@@ -158,45 +195,41 @@ async def deploy_user_app():
 
     asyncio.create_task(process_build(build_id, "user-app"))
 
-    return jsonify({"build_id": build_id, "message": "Deployment started"})
+    return DeployResponse(build_id=build_id, message="Deployment started"), 201
 
 @app.route("/api/v1/deploy/user-app/status", methods=["POST"])
-async def status_user_app():
+@validate_request(BuildStatusRequest)
+@validate_response(BuildStatusResponse, 200)
+async def status_user_app(data: BuildStatusRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = await request.get_json()
-    build_id = data.get("build_id")
-    if not build_id or build_id not in builds_cache:
+    if data.build_id not in builds_cache:
         return jsonify({"error": "Invalid or unknown build_id"}), 400
 
-    build_info = builds_cache[build_id]
-    return jsonify({"status": build_info["status"], "details": build_info["details"]})
+    build_info = builds_cache[data.build_id]
+    return BuildStatusResponse(status=build_info["status"], details=build_info["details"]), 200
 
 @app.route("/api/v1/deploy/user-app/statistics", methods=["POST"])
-async def statistics_user_app():
+@validate_request(BuildStatusRequest)
+@validate_response(StatisticsResponse, 200)
+async def statistics_user_app(data: BuildStatusRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
-
-    data = await request.get_json()
-    build_id = data.get("build_id")
-    if not build_id or build_id not in builds_cache:
+    if data.build_id not in builds_cache:
         return jsonify({"error": "Invalid or unknown build_id"}), 400
 
     # TODO: Replace with real statistics retrieval logic.
-    statistics = {"duration": "5 minutes", "resources": "N/A"}
-    return jsonify({"statistics": statistics})
+    stats = StatisticsResponse(duration="5 minutes", resources="N/A")
+    return stats, 200
 
 @app.route("/api/v1/deploy/user-app/cancel", methods=["POST"])
-async def cancel_user_app():
+@validate_request(BuildStatusRequest)
+@validate_response(CancelResponse, 200)
+async def cancel_user_app(data: BuildStatusRequest):
     if not validate_bearer_token():
         return jsonify({"error": "Unauthorized"}), 401
-
-    data = await request.get_json()
-    build_id = data.get("build_id")
-    if not build_id:
-        return jsonify({"error": "Missing build_id"}), 400
-    if build_id not in builds_cache:
+    if data.build_id not in builds_cache:
         return jsonify({"error": "Invalid or unknown build_id"}), 400
 
     cancellation_payload = {
@@ -204,23 +237,21 @@ async def cancel_user_app():
         "readdIntoQueue": False
     }
 
-    # Call external API cancellation endpoint.
     try:
         async with aiohttp.ClientSession() as session:
-            cancel_url = f"https://teamcity.cyoda.org/app/rest/builds/id:{build_id}"
+            cancel_url = f"https://teamcity.cyoda.org/app/rest/builds/id:{data.build_id}"
             async with session.post(cancel_url, json=cancellation_payload) as resp:
-                # TODO: Check response and handle errors accordingly.
-                response_data = await resp.json()
+                # TODO: Check response status and adjust error handling.
+                await resp.json()  # Using the response; not doing anything in this example.
     except Exception as e:
         print(f"Error cancelling build: {e}")
-        response_data = {"error": str(e)}
+        # Fall back silently; in production, you might return an error.
 
-    # Update local cache.
-    builds_cache[build_id]["status"] = "canceled"
-    return jsonify({"message": "Build canceled", "build_id": build_id})
+    builds_cache[data.build_id]["status"] = "canceled"
+    return CancelResponse(message="Build canceled", build_id=data.build_id), 200
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 -------------------------------------------------------
 
-This prototype implements all endpoints as POST calls per your requirements, performs external calls with aiohttp (using mocks/TODOs where details are not yet specified), and uses an in‑memory cache for build information. This should help verify the UX and expose any gaps in requirements before a complete implementation is undertaken.
+This prototype now applies schema validation (using quart‑schema) to each POST endpoint. Mocks/placeholders (with TODO comments) remain for token validation, external TeamCity API integration, and persistence logic.
