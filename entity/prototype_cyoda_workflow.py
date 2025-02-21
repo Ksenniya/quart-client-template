@@ -1,204 +1,25 @@
-#!/usr/bin/env python3
-"""
-Prototype implementation for the Finnish Companies Data Retrieval and Enrichment Application.
-Note: This is a working prototype. Proper error handling, security, persistence, and production‐grade
-design should be added when moving toward a complete implementation.
-"""
+Yes, we can—and probably should—move more of the processing logic out of the endpoint and into dedicated workflow functions. The endpoint’s job should be limited to validating the request, preparing the initial entity data, and then delegating everything else to background or workflow functions. That way, the controller stays lean and focused on handling HTTP-specific tasks while business logic (including async “fire‐and‐forget” tasks) is encapsulated in separate functions.
 
-import asyncio
-import uuid
-import datetime
-import random
-from dataclasses import dataclass
-from typing import Optional
+For example, in our current design the endpoint:
+• Creates the job entity.
+• Fires off the asynchronous processing task (process_entity).
 
-from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema, validate_request, validate_response  # validate_querystring if needed
-import aiohttp
+We could refactor this so that the workflow function (like process_companies_job) is responsible for any preliminary processing or transformation of the entity data just before its persistence. Although the workflow function should remain lightweight and synchronous (doing only transformations on the job data), if your “fire and forget” logic is not tightly coupled to immediately persisting the entity you might consider moving any simple state updates (or even triggers for external async tasks) into this workflow function.
 
-# Import constants and external service entry points.
-from common.config.config import ENTITY_VERSION
-from app_init.app_init import cyoda_token, entity_service
-from common.repository.cyoda.cyoda_init import init_cyoda
+A couple of options to consider:
 
-app = Quart(__name__)
-QuartSchema(app)  # Initialize QuartSchema
+1. Move Pure Data Transformations into the Workflow Function:
+ • For example, if there is any minor business logic (setting default values, timestamps, flags, etc.) that’s currently done in the endpoint, you can shift that directly into process_companies_job.
+ • This function would be passed as the workflow argument to entity_service.add_item and would be invoked just before saving the entity.
 
-# Define the workflow function to be applied to "companies_job" entities before they are persisted.
-def process_companies_job(entity: dict) -> dict:
-    """
-    Workflow function to process the job entity before persistence.
-    This function gets the job entity data as input, adds a timestamp indicating that
-    the workflow has been applied, and returns the modified entity.
-    """
-    # Add a new key to indicate workflow processing and timestamp.
-    entity['workflowProcessedAt'] = datetime.datetime.utcnow().isoformat()
-    # Additional changes to entity state can be added here if needed.
-    return entity
+2. Trigger Asynchronous Tasks Separately:
+ • If you have “fire and forget” tasks (e.g., process_entity) that need to make external API calls or do lengthy processing, you might not want to embed them directly inside the immediate persistence workflow (especially if that workflow is meant to be synchronous and fast).
+ • Instead, the workflow can update the entity to, say, include a “processing” flag or a URL/ID for later tracking, and then your endpoint (or a dedicated scheduler) can launch the async task.
+ • This keeps the workflow focused on state update and leaves long-running operations in the asynchronous world.
 
-# Add startup code to initialize external systems.
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
+In summary, yes—you can further decouple your controller such that it delegates non‐HTTP logic to workflow functions like process_companies_job. This makes the code more modular and robust. Just be mindful of whether the workflow function should remain synchronous (for quick, in–memory transformations) while longer async operations continue to run as separate background tasks.
 
-# Dataclass for POST request validation.
-@dataclass
-class CompanySearchRequest:
-    companyName: str
-    # TODO: Add other fields (location, businessId, etc.) as needed, using primitives only.
-
-# Dataclass for POST response validation.
-@dataclass
-class CompanySearchResponse:
-    jobId: str
-    status: str
-
-# POST endpoint: Validation decorators for POST should appear after the @app.route decorator.
-@app.route("/companies/search", methods=["POST"])
-@validate_request(CompanySearchRequest)  # Workaround for Quart Schema ordering issue: this decorator comes after @app.route for POST.
-@validate_response(CompanySearchResponse, 202)
-async def search_companies(data: CompanySearchRequest):
-    """
-    Accepts a search request, fires off background processing for retrieving and enriching
-    company data, and returns a job_id so the client can poll for results.
-    """
-    # 'data' is already validated as a CompanySearchRequest instance.
-    # Convert dataclass to dict for internal usage.
-    search_data = {"companyName": data.companyName}
-    # TODO: Populate additional parameters if provided in CompanySearchRequest.
-
-    # Create a job record with a unique ID.
-    job_id = str(uuid.uuid4())
-    requested_at = datetime.datetime.utcnow().isoformat()
-    job_data = {"status": "processing", "requestedAt": requested_at, "results": None}
-
-    # Store initial job details via the external entity service.
-    # Now including the workflow function 'process_companies_job' as the workflow parameter.
-    job_id = entity_service.add_item(
-        token=cyoda_token,
-        entity_model="companies_job",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,
-        workflow=process_companies_job  # Workflow function applied before persistence
-    )
-
-    # Fire and forget background processing task.
-    asyncio.create_task(process_entity(job_id, search_data))
-    return jsonify({"jobId": job_id, "status": "processing"}), 202
-
-# GET endpoint using URL parameter: no request body so no validation is applied.
-@app.route("/companies/result/<job_id>", methods=["GET"])
-async def get_results(job_id: str):
-    """
-    Returns the processed, enriched results based on job_id.
-    """
-    # Retrieve job details from the external entity service.
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="companies_job",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
-    if not job:
-        abort(404, description="Job not found")
-    return jsonify({
-        "jobId": job_id,
-        "status": job.get("status"),
-        "results": job.get("results")
-    })
-
-async def process_entity(job_id: str, search_data: dict):
-    """
-    Processes the search: calls the Finnish Companies Registry API,
-    filters result data, enriches with LEI data, and stores final results.
-    """
-    try:
-        async with aiohttp.ClientSession() as session:
-            # --- Step 1: Query the Finnish Companies Registry API ---
-            # Build query parameters. Here we use companyName from the input.
-            params = {"name": search_data.get("companyName")}
-            # TODO: Incorporate additional parameters (location, businessId, etc.) as needed.
-            async with session.get("https://avoindata.prh.fi/opendata-ytj-api/v3/companies", params=params) as response:
-                if response.status != 200:
-                    # When response fails, update the external job record accordingly.
-                    update_job = {
-                        "status": "failed",
-                        "results": {"error": "Failed to retrieve company data"}
-                    }
-                    entity_service.update_item(
-                        token=cyoda_token,
-                        entity_model="companies_job",
-                        entity_version=ENTITY_VERSION,  # always use this constant
-                        entity=update_job,
-                        meta={"technical_id": job_id}
-                    )
-                    return
-                prh_data = await response.json()
-                # TODO: Adapt parsing logic according to the actual API response structure.
-                companies = prh_data.get("results", [])
-
-            # --- Step 2: Filter Inactive Companies ---
-            # Assumes each record contains a "status" field.
-            active_companies = [company for company in companies if company.get("status", "").lower() == "active"]
-            # TODO: Implement further filtering for companies with multiple names if required.
-
-            # --- Step 3: Data Enrichment: External LEI lookup ---
-            enriched_companies = []
-            for company in active_companies:
-                # Build a simplified company result.
-                enriched_company = {
-                    "companyName": company.get("name", "N/A"),
-                    "businessId": company.get("businessId", "N/A"),
-                    "companyType": company.get("companyType", "N/A"),
-                    "registrationDate": company.get("registrationDate", "N/A"),
-                    "status": "Active",  # Only active companies are processed.
-                    "LEI": "Not Available"  # Default value.
-                }
-                # TODO: Map additional fields from API response as needed.
-                lei = await lookup_lei(session, enriched_company)
-                enriched_company["LEI"] = lei
-                enriched_companies.append(enriched_company)
-
-            # --- Step 4: Store final results via the external service ---
-            update_job = {
-                "status": "completed",
-                "results": enriched_companies
-            }
-            entity_service.update_item(
-                token=cyoda_token,
-                entity_model="companies_job",
-                entity_version=ENTITY_VERSION,  # always use this constant
-                entity=update_job,
-                meta={"technical_id": job_id}
-            )
-
-    except Exception as e:
-        # On exception update the job with a failure status and error details.
-        update_job = {
-            "status": "failed",
-            "results": {"error": str(e)}
-        }
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="companies_job",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=update_job,
-            meta={"technical_id": job_id}
-        )
-
-async def lookup_lei(session: aiohttp.ClientSession, company: dict) -> str:
-    """
-    Simulates the lookup of the Legal Entity Identifier (LEI) from an external service.
-    Returns a dummy LEI or "Not Available".
-    """
-    # TODO: Replace simulation with an actual HTTP call using session when LEI API details are available.
-    await asyncio.sleep(0.5)  # Simulate network delay.
-    if random.choice([True, False]):
-        # Generate a dummy LEI (20 characters, alphanumeric).
-        return "".join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=20))
-    else:
-        return "Not Available"
-
-if __name__ == '__main__':
-    # Note: This app.run configuration is for development/testing. In production use a production ASGI server.
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+By refactoring in this way, you ensure that:
+ • The controller does not get cluttered with business logic.
+ • The workflow function can encapsulate any immediate transformations or validations.
+ • The asynchronous tasks remain separate, improving the maintainability and testability of each component.
