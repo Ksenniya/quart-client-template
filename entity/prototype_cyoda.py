@@ -1,10 +1,10 @@
-Below is one possible refactored version of prototype.py. In this version the local in‑memory list (companies_data) has been removed and all reads and writes are accomplished via the external entity_service calls. (Since the allowed functions don’t include creation endpoints, note that no POST endpoint is provided here—but for endpoints that do add items you would use entity_service.add_item and then include the returned id in the response.) 
+You're correct that if we do not have a way to add companies to our local cache or the external service, we won't be able to retrieve any company data. Given your request to use only local cache without external persistence or SQLAlchemy, we'll need to incorporate a simple local in-memory cache for storing companies.
 
-In addition, the new startup code is added and ENTITY_VERSION is imported as required. (For any functionality that can’t be mapped to a permitted call—for example, if more complex filtering were needed—the previous behavior is maintained after retrieving the “full list” from the external service.) 
+Below is the modified `prototype_cyoda.py` code that allows adding companies to a local cache and retrieving them through the provided endpoints. Note that while we will have methods to add companies, the code will remain focused on the GET requests as per your earlier examples.
 
-Below is the complete refactored code:
+### Full Implementation of `prototype_cyoda.py`
 
-------------------------------------------------------------
+```python
 #!/usr/bin/env python3
 """
 Prototype for the Finnish Companies Data Retrieval and Enrichment Application.
@@ -18,9 +18,8 @@ Endpoints:
 
   • GET /companies/lei
     - Retrieves/enriches LEI for a company using its businessId.
-    - If the company exists in the external store *and* already has a LEI, returns that.
-    - Otherwise, makes an asynchronous GET request to an external LEI API.
-      (This external call is mocked with a placeholder URL; see TODO comments.)
+    - If the company exists in the local cache and already has a LEI, returns that.
+    - Otherwise, performs an external LEI lookup.
     
 Usage:
   Run this file directly to launch the Quart application.
@@ -47,6 +46,9 @@ QuartSchema(app)
 async def startup():
     await init_cyoda(cyoda_token)
 
+# Local in-memory cache for companies
+companies_cache = []
+
 # Define dataclasses for querystring validation.
 @dataclass
 class CompaniesQuery:
@@ -60,6 +62,26 @@ class CompaniesQuery:
 class LeiQuery:
     businessId: str  # businessId is required for LEI lookup
 
+# Function to add companies to the in-memory cache (for demonstration purposes)
+@app.route("/companies", methods=["POST"])
+async def add_company():
+    """
+    POST /companies
+    - Adds a company to the local cache.
+    """
+    data = await request.get_json()
+    company = {
+        "companyName": data.get("companyName"),
+        "businessId": data.get("businessId"),
+        "companyType": data.get("companyType"),
+        "registrationDate": data.get("registrationDate"),
+        "status": data.get("status"),
+        "lei": data.get("lei", None),  # Allow LEI to be None
+    }
+    
+    companies_cache.append(company)
+    return jsonify({"message": "Company added", "company": company}), 201
+
 # GET /companies endpoint.
 @validate_querystring(CompaniesQuery)  # This decorator validates querystring parameters before route handling.
 @app.route("/companies", methods=["GET"])
@@ -70,10 +92,6 @@ async def get_companies():
      - Only companies with status "Active" are returned.
      - Output format is determined by the "format" querystring parameter:
          • JSON (default) or CSV (if format=csv)
-     
-    Implementation notes:
-      Instead of filtering a local in‑memory collection, we retrieve all companies via
-      entity_service.get_items and perform the filtering in this service.
     """
     # Retrieve query parameters.
     name = request.args.get("name")
@@ -82,18 +100,9 @@ async def get_companies():
     company_form = request.args.get("companyForm")
     output_format = (request.args.get("format") or "json").lower()
 
-    # Get all companies from the external service.
-    companies = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-    )
-    if companies is None:
-        companies = []  # Just in case
-
-    # Filter companies based on search criteria.
+    # Filter companies based on search criteria from the in-memory cache.
     filtered_companies = []
-    for comp in companies:
+    for comp in companies_cache:
         # Only include active companies.
         if (comp.get("status") or "").lower() != "active":
             continue
@@ -134,25 +143,18 @@ async def get_company_lei():
     GET /companies/lei
       - Enrich company data by retrieving its Legal Entity Identifier (LEI)
       - Uses businessId as parameter for lookup.
-      - If the company exists in the external store and already has a LEI, returns that value;
+      - If the company exists in the local cache and already has a LEI, returns that value;
         otherwise, calls an external (mocked) API to look up the LEI.
     """
     business_id = request.args.get("businessId")
     if not business_id:
         return jsonify({"error": "Missing businessId parameter"}), 400
 
-    # Retrieve the company using the provided businessId.
-    companies_found = await entity_service.get_items_by_condition(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-        condition={"businessId": business_id},
-    )
-    if not companies_found or len(companies_found) == 0:
+    # Retrieve the company using the provided businessId from the local cache.
+    company = next((c for c in companies_cache if c.get("businessId") == business_id), None)
+    if not company:
         return jsonify({"error": "Company not found"}), 404
 
-    # Assume using the first matching record.
-    company = companies_found[0]
     lei_value = company.get("lei")
     if lei_value:
         return jsonify({"lei": lei_value})
@@ -167,13 +169,6 @@ async def get_company_lei():
                         lei = data.get("lei", "Not Available")
                         # Update the company record with the new LEI.
                         company["lei"] = lei
-                        await entity_service.update_item(
-                            token=cyoda_token,
-                            entity_model="companies",
-                            entity_version=ENTITY_VERSION,
-                            entity=company,
-                            meta={}
-                        )
                         return jsonify({"lei": lei})
                     else:
                         return jsonify({"lei": "Not Available"}), 200
@@ -184,13 +179,13 @@ async def get_company_lei():
 if __name__ == '__main__':
     # Run the Quart application.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```
 
-------------------------------------------------------------
+### Key Changes and Features
+1. **Local Cache**: Introduced a `companies_cache` list to store company data locally.
+2. **Adding Companies**: Added a `POST /companies` endpoint that allows adding company records to the local cache.
+3. **Retrieving Companies**: The `GET /companies` endpoint retrieves companies from the local cache and applies filters based on the query parameters.
+4. **LEI Lookup**: The `GET /companies/lei` endpoint checks the local cache for the LEI and falls back to an external lookup if necessary.
+5. **Error Handling**: Basic error handling is included for missing parameters and no results found.
 
-Notes on this version:
-1. All data retrieval and update calls now use entity_service.get_items, get_items_by_condition, and update_item instead of directly reading/writing a local dictionary.
-2. For a creation (POST) endpoint (not provided here), one would call entity_service.add_item(...) and include the returned id in the response so that users can later query the new item by that id.
-3. The original business logic (filtering, marking missing LEI as "Not Available", and external API lookup) has been preserved.
-4. The startup hook initializes the Cyoda repository using the provided token.
-
-This is one accepted solution; depending on your business needs and the entity_service’s API (synchronous or asynchronous), further adjustments might be necessary.
+This prototype allows for both adding and retrieving companies while maintaining all previous functionality. If you have any additional requests or modifications, feel free to ask!
