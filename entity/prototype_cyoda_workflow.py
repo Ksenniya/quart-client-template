@@ -1,26 +1,28 @@
-Below is one acceptable complete revision of the file. In this version the POST endpoint calls entity_service.add_item with an added workflow function, process_companies_workflow. This asynchronous workflow function is applied to the job (entity) before it is persisted, so you can, for example, add timestamps or change the entity state. (Remember, avoid modifying the entity state for entity_model "companies" later from within a workflow causing infinite recursion.) 
+Yes—it’s not only possible but also a good design decision to move as much asynchronous processing (or any business logic) as possible out of your endpoint controllers. By shifting that logic into the dedicated workflow function (process_{entity_name}), you “thin out” your controllers and make your code more robust and easier to test.
 
-Below is the complete updated code:
+In our current implementation the POST endpoint immediately creates a job record and then separately fires off an asynchronous task (via asyncio.create_task) that enriches the data before updating the job record. Instead, we can shift that external API call and enrichment logic directly into the workflow function. That way, when add_item is invoked, the workflow function is automatically executed on the job data before it’s persisted.
+
+Keep in mind that in the workflow function:
+ • You can execute asynchronous code (like external API calls).
+ • You can modify the entity directly, for example, adding a processed timestamp or enrichment data.
+ • You are not allowed to perform any add/update/delete operations on the same entity via entity_service since the entity’s altered state is automatically persisted after the workflow execution.
+
+Below is an example refactoring that moves the previously “fire and forget” asynchronous processing into the workflow function:
 
 ------------------------------------------------------------
 #!/usr/bin/env python3
 """
-Prototype implementation for the Finnish Companies Data Retrieval and Enrichment Application.
+Refactored prototype implementation for the Finnish Companies Data Retrieval and Enrichment Application.
 
 Notes:
  • External API calls are performed with aiohttp.ClientSession.
  • Persistence is now implemented via an external entity_service.
- • The external entity_service.add_item() now requires an additional 'workflow' function as an argument.
-   This workflow function is applied asynchronously to the entity before it is persisted.
+ • The entity_service.add_item() function now takes a workflow function that will be applied asynchronously
+   on the entity (job record) right before that entity is persisted. This decouples processing logic from the controller.
  • Decorators for request/response validation using quart-schema are applied.
-   WORKAROUND: For GET endpoints the validation decorator (@validate_querystring) is placed first and
-   the endpoint function does not accept the validated model as an argument.
-   For POST endpoints, the order is: route, then @validate_request, then @validate_response.
- • TODO comments denote areas where further clarification or real implementations are required.
 """
 
 import asyncio
-import uuid
 from datetime import datetime
 from dataclasses import dataclass
 from quart import Quart, request, jsonify
@@ -33,7 +35,7 @@ from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 
 app = Quart(__name__)
-QuartSchema(app)  # one‐line integration of QuartSchema
+QuartSchema(app)
 
 # Startup initialization for external system connection
 @app.before_serving
@@ -47,7 +49,7 @@ async def startup():
 @dataclass
 class CompanySearch:
     name: str
-    # TODO: Add additional filters (e.g., location, companyForm) if needed, using only primitives
+    # TODO: Add additional filters if needed
 
 @dataclass
 class CompanySearchResponse:
@@ -62,77 +64,49 @@ class PaginationQuery:
 # -----------------------------------------------------------------------------
 # Workflow Function for Pre-persistence Processing
 #
-# This asynchronous function will be called by entity_service.add_item before the job entity is persisted.
-# You can modify the entity’s state as needed (such as add timestamps) as long as you don't update entities with
-# the same entity_model later from within this workflow (to avoid recursions).
+# This asynchronous workflow function is applied to the job entity before persisting.
+# All asynchronous tasks (including external API calls for data retrieval and enrichment)
+# can be moved here. This frees our endpoint controller from excessive logic.
+#
+# IMPORTANT:
+# • Modify the entity state directly. Do not use entity_service functions to update the same entity.
+# • If you need to fetch supplementary data for a different entity model, that is allowed.
 # -----------------------------------------------------------------------------
 
 async def process_companies_workflow(entity: dict):
-    # For example, mark that the workflow has been applied and set a processed timestamp.
-    entity['workflowApplied'] = True
-    entity['workflowProcessedAt'] = datetime.utcnow().isoformat()
-    return entity
-
-# -----------------------------------------------------------------------------
-# Asynchronous processing task.
-#
-# This background task uses the entity_service functions to retrieve and update
-# the job record rather than using an in‐memory cache.
-# -----------------------------------------------------------------------------
-
-async def process_entity(job_id: str, request_data: dict):
-    # Retrieve current job record from the external service.
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
+    # In our example, we'll assume the search term is contained within the entity under "searchTerm".
+    search_term = entity.get("searchTerm", "")
     async with aiohttp.ClientSession() as session:
         try:
-            # Build URL for the Finnish Companies Registry API using the provided company name.
+            # Call external API to fetch Finnish Companies Data.
             base_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
-            name = request_data.get("name", "")
-            # TODO: Expand URL building if additional filters are provided in request_data.
-            url = f"{base_url}?name={name}"
+            url = f"{base_url}?name={search_term}"
             async with session.get(url) as resp:
-                # TODO: Adapt error handling if external API returns non‐200 codes.
+                # Adapt error handling if necessary.
                 companies_data = await resp.json()
         except Exception as e:
-            job["status"] = "failed"
-            job["error"] = f"Error retrieving companies: {str(e)}"
-            entity_service.update_item(
-                token=cyoda_token,
-                entity_model="companies",
-                entity_version=ENTITY_VERSION,
-                entity=job,
-                meta={}
-            )
-            return
+            entity["status"] = "failed"
+            entity["error"] = f"Error retrieving companies: {str(e)}"
+            return entity
 
-        # Prepare list to store enriched company data.
+        # Process and enrich the company data.
         results = []
-        # TODO: Adjust key names based on the actual API response schema.
         for company in companies_data.get("results", []):
-            # Filter: Only consider companies marked as active.
-            # TODO: Adjust condition based on the actual field defining active/inactive status.
             if company.get("status", "").lower() != "active":
                 continue
 
             business_id = company.get("businessId", "")
-            # Placeholder URL for LEI data enrichment.
-            lei_url = f"https://mock-lei-api.com/api/lei?businessId={business_id}"  # TODO: Replace with a real LEI API endpoint
+            lei_url = f"https://mock-lei-api.com/api/lei?businessId={business_id}"  # Replace with a real endpoint if needed
 
             try:
                 async with session.get(lei_url) as lei_resp:
                     if lei_resp.status == 200:
                         lei_data = await lei_resp.json()
-                        # TODO: Adjust based on actual response structure from the LEI API.
                         company["lei"] = lei_data.get("lei", "Not Available")
                     else:
                         company["lei"] = "Not Available"
             except Exception:
-                company["lei"] = "Not Available"  # In case of errors, mark LEI as not available
+                company["lei"] = "Not Available"
 
             results.append({
                 "companyName": company.get("companyName", "Unknown"),
@@ -143,48 +117,50 @@ async def process_entity(job_id: str, request_data: dict):
                 "lei": company.get("lei")
             })
 
-        # Update the job record and save the processing result via the external service.
-        job["results"] = results
-        job["status"] = "completed"
-        job["completedAt"] = datetime.utcnow().isoformat()
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="companies",
-            entity_version=ENTITY_VERSION,
-            entity=job,
-            meta={}
-        )
+        # Update the job entity state.
+        entity["results"] = results
+        entity["status"] = "completed"
+        entity["completedAt"] = datetime.utcnow().isoformat()
+        return entity
 
 # -----------------------------------------------------------------------------
 # POST Endpoint: Trigger data processing and enrichment.
+#
+# Instead of firing off a separate asynchronous background task,
+# we embed the asynchronous processing logic in a workflow function
+# that will be executed immediately (asynchronously) as part of the persistence chain.
 # -----------------------------------------------------------------------------
 
 @app.route('/companies/search', methods=['POST'])
-@validate_request(CompanySearch)          # For POST endpoints, validation comes after route decorator.
+@validate_request(CompanySearch)  # For POST endpoints, this comes after the route decorator.
 @validate_response(CompanySearchResponse, 200)
 async def search_companies(data: CompanySearch):
-    # Create a job record for this search.
+    # Prepare the job record with some initial data.
     requested_at = datetime.utcnow().isoformat()
-    job_data = {"status": "processing", "requestedAt": requested_at, "results": []}
-    # Call external service with the added workflow function.
+    # We store the search term so the workflow function can use it to query external APIs.
+    job_data = {
+        "status": "processing",
+        "requestedAt": requested_at,
+        "results": [],
+        "searchTerm": data.name  # Pass search parameter to workflow
+    }
+    # Use entity_service.add_item with the workflow function to process the entity.
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,                # the validated job dictionary
+        entity=job_data,
         workflow=process_companies_workflow  # Workflow function applied asynchronously before persistence.
     )
-    # Fire-and-forget background processing task.
-    # Pass the external job_id so that the process_entity function can lookup and update the record.
-    asyncio.create_task(process_entity(job_id, {"name": data.name}))
-    # Return the job id in the response so that the user can query data by id.
+    # The entity_service.add_item call will execute the workflow (which performs the async processing)
+    # and then persist the updated state of the job entity.
     return CompanySearchResponse(searchId=job_id, status="processing")
 
 # -----------------------------------------------------------------------------
 # GET Endpoint: Retrieve processed results.
 # -----------------------------------------------------------------------------
 
-@validate_querystring(PaginationQuery)  # WORKAROUND: Must be placed first for GET requests (do not pass as function argument).
+@validate_querystring(PaginationQuery)
 @app.route('/companies/result/<string:search_id>', methods=['GET'])
 async def get_companies_result(search_id: str):
     job = entity_service.get_item(
@@ -196,7 +172,6 @@ async def get_companies_result(search_id: str):
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
-    # Use standard approach to access query parameters - validated via decorator.
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("pageSize", 100))
@@ -231,10 +206,10 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ------------------------------------------------------------
 
-In this updated implementation:
+In this refactored design:
 
-1. The workflow function process_companies_workflow is defined near the top and is passed to add_item.
-2. The add_item call in the POST endpoint now includes the workflow parameter.
-3. All external interactions remain the same while incorporating the required extra workflow functionality.
+1. The controller (search_companies endpoint) is responsible only for assembling the minimal job record and invoking entity_service.add_item.
+2. All the asynchronous processing logic—such as fetching and enriching company data via external APIs—is encapsulated in process_companies_workflow.
+3. The workflow function modifies the entity directly. Once done, the updated state is persisted by the entity_service.
 
-This refactoring maintains the original business logic, while ensuring the new workflow step is applied prior to persistence.
+This approach leads to thinner, more focused controllers while keeping the processing logic centralized and robust.
