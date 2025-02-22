@@ -30,61 +30,11 @@ class QueryResponse:
     status: str
     requestedAt: str
 
-# Workflow function applied to the entity before it is persisted
-def process_finnish_company_query(entity: dict) -> dict:
-    # Example workflow processing: mark the entity as preprocessed
-    entity["workflowProcessed"] = True
-    entity["processedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
-    return entity
-
-# Startup: initialize cyoda integration
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
-
-# POST endpoint: create company query.
-@app.route('/api/finnish-companies', methods=['POST'])
-@validate_request(FinnishCompanyQuery)  # For POST, validate_request goes after route decorator.
-@validate_response(QueryResponse, 200)     # For POST, validate_response comes next.
-async def create_company_query(data: FinnishCompanyQuery):
-    # Generate a unique identifier and timestamp
-    job_id = str(uuid.uuid4())
-    requested_at = datetime.datetime.utcnow().isoformat() + "Z"
-    # Create initial job data
-    job_data = {
-        "queryId": job_id,
-        "status": "processing",
-        "requestedAt": requested_at,
-        "results": None
-    }
-    # Add job to external entity service with workflow function
-    stored_id = entity_service.add_item(
-        token=cyoda_token,
-        entity_model="finnish_company_query",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,  # the initial job data
-        workflow=process_finnish_company_query  # Workflow function applied to the entity asynchronously before persistence.
-    )
-    # Fire and forget the processing task; pass the job data as well.
-    asyncio.create_task(process_entity(stored_id, job_data, data.__dict__))
-    return QueryResponse(queryId=stored_id, status="processing", requestedAt=requested_at)
-
-# GET endpoint: get query results.
-@app.route('/api/results/<job_id>', methods=['GET'])
-async def get_query_results(job_id: str):
-    # Retrieve the job from the external entity service
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="finnish_company_query",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
-    if not job:
-        abort(404, description="Query ID not found")
-    return jsonify(job)
-
-# Processing task: calls external APIs and aggregates results.
-async def process_entity(job_id: str, job_data: dict, query_data: dict):
+# Workflow function applied to the entity asynchronously before persistence.
+# All processing logic from the controller can be moved into this function.
+async def process_finnish_company_query(entity: dict) -> dict:
+    # Retrieve the query parameters stored in the entity
+    query_data = entity.get("queryParams", {})
     async with aiohttp.ClientSession() as session:
         finnish_api_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
         params = {"name": query_data.get("companyName")}
@@ -97,45 +47,26 @@ async def process_entity(job_id: str, job_data: dict, query_data: dict):
         try:
             async with session.get(finnish_api_url, params=params) as resp:
                 if resp.status != 200:
-                    job_data["status"] = "error"
-                    job_data["results"] = {"error": "Failed to retrieve data from Finnish API"}
-                    job_data["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
-                    entity_service.update_item(
-                        token=cyoda_token,
-                        entity_model="finnish_company_query",
-                        entity_version=ENTITY_VERSION,  # always use this constant
-                        entity=job_data,
-                        meta={}
-                    )
-                    return
+                    entity["status"] = "error"
+                    entity["results"] = {"error": "Failed to retrieve data from Finnish API"}
+                    entity["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+                    return entity
                 finnish_data = await resp.json()
         except Exception as e:
-            job_data["status"] = "error"
-            job_data["results"] = {"error": str(e)}
-            job_data["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
-            entity_service.update_item(
-                token=cyoda_token,
-                entity_model="finnish_company_query",
-                entity_version=ENTITY_VERSION,  # always use this constant
-                entity=job_data,
-                meta={}
-            )
-            return
+            entity["status"] = "error"
+            entity["results"] = {"error": str(e)}
+            entity["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+            return entity
 
-        # Assuming a 'results' list is provided in the finnish API response.
         companies: List[Dict[str, Any]] = finnish_data.get("results", [])
-
-        # Filter out inactive companies.
         active_companies = []
         for company in companies:
             if company.get("status", "").lower() == "active":
                 active_companies.append(company)
 
-        # Enrich each active company with LEI information.
         tasks = [fetch_and_enrich_lei(session, company) for company in active_companies]
         enriched_companies = await asyncio.gather(*tasks)
 
-        # Format the final results with required fields.
         results = []
         for comp in enriched_companies:
             results.append({
@@ -147,16 +78,56 @@ async def process_entity(job_id: str, job_data: dict, query_data: dict):
                 "LEI": comp.get("LEI", "Not Available"),
             })
 
-        job_data["status"] = "completed"
-        job_data["results"] = results
-        job_data["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="finnish_company_query",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=job_data,
-            meta={}
-        )
+        entity["status"] = "completed"
+        entity["results"] = results
+        entity["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+        return entity
+
+# Startup: initialize cyoda integration
+@app.before_serving
+async def startup():
+    await init_cyoda(cyoda_token)
+
+# POST endpoint: create company query.
+@app.route('/api/finnish-companies', methods=['POST'])
+@validate_request(FinnishCompanyQuery)
+@validate_response(QueryResponse, 200)
+async def create_company_query(data: FinnishCompanyQuery):
+    # Generate a unique identifier and timestamp
+    job_id = str(uuid.uuid4())
+    requested_at = datetime.datetime.utcnow().isoformat() + "Z"
+    # Create initial job data and include query parameters for later processing
+    job_data = {
+        "queryId": job_id,
+        "status": "processing",
+        "requestedAt": requested_at,
+        "results": None,
+        "queryParams": data.__dict__
+    }
+    # Add job to external entity service with workflow function.
+    # The workflow function (process_finnish_company_query) will run asynchronously,
+    # perform all external API calls and enrichment, modify the job_data and the new state will be persisted.
+    stored_id = entity_service.add_item(
+        token=cyoda_token,
+        entity_model="finnish_company_query",
+        entity_version=ENTITY_VERSION,  # always use this constant
+        entity=job_data,
+        workflow=process_finnish_company_query  # Workflow function applied to the entity asynchronously before persistence.
+    )
+    return QueryResponse(queryId=stored_id, status="processing", requestedAt=requested_at)
+
+# GET endpoint: get query results.
+@app.route('/api/results/<job_id>', methods=['GET'])
+async def get_query_results(job_id: str):
+    job = entity_service.get_item(
+        token=cyoda_token,
+        entity_model="finnish_company_query",
+        entity_version=ENTITY_VERSION,
+        technical_id=job_id
+    )
+    if not job:
+        abort(404, description="Query ID not found")
+    return jsonify(job)
 
 # External LEI enrichment using aiohttp.
 async def fetch_and_enrich_lei(session: aiohttp.ClientSession, company: dict) -> dict:
