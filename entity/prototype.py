@@ -1,25 +1,46 @@
-Below is the prototype.py file that implements the basic behavior. This implementation uses Quart with QuartSchema and aiohttp.ClientSession for HTTP calls. Persistence is mocked using a local in‐memory cache. Note that any external API endpoint that isn’t fully specified is represented using a placeholder call along with a TODO comment.
+Below is the updated prototype.py file. In this version we define dataclasses for the search request and response payloads and include @validate_request and @validate_response for the POST endpoint. (Note that for GET endpoints—if we ever had query string validation—the decorator is placed before @app.route. This is a known workaround for an issue with quart-schema.)
 
 ------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import uuid
 import datetime
-import json
-
-from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema  # one-line init per requirements
 import aiohttp
 
-# Create Quart app and attach QuartSchema (without @validate_request)
+from dataclasses import dataclass
+from quart import Quart, request, jsonify, abort
+from quart_schema import QuartSchema, validate_request, validate_response  # for GET, use validate_querystring if needed (see comment below)
+
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory persistence for job results
+# In-memory persistence for job results (a prototype-local cache)
 entity_jobs = {}
 
-# TODO: In a production system, proper persistence and background task handling would be implemented.
+# Define data classes for request/response objects
 
+@dataclass
+class CompanySearchRequest:
+    companyName: str
+    # Optional fields for future expansion (only primitives)
+    registrationDateFrom: str = ""
+    registrationDateTo: str = ""
+
+@dataclass
+class CompanyRecord:
+    companyName: str
+    businessId: str
+    companyType: str
+    registrationDate: str
+    status: str
+    lei: str
+
+@dataclass
+class CompanySearchResponse:
+    searchId: str
+    results: list  # List of CompanyRecord objects (using only primitives)
+
+# Asynchronous function to call the Finnish Companies Registry API
 async def fetch_prh_data(company_name: str) -> dict:
     """Calls the Finnish Companies Registry API and returns JSON data."""
     prh_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
@@ -28,7 +49,7 @@ async def fetch_prh_data(company_name: str) -> dict:
         try:
             async with session.get(prh_url, params=params) as resp:
                 if resp.status != 200:
-                    # TODO: Add proper error handling / logging if needed.
+                    # TODO: Add proper error handling and logging if needed.
                     return {}  # Return empty dict on error for prototype
                 data = await resp.json()
                 return data
@@ -36,13 +57,13 @@ async def fetch_prh_data(company_name: str) -> dict:
             # TODO: Log the exception properly.
             return {}
 
+# Asynchronous function to fetch the LEI data.
 async def fetch_lei_data(company: dict) -> str:
     """Fetches the LEI for a given company using an external LEI API.
        This is a placeholder that simulates the LEI lookup.
     """
     # TODO: Replace with actual LEI data source call when available.
     await asyncio.sleep(0.1)  # simulate network delay
-    # For demonstration, return a fake LEI if the company's businessId ends with an even digit.
     try:
         if int(company.get("businessId", "0")[-1]) % 2 == 0:
             return "5493001KJTIIGC8Y1R12"
@@ -50,11 +71,11 @@ async def fetch_lei_data(company: dict) -> str:
         pass
     return "Not Available"
 
+# Asynchronous processing function that retrieves, filters, and enriches company data.
 async def process_entity(job_id: str, input_data: dict):
     """Process the retrieval, filtering, and LEI enrichment.
        This function is executed asynchronously after accepting a job.
     """
-    # Initialize local results list.
     results = []
     company_name = input_data.get("companyName")
     
@@ -64,15 +85,14 @@ async def process_entity(job_id: str, input_data: dict):
     # TODO: Adjust below based on real API response structure.
     companies = prh_response.get("results", []) if prh_response else []
     
-    # Filter out inactive companies.
+    # Filtering out inactive companies.
     active_companies = []
     for company in companies:
         # TODO: Replace with the actual field or logic to determine active status.
         if company.get("status", "").lower() == "active":
             active_companies.append(company)
     
-    # For companies with multiple names, we assume the API returns already filtered names.
-    # Enrich each active company with LEI data.
+    # Enrich active companies with LEI data.
     for company in active_companies:
         lei = await fetch_lei_data(company)
         enriched = {
@@ -85,23 +105,21 @@ async def process_entity(job_id: str, input_data: dict):
         }
         results.append(enriched)
     
-    # Store the final results in the in-memory entity_jobs.
+    # Update the job record in the in-memory cache.
     entity_jobs[job_id]["status"] = "completed"
     entity_jobs[job_id]["results"] = results
 
+# POST endpoint: process external calls and store resulting enriched company data.
 @app.route("/companies/search", methods=["POST"])
-async def search_companies():
-    """POST endpoint to initiate company search and enrichment."""
-    try:
-        data = await request.get_json()
-    except Exception:
-        abort(400, description="Invalid JSON payload.")
-    
-    company_name = data.get("companyName")
+@validate_request(CompanySearchRequest)  # For POST requests, place after @app.route (workaround for quart-schema issue)
+@validate_response(CompanySearchResponse, 200)
+async def search_companies(data: CompanySearchRequest):
+    """Initiate company search and enrichment."""
+    company_name = data.companyName
     if not company_name:
         abort(400, description="Missing required field: companyName")
     
-    # Create a unique job id and record the initial job in the cache.
+    # Create a unique job id and note the requested time.
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat() + "Z"
     entity_jobs[job_id] = {
@@ -111,38 +129,41 @@ async def search_companies():
     }
     
     # Fire and forget the processing task.
-    # In a more robust implementation, error handling and task result tracking would be added.
-    asyncio.create_task(process_entity(job_id, data))
+    # TODO: In production, add better task handling and error logging.
+    asyncio.create_task(process_entity(job_id, data.__dict__))
     
-    # Immediate response with the search id; results may not be ready yet.
-    return jsonify({"searchId": job_id, "results": []})
+    # Immediate response with searchId; results may be pending.
+    return CompanySearchResponse(searchId=job_id, results=[])
 
+# GET endpoint: Retrieve processed search results using a path parameter.
+# Note: No validation is applied here because we are not expecting a query string.
 @app.route("/companies/results/<job_id>", methods=["GET"])
 async def get_results(job_id):
-    """GET endpoint to retrieve stored, enriched results by search id."""
+    """Retrieve stored enriched results by searchId."""
     job = entity_jobs.get(job_id)
     if not job:
         abort(404, description="Job ID not found.")
     
-    return jsonify({
+    response = {
         "searchId": job_id,
+        "results": job.get("results"),
         "status": job.get("status"),
-        "requestedAt": job.get("requestedAt"),
-        "results": job.get("results")
-    })
+        "requestedAt": job.get("requestedAt")
+    }
+    return jsonify(response)
 
-# A simple test endpoint to check the service.
+# A simple test endpoint for checking service health.
 @app.route("/", methods=["GET"])
 async def index():
     return "Finnish Companies Data Retrieval and Enrichment Prototype is running."
 
 if __name__ == '__main__':
-    # Using threaded=True per requirement.
+    # Entry point as specified.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 
 ------------------------------------------------
 
-Below is a Mermaid sequence diagram for the user-app interaction:
+Below is an updated Mermaid sequence diagram for the interaction:
 
 ------------------------------------------------
 %% Mermaid Sequence Diagram
@@ -152,7 +173,7 @@ sequenceDiagram
     participant PRH_API as "Finnish Registry API"
     participant LEI_API as "LEI Service"
 
-    Client->>Server: POST /companies/search {companyName:"Example Corp"}
+    Client->>Server: POST /companies/search {companyName: "Example Corp"}
     Server->>PRH_API: GET /companies?name=Example+Corp
     PRH_API-->>Server: Company data (multiple companies)
     Server->>Server: Filter out inactive companies
@@ -165,4 +186,4 @@ sequenceDiagram
     Server-->>Client: Stored results with enriched data
 ------------------------------------------------
 
-This prototype meets the design requirements and serves for early UX testing and requirement validation. Future iterations should address error handling, persistence enhancements, and further integration with actual external APIs.
+This prototype implements the earlier specified design. Future iterations would add robust error handling, persistence beyond an in-memory cache, and integration with actual external API endpoints.
