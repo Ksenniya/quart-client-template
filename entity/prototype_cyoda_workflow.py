@@ -4,7 +4,6 @@ from quart_schema import QuartSchema, validate_request, validate_response
 from dataclasses import dataclass
 import aiohttp
 import asyncio
-import uuid
 from datetime import datetime
 import random
 
@@ -53,35 +52,20 @@ async def fetch_lei(session, company):
         return "Not Available"
 
 # Workflow function applied to "companies" entity before persistence.
+# All processing logic is moved here.
 async def process_companies(entity):
-    # Add workflow specific modifications to the entity.
-    entity["workflowProcessed"] = True
-    entity["processedAtWorkFlow"] = datetime.utcnow().isoformat()
-    return entity
-
-# Processing task that retrieves and enriches data.
-async def process_entity(job_id, task_data: dict):
-    requested_at = datetime.utcnow().isoformat()
+    # Expecting that entity contains the search parameters.
+    company_name = entity.get("companyName")
+    page = entity.get("page", 1)
     try:
-        company_name = task_data.get("companyName")
-        page = task_data.get("page", 1)
         async with aiohttp.ClientSession() as session:
             companies_response = await fetch_companies_data(session, company_name, page)
             if companies_response is None:
-                update_data = {
-                    "status": "failed",
-                    "error": "Failed to retrieve data from Finnish Companies Registry API"
-                }
-                entity_service.update_item(
-                    token=cyoda_token,
-                    entity_model="companies",
-                    entity_version=ENTITY_VERSION,
-                    entity=update_data,
-                    meta={"technical_id": job_id}
-                )
-                return
+                entity["status"] = "failed"
+                entity["error"] = "Failed to retrieve data from Finnish Companies Registry API"
+                return entity
 
-            # TODO: Process companies_response based on the actual API response structure.
+            # Process companies_response based on the actual API response structure.
             companies_list = companies_response.get("results", [])
             # Filter active companies; assume each company dict has a "status" field with value "active" if active.
             active_companies = [comp for comp in companies_list if comp.get("status", "").lower() == "active"]
@@ -89,7 +73,7 @@ async def process_entity(job_id, task_data: dict):
             enriched_results = []
             for comp in active_companies:
                 lei = await fetch_lei(session, comp)
-                # TODO: Map actual fields from the API response to your output model.
+                # Map actual fields from the API response to your output model.
                 enriched_results.append({
                     "companyName": comp.get("name", "Unknown"),
                     "businessId": comp.get("businessId", "Unknown"),
@@ -99,41 +83,34 @@ async def process_entity(job_id, task_data: dict):
                     "LEI": lei,
                 })
             # Update job completion status.
-            update_data = {
+            entity.update({
                 "status": "completed",
                 "data": enriched_results,
-                "requestedAt": requested_at,
                 "completedAt": datetime.utcnow().isoformat()
-            }
-            entity_service.update_item(
-                token=cyoda_token,
-                entity_model="companies",
-                entity_version=ENTITY_VERSION,
-                entity=update_data,
-                meta={"technical_id": job_id}
-            )
+            })
     except Exception as e:
-        update_data = {
-            "status": "failed",
-            "error": str(e)
-        }
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="companies",
-            entity_version=ENTITY_VERSION,
-            entity=update_data,
-            meta={"technical_id": job_id}
-        )
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+    # Additional workflow modifications.
+    entity["workflowProcessed"] = True
+    entity["processedAtWorkFlow"] = datetime.utcnow().isoformat()
+    return entity
 
-# Workaround for quart-schema issue: For POST methods, route decorator comes first then validation decorators.
+# Endpoint for companies search.
 @app.route('/companies/search', methods=['POST'])
 @validate_request(CompanySearch)
 @validate_response(CompanySearchResponse, 201)
 async def companies_search(data: CompanySearch):
     requested_at = datetime.utcnow().isoformat()
-    # Create initial job data.
-    job_data = {"status": "processing", "requestedAt": requested_at}
+    # Create initial job data including parameters needed by the workflow.
+    job_data = {
+        "status": "processing",
+        "requestedAt": requested_at,
+        "companyName": data.companyName,
+        "page": data.page
+    }
     # Add the job record to the external entity service with a workflow function.
+    # The workflow function (process_companies) will be applied asynchronously before persisting.
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies",
@@ -141,8 +118,6 @@ async def companies_search(data: CompanySearch):
         entity=job_data,
         workflow=process_companies
     )
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data.__dict__))
     return jsonify({"taskId": job_id, "status": "submitted"}), 201
 
 @app.route('/companies/results/<job_id>', methods=['GET'])
