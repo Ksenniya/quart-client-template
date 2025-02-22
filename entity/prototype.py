@@ -1,35 +1,75 @@
-Below is a complete prototype.py that implements your requirements using Quart and aiohttp. Note that many external calls and persistence aspects are mocked with TODO comments so that we can later refine with real implementations.
+Below is the updated prototype.py file with dataclasses and proper placement of validation decorators. Note that the GET endpoint uses no validation because it does not accept a request body or query parameters. Also, a comment is included to explain the decorator ordering workaround for Quart Schema.
 
 ------------------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import datetime
 import uuid
+from dataclasses import dataclass
+from typing import Optional
 
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response
 import aiohttp
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
-# In-memory job cache. In production, use a persistent storage
+# In-memory job cache. In production, use a persistent storage.
 entity_jobs = {}
+
+
+# Dataclass definitions for request/response validations
+@dataclass
+class LookupRequest:
+    companyName: str  # Required – full or partial company name.
+    location: Optional[str] = None    # Optional – additional filtering.
+    businessId: Optional[str] = None  # Optional
+    registrationDateStart: Optional[str] = None  # Optional, format yyyy-mm-dd
+    registrationDateEnd: Optional[str] = None    # Optional, format yyyy-mm-dd
+
+
+@dataclass
+class LookupResponse:
+    searchId: str  # Identifier to poll for completed results.
+
+
+# The POST endpoint uses App.route first, then validation decorators.
+# (Workaround: For POST endpoints, the route decorator must be placed first, followed by @validate_request
+# and then @validate_response, to satisfy the current quart-schema ordering requirements.)
+@app.route('/companies/lookup', methods=['POST'])
+@validate_request(LookupRequest)
+@validate_response(LookupResponse, 202)
+async def lookup_companies(data: LookupRequest):
+    """
+    POST endpoint to trigger company lookup and enrichment.
+    The JSON payload must include at least "companyName" (full or partial).
+    """
+    # Create a job ID and store initial job info in the in-memory cache.
+    job_id = str(uuid.uuid4())
+    requested_at = datetime.datetime.utcnow().isoformat()
+    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at, "result": None}
+
+    # Fire-and-forget the processing task.
+    # We pass data.__dict__ to get a dictionary of the input values.
+    asyncio.create_task(process_entity(job_id, data.__dict__))
+
+    # Immediately return a searchId to the client.
+    return jsonify(LookupResponse(searchId=job_id)), 202
 
 
 async def process_entity(job_id: str, payload: dict):
     """
-    Process the company lookup and enrichment.  
-    This function:
+    Process the company lookup and enrichment.
       - Invokes the Finnish Companies Registry API to get company data.
-      - Filters for active companies.
-      - For each active company invokes (a mock) LEI lookup.
+      - Filters out inactive companies.
+      - For each active company, invokes (a mock) LEI lookup.
       - Saves the enriched result in the global entity_jobs cache.
     """
     companies_result = []
     external_api_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
-    # Build query parameters from payload. For now, we're only using "companyName"
-    # as per our requirements, but additional filtering parameters can be added.
+
+    # Build query parameters from payload.
     params = {}
     if payload.get("companyName"):
         params["name"] = payload["companyName"]
@@ -43,9 +83,8 @@ async def process_entity(job_id: str, payload: dict):
                     entity_jobs[job_id]["status"] = "error"
                     entity_jobs[job_id]["result"] = {"error": "Failed to retrieve company data."}
                     return
-                # Assume the external API returns a JSON with a field "results" (this is a placeholder).
                 external_data = await resp.json()
-                # TODO: Adapt this extraction according to the real response structure.
+                # TODO: Adapt this extraction according to the actual response structure.
                 companies = external_data.get("results", [])
         except Exception as e:
             entity_jobs[job_id]["status"] = "error"
@@ -55,18 +94,17 @@ async def process_entity(job_id: str, payload: dict):
         # Filter out inactive companies.
         active_companies = []
         for company in companies:
-            # TODO: Update the filtering logic based on the actual field names provided by the API.
-            # For our prototype, we assume a field "status" exists and active companies have "active" (case-insensitive).
+            # TODO: Update the filtering logic based on the actual field names.
+            # For our prototype we assume a field "status" exists and "active" indicates an active company.
             if company.get("status", "").lower() == "active":
                 active_companies.append(company)
 
-        # Enrich each active company with LEI information.
+        # Enrich each active company with LEI data.
         for company in active_companies:
-            # TODO: Replace with real LEI API call. Using a mocked value for now.
+            # TODO: Replace mocked LEI lookup with a real API call if/when available.
             lei = "Not Available"
             try:
-                # Here you could make an external HTTP request to a LEI service if available.
-                # For example:
+                # Example external LEI lookup:
                 # lei_api_url = "https://example-lei-api.com/lookup"
                 # async with session.get(lei_api_url, params={"businessId": company.get("businessId")}) as lei_resp:
                 #     if lei_resp.status == 200:
@@ -74,14 +112,12 @@ async def process_entity(job_id: str, payload: dict):
                 #         lei = lei_data.get("lei", "Not Available")
                 #     else:
                 #         lei = "Not Available"
-                #
-                # For now, we simply assign a mocked LEI value.
                 lei = "Mocked-LEI-12345"
-            except Exception as e:
+            except Exception:
                 lei = "Not Available"
             company["lei"] = lei
 
-            # Compose final company output. Adjust key mapping based on available data.
+            # Compose final company output. Adjust keys as needed based on data source.
             companies_result.append({
                 "companyName": company.get("companyName", "Unknown"),
                 "businessId": company.get("businessId", "Unknown"),
@@ -96,43 +132,18 @@ async def process_entity(job_id: str, payload: dict):
     entity_jobs[job_id]["result"] = companies_result
 
 
-@app.route('/companies/lookup', methods=['POST'])
-async def lookup_companies():
-    """
-    POST endpoint to trigger company lookup and enrichment.
-    The request payload must include at least "companyName" (full or partial).
-    """
-    try:
-        payload = await request.get_json()
-    except Exception:
-        abort(400, description="Invalid JSON payload.")
-
-    if not payload or not payload.get("companyName"):
-        abort(400, description="Missing required field: companyName")
-
-    # Create a job ID and store initial job info in the in-memory cache.
-    job_id = str(uuid.uuid4())
-    requested_at = datetime.datetime.utcnow().isoformat()
-    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at, "result": None}
-
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, payload))
-    
-    # Immediately return a searchId to the user.
-    return jsonify({"searchId": job_id}), 202
-
-
+# GET endpoint for retrieving results.
+# This endpoint does not have a request body; thus, no validation decorator is applied.
 @app.route('/companies/<job_id>', methods=['GET'])
 async def get_companies(job_id):
     """
-    GET endpoint to retrieve results of a previous lookup by searchId.
-    Returns processing status if not complete.
+    GET endpoint to retrieve results of a previous lookup using searchId.
+    Returns the processing status if the result is not yet complete.
     """
     job = entity_jobs.get(job_id)
     if not job:
         abort(404, description="Job not found.")
 
-    # If processing, inform the client.
     if job["status"] == "processing":
         return jsonify({"status": "processing", "requestedAt": job["requestedAt"]})
     elif job["status"] == "error":
@@ -146,10 +157,12 @@ if __name__ == '__main__':
 
 ------------------------------------------------------------
 
-Comments on key areas:
-• External API calls (Finnish Companies Registry and LEI services) are implemented via aiohttp.ClientSession. The actual response structure is assumed (TODO comments mark where adjustments may be necessary).
-• In-memory caching is used via the global dictionary entity_jobs. In production, replace this with a proper persistence layer.
-• The processing is fire-and-forget using asyncio.create_task, so the POST endpoint returns a searchId immediately.  
-• The GET endpoint provides a way to poll the job status.
+Key notes:
+• The POST endpoint (/companies/lookup) is decorated in the order required for POST requests:
+ - First, app.route;
+ - Then @validate_request (which converts JSON into a LookupRequest object);
+ - Followed by @validate_response ensuring a LookupResponse instance is returned.
+• The GET endpoint does not have request validation decorators.
+• Mocks and TODO comments are included wherever external APIs or persistence logic is not fully defined.
 
-This prototype will help verify the overall user experience and highlight any gaps before a full implementation.
+This prototype should help evaluate the UX and identify any gaps in the requirements before proceeding further.
