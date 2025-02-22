@@ -1,0 +1,1 @@
+{"jobId": "string", "status": "string", "message": "string", "requestedAt": "string", "results": [{"businessId": "string", "name": "string", "status": "string", "lei": "string"}], "error": "string"}
