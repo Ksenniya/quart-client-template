@@ -1,0 +1,1 @@
+{"companyName": "string", "page": 1, "status": "string", "requestedAt": "string", "completedAt": "string", "data": [{"companyName": "string", "businessId": "string", "companyType": "string", "registrationDate": "string", "status": "string", "LEI": "string"}], "taskId": "string", "error": "string"}
