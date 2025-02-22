@@ -1,6 +1,10 @@
-Below is one complete refactored version of the file. The only functional change (aside from all the original enrichment logic) is that the call to entity_service.add_item now passes an additional workflow function (process_companies) that is applied asynchronously to the job record before it is persisted. In this simple implementation the workflow function just tags the entity with a “workflowApplied” flag and a timestamp. (You may replace or extend its logic as needed.) All other functionality for background enrichment remains unchanged.
+Below is one possible refactoring. In this version we “free” the endpoint from any asynchronous background logic by moving all enrichment‐steps into the workflow function (here named process_companies). That function is passed as a parameter to entity_service.add_item and is invoked asynchronously before the record is persisted. (Remember: within the workflow you may modify the passed entity’s state directly but you must not use entity_service.add/update/delete on the current entity_model.)
 
-----------------------------------------------------------------
+In our refactored approach the endpoint simply builds a minimal job record (now also storing the original request data under an “input” key so that the workflow function can use it), and then calls add_item with process_companies as the workflow. The workflow function itself (running asynchronously) first marks the job “processing”, then (using helper functions to call external APIs such as the Finnish Companies Registry and an LEI service) gathers enriched company details, and finally updates the same entity’s state with the results and “completed” status. This eliminates the need for a separate fire‐and‐forget background task.
+
+Below is complete updated code:
+
+------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 from datetime import datetime
@@ -15,22 +19,22 @@ from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 
 app = Quart(__name__)
-QuartSchema(app)  # Initialize quart-schema for request/response validation
+QuartSchema(app)  # Initialize request/response validation
 
 # -------------------------------------------------------------------------
-# Startup tasks: Initialize external system(s) before serving requests.
+# Startup: Initialize any external systems before serving requests.
 # -------------------------------------------------------------------------
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
 
 # -------------------------------------------------------------------------
-# Data models for validation.
+# Data Models for API validation.
 # -------------------------------------------------------------------------
 @dataclass
 class EnrichRequest:
     companyName: str
-    outputFormat: str = "json"  # Optional; default is JSON.
+    outputFormat: str = "json"  # Default format
 
 @dataclass
 class EnrichResponse:
@@ -38,28 +42,12 @@ class EnrichResponse:
     message: str
 
 # -------------------------------------------------------------------------
-# Workflow Function
-# -------------------------------------------------------------------------
-async def process_companies(entity: dict) -> dict:
-    """
-    The workflow function applied to 'companies' entities before persistence.
-    You may change or extend the entity state as needed.
-    In this implementation, we simply add a marker and a timestamp.
-    
-    Note: DO NOT call entity_service.add_item/update_item for the same entity_model
-    from within this function – that would cause infinite recursion.
-    """
-    entity["workflowApplied"] = True
-    entity["workflowTimestamp"] = datetime.utcnow().isoformat()
-    return entity
-
-# -------------------------------------------------------------------------
-# External API calls (mocks and TODOs)
+# Helper Functions (External API calls)
 # -------------------------------------------------------------------------
 async def fetch_company_data(session: aiohttp.ClientSession, company_name: str):
     """
-    Query the Finnish Companies Registry API using the company name.
-    NOTE: Adapt this logic as needed for the actual API.
+    Query the Finnish Companies Registry API using the provided company name.
+    (Adjust the URL/parameters according to the actual API.)
     """
     params = {"name": company_name}
     async with session.get("https://avoindata.prh.fi/opendata-ytj-api/v3/companies", params=params) as resp:
@@ -67,74 +55,74 @@ async def fetch_company_data(session: aiohttp.ClientSession, company_name: str):
             data = await resp.json()
             return data.get("results", [])
         else:
-            # TODO: Add more robust error handling.
+            # TODO: Implement robust error handling.
             return []
 
 async def lookup_lei(session: aiohttp.ClientSession, company: dict):
     """
     Lookup the Legal Entity Identifier (LEI) for the company.
-    This is a placeholder implementation.
+    This is a placeholder: the logic here must be replaced with a real LEI lookup as needed.
     """
-    await asyncio.sleep(0.1)  # Simulate network latency.
-    # TODO: Replace with an actual call to an LEI lookup service.
+    await asyncio.sleep(0.1)  # Simulate latency.
     if len(company.get("companyName", "")) % 2 == 0:
         return "5493001KJTIIGC8Y1R12"
     else:
         return "Not Available"
 
 # -------------------------------------------------------------------------
-# Background Processing Task
+# Workflow Function for the 'companies' entity
+#
+# This function is invoked asynchronously by entity_service.add_item right before
+# persisting the entity. It takes the entity data dictionary as its only argument.
+# You may change this entity state as needed (e.g., add/modify attributes).
+# IMPORTANT: You cannot call add/update/delete methods on the current entity model.
+# However, you can get or add supplementary data for a different entity_model.
 # -------------------------------------------------------------------------
-async def process_entity(job_id: str, input_data: dict):
+async def process_companies(entity: dict) -> dict:
     """
-    Background task to retrieve and enrich company data.
-    This function updates the persistent job record via external service calls.
+    Pre-persistence workflow: Enriches a companies job record based on its input.
+    
+    The process includes:
+      • Marking the job as "processing"
+      • Fetching company data from an external source by companyName (provided in entity['input'])
+      • Filtering active companies and looking up LEI values for each.
+      • Updating the entity state with the enrichment results and marking the job "completed".
     """
-    # Update the job status to "processing"
-    processing_update = {
-        "technical_id": job_id,
-        "status": "processing"
-    }
-    entity_service.update_item(
-        token=cyoda_token,
-        entity_model="companies",       # Using "companies" as the entity model
-        entity_version=ENTITY_VERSION,
-        entity=processing_update,
-        meta={}
-    )
-
+    # Mark the job record as processing.
+    entity["status"] = "processing"
+    
+    # Retrieve the original input data stored in the entity.
+    input_data = entity.get("input", {})
     company_name = input_data.get("companyName")
-    async with aiohttp.ClientSession() as session:
-        companies = await fetch_company_data(session, company_name)
-        # Filter active companies (we assume a company is active if its status is "active")
-        active_companies = [comp for comp in companies if comp.get("status", "").lower() == "active"]
-
-        enriched_companies = []
-        for comp in active_companies:
-            lei_val = await lookup_lei(session, comp)
-            enriched_companies.append({
-                "companyName": comp.get("companyName", "Unknown"),
-                "businessId": comp.get("businessId", "Unknown"),
-                "companyType": comp.get("companyType", "Unknown"),
-                "registrationDate": comp.get("registrationDate", "Unknown"),
-                "status": "Active",
-                "LEI": lei_val,
-            })
-
-    # Update the job record with "completed" status and the enrichment results.
-    completed_update = {
-        "technical_id": job_id,
-        "status": "completed",
-        "results": enriched_companies,
-        "completedAt": datetime.utcnow().isoformat()
-    }
-    entity_service.update_item(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-        entity=completed_update,
-        meta={}
-    )
+    
+    enriched_companies = []
+    if company_name:
+        async with aiohttp.ClientSession() as session:
+            companies = await fetch_company_data(session, company_name)
+            
+            # Consider only active companies.
+            active_companies = [comp for comp in companies if comp.get("status", "").lower() == "active"]
+    
+            for comp in active_companies:
+                lei_val = await lookup_lei(session, comp)
+                enriched_companies.append({
+                    "companyName": comp.get("companyName", "Unknown"),
+                    "businessId": comp.get("businessId", "Unknown"),
+                    "companyType": comp.get("companyType", "Unknown"),
+                    "registrationDate": comp.get("registrationDate", "Unknown"),
+                    "status": "Active",
+                    "LEI": lei_val,
+                })
+    
+    # Update the entity with results and mark the job complete.
+    entity["results"] = enriched_companies
+    entity["status"] = "completed"
+    entity["completedAt"] = datetime.utcnow().isoformat()
+    
+    # You can also add extra meta-data if needed.
+    entity["workflowApplied"] = True
+    entity["workflowTimestamp"] = datetime.utcnow().isoformat()
+    return entity
 
 # -------------------------------------------------------------------------
 # REST API Endpoints
@@ -144,29 +132,32 @@ async def process_entity(job_id: str, input_data: dict):
 @validate_response(EnrichResponse, 202)
 async def enrich_companies(data: EnrichRequest):
     """
-    Accepts a company name and initiates the enrichment process.
-    A new record is created via entity_service.add_item. The returned technical id
-    is provided in the response. A workflow function (process_companies) is passed
-    to add_item so that the job record is pre-processed before persistence.
+    Initiates company data enrichment. Instead of launching an external asynchronous
+    background task, we now pass a workflow function (process_companies) to entity_service.add_item.
+    
+    The endpoint builds an initial job record (which here also stores the original input data)
+    and delegates the enrichment work entirely to process_companies, which is executed asynchronously
+    before the entity is persisted.
     """
     requested_at = datetime.utcnow().isoformat()
-    # Prepare initial job data.
+    # Build the initial job record. Note the additional "input" key (containing the request data)
+    # is provided so the workflow has access to the companyName and any other parameters.
     job_data = {
         "status": "queued",
         "requestedAt": requested_at,
-        "results": None
+        "results": None,
+        "input": data.__dict__
     }
-    # Persist the job record via entity_service.add_item and retrieve the generated id.
-    # The workflow function is applied to job_data asynchronously before saving.
+    
+    # Persist the job record; process_companies is automatically invoked asynchronously to enrich the record.
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies",
         entity_version=ENTITY_VERSION,  # Always use this constant
-        entity=job_data,                # The initial job data
-        workflow=process_companies      # Workflow function applied before persistence
+        entity=job_data,                # Initial job record state
+        workflow=process_companies      # Workflow function for pre-persistence processing
     )
-    # Fire-and-forget: Execute a background task to enrich the record.
-    asyncio.create_task(process_entity(job_id, data.__dict__))
+    
     return jsonify({
         "jobId": job_id,
         "message": "Enrichment processing started. Use the jobId to retrieve results."
@@ -175,8 +166,8 @@ async def enrich_companies(data: EnrichRequest):
 @app.route("/companies/results/<job_id>", methods=["GET"])
 async def get_results(job_id: str):
     """
-    Retrieves the enriched data for a given job id.
-    The job record is fetched from the external persistent store.
+    Retrieves the enriched result of a given job id.
+    The job record is fetched from the persistent store.
     """
     job = entity_service.get_item(
         token=cyoda_token,
@@ -200,12 +191,15 @@ async def get_results(job_id: str):
     }), 200
 
 if __name__ == '__main__':
-    # threaded=True allows background async tasks to run in this prototype.
+    # threaded=True allows asynchronous background tasks to work in this prototype.
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-----------------------------------------------------------------
+------------------------------------------------
 
-Notes:
-1. The workflow function process_companies is a lightweight pre‐persistence handler that adds additional metadata.
-2. The background task (process_entity) still handles the actual enrichment and job record updates.
-3. All external interactions use the provided cyoda_token and constant ENTITY_VERSION.
-4. You may expand process_companies if additional transformation or validation steps are needed before saving.
+Key Points in this Refactoring:
+
+1. All the enrichment logic (previously in a fire‐and‐forget task) has been moved inside process_companies.
+2. The process_companies workflow function is asynchronous and directly modifies the incoming entity state.
+3. The endpoint is now “lean” – it merely constructs the job record and delegates processing.
+4. If additional supplementary data is needed (or processing on a different entity_model), that logic can be added inside process_companies. 
+
+This approach leads to more robust code with thinner controllers and a clearer separation between request handling and business logic.
