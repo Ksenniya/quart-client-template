@@ -1,0 +1,1 @@
+{"companyName": "string", "outputFormat": "json", "jobId": "string", "message": "string", "status": "string", "requestedAt": "string", "results": [{"companyName": "string", "businessId": "string", "companyType": "string", "registrationDate": "string", "status": "Active", "LEI": "string"}], "completedAt": "string"}
