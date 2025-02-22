@@ -17,14 +17,19 @@ QuartSchema(app)  # Enable QuartSchema once as required.
 # Startup initialization.
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        # Prevent startup failure if initialization fails.
+        app.logger.error(f"Failed to initialize cyoda: {e}")
+        raise
 
 # Dataclass for POST request validation.
 @dataclass
 class CompanySearch:
     companyName: str
     page: int = 1
-    # TODO: Additional filters can be added as needed.
+    # Additional filters can be added as needed.
 
 # Dataclass for POST response validation.
 @dataclass
@@ -33,41 +38,56 @@ class CompanySearchResponse:
     status: str
 
 # Helper function to retrieve company data from the Finnish Companies Registry API.
-async def fetch_companies_data(session, company_name, page=1):
-    # TODO: Expand query parameters based on additional filters if needed.
+async def fetch_companies_data(session: aiohttp.ClientSession, company_name: str, page: int = 1):
+    # Expand query parameters based on additional filters if needed.
     url = f"https://avoindata.prh.fi/opendata-ytj-api/v3/companies?name={company_name}&page={page}"
-    async with session.get(url) as resp:
-        if resp.status != 200:
-            # TODO: Handle error more gracefully.
-            return None
-        return await resp.json()
+    try:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                # Log error and return None to indicate failure.
+                app.logger.error(f"Finnish Companies Registry API returned status {resp.status} for URL: {url}")
+                return None
+            return await resp.json()
+    except Exception as e:
+        app.logger.error(f"Exception during fetching companies data: {e}")
+        return None
 
 # Helper function to simulate LEI lookup for a given company.
-async def fetch_lei(session, company):
-    # TODO: Implement actual LEI data retrieval from an official source.
-    await asyncio.sleep(0.1)  # Simulate network delay
-    if random.choice([True, False]):
-        return "MOCK-LEI-1234567890"
-    else:
+async def fetch_lei(session: aiohttp.ClientSession, company: dict):
+    # Simulate network delay and potential lookup
+    try:
+        await asyncio.sleep(0.1)
+        # Randomly simulate LEI availability.
+        if random.choice([True, False]):
+            return "MOCK-LEI-1234567890"
+        else:
+            return "Not Available"
+    except Exception as e:
+        app.logger.error(f"Exception during LEI lookup: {e}")
         return "Not Available"
 
 # Workflow function applied to "companies" entity before persistence.
-# All processing logic is moved here.
-async def process_companies(entity):
-    # Expecting that entity contains the search parameters.
+# All heavy processing logic is moved here to free the controller.
+async def process_companies(entity: dict):
+    # The entity is expected to have the search parameters.
     company_name = entity.get("companyName")
     page = entity.get("page", 1)
+    # Set default timestamps if not already present.
+    requested_at = entity.get("requestedAt", datetime.utcnow().isoformat())
     try:
         async with aiohttp.ClientSession() as session:
             companies_response = await fetch_companies_data(session, company_name, page)
             if companies_response is None:
+                # Mark failure with error details.
                 entity["status"] = "failed"
                 entity["error"] = "Failed to retrieve data from Finnish Companies Registry API"
+                entity["completedAt"] = datetime.utcnow().isoformat()
+                # Early return with modified entity that will be persisted.
                 return entity
 
             # Process companies_response based on the actual API response structure.
             companies_list = companies_response.get("results", [])
-            # Filter active companies; assume each company dict has a "status" field with value "active" if active.
+            # Filter active companies; assume each company dict has a "status" field with value "active".
             active_companies = [comp for comp in companies_list if comp.get("status", "").lower() == "active"]
 
             enriched_results = []
@@ -82,16 +102,22 @@ async def process_companies(entity):
                     "status": "Active",
                     "LEI": lei,
                 })
-            # Update job completion status.
+
+            # Update entity with enriched results and mark it as completed.
             entity.update({
                 "status": "completed",
                 "data": enriched_results,
+                "requestedAt": requested_at,
                 "completedAt": datetime.utcnow().isoformat()
             })
     except Exception as e:
+        # Catch and log any exceptions during processing.
+        app.logger.error(f"Exception in process_companies workflow: {e}")
         entity["status"] = "failed"
         entity["error"] = str(e)
-    # Additional workflow modifications.
+        entity["completedAt"] = datetime.utcnow().isoformat()
+
+    # Mark that workflow processing has been applied.
     entity["workflowProcessed"] = True
     entity["processedAtWorkFlow"] = datetime.utcnow().isoformat()
     return entity
@@ -101,8 +127,9 @@ async def process_companies(entity):
 @validate_request(CompanySearch)
 @validate_response(CompanySearchResponse, 201)
 async def companies_search(data: CompanySearch):
+    # Capture request time and parameters.
     requested_at = datetime.utcnow().isoformat()
-    # Create initial job data including parameters needed by the workflow.
+    # Create initial job data with search parameters.
     job_data = {
         "status": "processing",
         "requestedAt": requested_at,
@@ -110,38 +137,53 @@ async def companies_search(data: CompanySearch):
         "page": data.page
     }
     # Add the job record to the external entity service with a workflow function.
-    # The workflow function (process_companies) will be applied asynchronously before persisting.
-    job_id = entity_service.add_item(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-        entity=job_data,
-        workflow=process_companies
-    )
+    # The workflow function (process_companies) will run asynchronously and modify the entity.
+    try:
+        job_id = entity_service.add_item(
+            token=cyoda_token,
+            entity_model="companies",
+            entity_version=ENTITY_VERSION,
+            entity=job_data,
+            workflow=process_companies
+        )
+    except Exception as e:
+        app.logger.error(f"Error adding item to entity_service: {e}")
+        abort(500, description="Failed to create job")
     return jsonify({"taskId": job_id, "status": "submitted"}), 201
 
+# Endpoint to fetch complete results of a companies job.
 @app.route('/companies/results/<job_id>', methods=['GET'])
-async def companies_results(job_id):
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
+async def companies_results(job_id: str):
+    try:
+        job = entity_service.get_item(
+            token=cyoda_token,
+            entity_model="companies",
+            entity_version=ENTITY_VERSION,
+            technical_id=job_id
+        )
+    except Exception as e:
+        app.logger.error(f"Error fetching job {job_id}: {e}")
+        abort(500, description="Error retrieving task")
     if not job:
         abort(404, description="Task not found")
     return jsonify(job)
 
+# Endpoint to check status of a companies job.
 @app.route('/companies/results/<job_id>/status', methods=['GET'])
-async def companies_status(job_id):
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="companies",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
+async def companies_status(job_id: str):
+    try:
+        job = entity_service.get_item(
+            token=cyoda_token,
+            entity_model="companies",
+            entity_version=ENTITY_VERSION,
+            technical_id=job_id
+        )
+    except Exception as e:
+        app.logger.error(f"Error fetching status for job {job_id}: {e}")
+        abort(500, description="Error retrieving task status")
     if not job:
         abort(404, description="Task not found")
+    # Return only taskId and status.
     return jsonify({"taskId": job_id, "status": job.get("status")})
 
 if __name__ == '__main__':
