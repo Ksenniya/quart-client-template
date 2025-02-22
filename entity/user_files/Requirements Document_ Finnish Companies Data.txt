@@ -1,0 +1,147 @@
+﻿Requirements Document: Finnish Companies Data Retrieval and Enrichment Application
+1. Overview
+This application will retrieve a subset of data from the Finnish Companies Registry (PRH Avoindata API) based on a given company name, filter out inactive names, and enrich the data by fetching the Legal Entity Identifier (LEI) from the web.
+2. Functional Requirements
+2.1 Data Retrieval
+        •        The application must query the Finnish Companies Registry API (https://avoindata.prh.fi/opendata-ytj-api/) to retrieve company information.
+        •        The input must be a company name or a partial name.
+        •        The application must return only exact or closest matching companies.
+2.2 Filtering
+        •        After retrieving the data, the application must filter out inactive company names.
+        •        A company is considered active if its business status is marked as active in the registry.
+        •        If multiple names exist for an entity, retain only those marked as active.
+2.3 LEI Data Enrichment
+        •        The application must search the web for the Legal Entity Identifier (LEI) of each active company.
+        •        The LEI should be fetched from official LEI registries or reliable financial data sources.
+        •        If an LEI exists, it should be added to the output data.
+2.4 Output
+        •        The final output should be a structured JSON or CSV format containing:
+        •        Company Name
+        •        Business ID
+        •        Company Type
+        •        Registration Date
+        •        Status (Active/Inactive)
+        •        LEI (if available)
+        •        If no LEI is found, the field should be marked as “Not Available”.
+
+
+openapi: 3.0.1
+info:
+  title: Opendata YTJ-Api
+  version: 2.0
+  license:
+    name: Creative Commons Nimeä 4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+servers:
+  - url: https://avoindata.prh.fi/opendata-ytj-api/v3
+paths:
+  /companies:
+    get:
+      summary: "Search for companies by company name, place of registered office, Business ID or company form"
+      operationId: GetCompanies
+      parameters:
+        - in: query
+          name: name
+          description: "Company name (search for current or previous company names, parallel company names or auxiliary company names)"
+          schema:
+            type: string
+        - in: query
+          name: location
+          description: "Town or city"
+          schema:
+            type: string
+        - in: query
+          name: businessId
+          description: "Business ID"
+          schema:
+            type: string
+        - in: query
+          name: companyForm
+          description: >
+            <a aria-label="Opens in a new window" rel="noopener" href="/opendata-ytj-api/v3/description?code=YRMU&lang=en">Company form <svg width="15" height="20" viewBox="0 -11 24 24"> <path margin="0" fill="#035ca7" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"></path></svg></a>
+          schema:
+            type: string
+            enum: [ "AOY", "ASH", "ASY", "AY", "AYH", "ETS", "ETY", "SCE", "SCP", "HY", "KOY", "KVJ", "KVY", "KY", "OK",
+                      "OP", "OY", "OYJ", "SE", "SL", "SP", "SÄÄ", "TYH", "VOJ", "VOY", "VY", "VALTLL"]
+        - in: query
+          name: mainBusinessLine
+          description: >
+            <a aria-label="Opens in a new window" rel="noopener" href="https://www.stat.fi/en/luokitukset/toimiala/">Main line of business <svg width="15" height="20" viewBox="0 -6 24 24"> <path margin="0" fill="#035ca7" d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"></path></svg></a>(Search by Statistics Finland TOL 2008 code or by text)
+          schema:
+            type: string
+        - in: query
+          name: registrationDateStart
+          description: "Company registration date over a period of time (write the start date in the format yyyy-mm-dd)"
+          schema:
+            type: string
+            format: date
+            minLength: 10
+            maxLength: 10
+        - in: query
+          name: registrationDateEnd
+          description: "Company registration date over a period of time (write the end date in the format yyyy-mm-dd)"
+          schema:
+            type: string
+            format: date
+            minLength: 10
+            maxLength: 10
+        - in: query
+          name: postCode
+          description: "Postal code of street or postal address"
+          schema:
+            type: string
+        - in: query
+          name: businessIdRegistrationStart
+          description: "Date of grant of Business ID over a period of time (Write the start date in the format yyyy-mm-dd)"
+          schema:
+            type: string
+            format: date
+            minLength: 10
+            maxLength: 10
+        - in: query
+          name: businessIdRegistrationEnd
+          description: "Date of grant of Business ID over a period of time (write the end date in the format yyyy-mm-dd)"
+          schema:
+            type: string
+            format: date
+            minLength: 10
+            maxLength: 10
+        - in: query
+          name: page
+          description: "If your search returns more than 100 results, they are shown on multiple pages. Use the page parameter to indicate the results page you need. If the page parameter is not used or it points to a page not included in the results, the results of the first page are returned (for instance if you search for page 5 and the results only have 3 pages)."
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResult'
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        429:
+          description: "Too many requests"
+          content:
+            text/plain:
+              schema:
+                type: string
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        503:
+          description: "The server cannot process the request"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+
