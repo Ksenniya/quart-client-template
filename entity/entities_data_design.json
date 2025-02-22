@@ -1,0 +1,26 @@
+{
+    "entities": [
+        {
+            "entity_name": "finnish_company_query",
+            "entity_data_example": {
+                "companyName": "string",
+                "location": "string",
+                "registrationDateStart": "string",
+                "registrationDateEnd": "string",
+                "queryId": "string",
+                "status": "string",
+                "requestedAt": "string",
+                "results": [
+                    {
+                        "companyName": "string",
+                        "businessId": "string",
+                        "companyType": "string",
+                        "registrationDate": "string",
+                        "status": "string",
+                        "LEI": "string"
+                    }
+                ]
+            }
+        }
+    ]
+}
