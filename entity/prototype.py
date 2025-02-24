@@ -1,6 +1,3 @@
-Below is an implementation for prototype.py. This prototype uses aiohttp for external HTTP calls and Quart for building the API. Note that external calls are mocked with TODO comments, and persistence is implemented with a simple in‐memory dictionary. Please review and adjust the TODO sections as the requirements become more complete.
-
---------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import uuid
@@ -8,11 +5,27 @@ import datetime
 import logging
 
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # One-liner as required
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
+
+# Data classes for request/response validation
+@dataclass
+class CompanyRequest:
+    companyName: str
+
+@dataclass
+class JobResponse:
+    searchId: str
+    status: str
+    requestedAt: str
+
+@dataclass
+class QueryJob:
+    searchId: str
 
 # Global in-memory storage for jobs; keys are search IDs.
 jobs = {}
@@ -20,7 +33,6 @@ jobs = {}
 # Configure logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 async def process_entity(search_id, request_data):
     """
@@ -42,7 +54,7 @@ async def process_entity(search_id, request_data):
             async with session.get(registry_url, params=params) as resp:
                 if resp.status != 200:
                     logger.error("Finnish Registry API request failed with status %s", resp.status)
-                    # TODO: Depending on requirements, update job status with error details.
+                    # TODO: Update job status with error details as per requirements.
                     jobs[search_id]["status"] = "error"
                     jobs[search_id]["error"] = f"Registry API returned status {resp.status}"
                     return
@@ -53,15 +65,13 @@ async def process_entity(search_id, request_data):
             jobs[search_id]["error"] = str(e)
             return
 
-        # TODO: Adjust the data model according to actual API response.
-        # For the prototype, assume registry_data is a dict containing a key 'results' that is a list of companies.
+        # TODO: Adjust data model according to actual API response.
         companies = registry_data.get("results", [])
         logger.info("Retrieved %d companies from registry", len(companies))
 
         # 2. Filter out inactive companies and retain only active names from companies with multiple names
         active_companies = []
         for company in companies:
-            # Assuming company has a 'status' key marking "Active" or "Inactive"
             if company.get("status", "").lower() == "active":
                 active_companies.append(company)
 
@@ -69,9 +79,8 @@ async def process_entity(search_id, request_data):
 
         # 3. For each active company, call an external LEI lookup service
         for company in active_companies:
-            # TODO: Replace the dummy URL and logic with a real LEI lookup service.
+            # TODO: Replace dummy URL and logic with a real LEI lookup service.
             lei_service_url = "https://dummy-lei-lookup.com/api/lei"
-            # Use businessId as a key for LEI lookup if available.
             params = {"businessId": company.get("businessId")}  # Adjust as necessary
             try:
                 async with session.get(lei_service_url, params=params) as lei_resp:
@@ -85,7 +94,6 @@ async def process_entity(search_id, request_data):
                 logger.exception("Exception during LEI lookup for company %s", company.get("businessId"))
                 lei = "Not Available"
 
-            # Prepare the enriched record
             enriched_company = {
                 "companyName": company.get("companyName", "Unknown"),
                 "businessId": company.get("businessId", "Unknown"),
@@ -102,23 +110,20 @@ async def process_entity(search_id, request_data):
         jobs[search_id]["results"] = results
         logger.info("Completed processing job %s", search_id)
 
-
+# For POST endpoints, the route decorator must come first, then validation decorators.
 @app.route("/api/company-enrichment", methods=["POST"])
-async def company_enrichment():
+@validate_request(CompanyRequest)  # Workaround: For POST, validation decorators go after the route decorator.
+@validate_response(JobResponse, 202)
+async def company_enrichment(data: CompanyRequest):
     """
     POST endpoint to trigger company enrichment.
     Expects JSON like: {"companyName": "Example Company"}.
     Returns a searchId for later retrieval.
     """
-    request_data = await request.get_json()
-    if not request_data or "companyName" not in request_data:
-        return jsonify({"error": "Missing companyName in request"}), 400
-
-    # Create a unique job id
     search_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat()
 
-    # Save initial job information in the in-memory cache
+    # Save initial job information in the in-memory cache.
     jobs[search_id] = {
         "status": "processing",
         "requestedAt": requested_at,
@@ -126,10 +131,11 @@ async def company_enrichment():
     }
 
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(search_id, request_data))
-    return jsonify({"searchId": search_id, "status": "processing", "requestedAt": requested_at}), 202
+    asyncio.create_task(process_entity(search_id, data.__dict__))
+    return JobResponse(searchId=search_id, status="processing", requestedAt=requested_at), 202
 
-
+# For GET endpoints with query parameters, validation decorators must go first.
+@validate_querystring(QueryJob)  # Workaround: For GET, validation decorators go before the route decorator.
 @app.route("/api/results", methods=["GET"])
 async def results():
     """
@@ -146,16 +152,5 @@ async def results():
 
     return jsonify(job), 200
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-
---------------------------------------------------
-
-Note the following:
-• External API calls (Finnish Registry and LEI lookup) are implemented with aiohttp.ClientSession. Actual URL endpoints and data models might need updating.
-• A simple in-memory dictionary (jobs) is used as a placeholder for persistence.
-• Asynchronous processing is handled via asyncio.create_task to mimic fire-and-forget processing.
-• TODO comments indicate where proper implementations or clarifications are needed.
-
-This prototype should help verify the UX and identify any gaps before moving to a more robust implementation.
