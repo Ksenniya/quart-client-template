@@ -25,12 +25,12 @@ async def startup():
 class JobRequest:
     pass
 
-# Workflow function applied to the "report" entity before persistence.
-# It takes the initial report data as its only argument,
-# fetches conversion rates from an external API, updates the report state,
-# and returns the updated report data.
+# Workflow function applied to the "report" entity asynchronously before persistence.
+# It takes the initial report data as its only argument, enriches it with external API data,
+# simulates email sending and updates the entity state. Any modifications to the entity (report)
+# here will be persisted. Note: Do not use entity_service.add/update/delete for the current entity.
 async def process_report(report: dict) -> dict:
-    # Update the requestedAt timestamp
+    # Update the requested timestamp
     report["requestedAt"] = datetime.utcnow().isoformat()
 
     # Simulate external API call to fetch BTC conversion rates.
@@ -46,15 +46,14 @@ async def process_report(report: dict) -> dict:
                     btc_usd = 50000  # fallback dummy value
                     btc_eur = 42000  # fallback dummy value
         except Exception as e:
-            # Log error and use fallback dummy data
             print(f"Error fetching BTC rates: {e}")
             btc_usd = 50000
             btc_eur = 42000
 
-    # Simulate email sending (mock implementation)
+    # Simulate email sending (fire-and-forget async task could be moved here if needed)
     email_status = "Email sent successfully"
 
-    # Update the report state
+    # Update the report data directly; these changes will be persisted.
     report.update({
         "timestamp": datetime.utcnow().isoformat(),
         "conversion_rates": {
@@ -68,31 +67,32 @@ async def process_report(report: dict) -> dict:
 
 # For POST endpoints, we apply validate_request after the route decorator as a workaround for an issue in quart-schema.
 @app.route("/job", methods=["POST"])
-@validate_request(JobRequest)  # Workaround: For POST endpoints, the decorator is applied after the route decorator.
+@validate_request(JobRequest)
 async def create_job(data: JobRequest):
-    # Generate a unique job id
+    # Generate a unique job id.
     job_id = str(uuid.uuid4())
     initial_data = {
         "report_id": job_id,
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat()
     }
-    # Save the initial report using the external service with the workflow function applied before persistence.
+    # Persist the report with the workflow function that processes the entity asynchronously
+    # right before saving. All heavy lifting is offloaded from this controller.
     added_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="report",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=initial_data,  # the validated data object
-        workflow=process_report  # Workflow function applied to the entity asynchronously before persistence.
+        entity=initial_data,  # the initial report data
+        workflow=process_report  # Workflow function to update the entity state before persistence.
     )
-    # Retrieve the processed report from the external service.
+    # Retrieve the persisted report for the response.
     report = await entity_service.get_item(
         token=cyoda_token,
         entity_model="report",
         entity_version=ENTITY_VERSION,
         technical_id=job_id
     )
-    # Add the external service id to the response for querying by id.
+    # Add the external service id to the response.
     report["id"] = added_id if added_id is not None else job_id
     return jsonify(report), 200
 
