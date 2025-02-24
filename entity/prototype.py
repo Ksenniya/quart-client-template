@@ -2,8 +2,9 @@ import asyncio
 import aiohttp
 import uuid
 import datetime
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Note: For GET endpoints, validation (if needed) must come as the first decorator
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -11,6 +12,10 @@ QuartSchema(app)
 # In-memory caches for processed brand data and job status
 brands_cache = []  # Global variable to store processed brand data
 jobs = {}          # Global dictionary to track job statuses
+
+@dataclass
+class BrandFilter:
+    filter: str = ""  # Optional filter criteria; using only primitives
 
 async def process_entity(job, data):
     # Simulate processing delay
@@ -27,8 +32,10 @@ async def process_entity(job, data):
     job["status"] = "completed"
     job["completedAt"] = datetime.datetime.utcnow().isoformat()
 
+# For POST endpoints, route decorator comes first and validate_request comes second (workaround for quart-schema issue)
 @app.route('/brands', methods=['POST'])
-async def create_brands():
+@validate_request(BrandFilter)
+async def create_brands(data: BrandFilter):
     global jobs
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat()
@@ -37,8 +44,8 @@ async def create_brands():
     job = {"status": "processing", "requestedAt": requested_at}
     jobs[job_id] = job
 
-    # Optionally, read filter criteria or other parameters from the request body
-    request_data = await request.get_json() or {}
+    # Access validated data from the request body
+    request_data = data  # This contains the validated BrandFilter object
     # TODO: Process request_data if specific filters or parameters are required
 
     # Retrieve data from the external API
@@ -59,6 +66,7 @@ async def create_brands():
     # Return the processed brand data
     return jsonify(brands_cache), 200
 
+# GET endpoint does not require request body validation (no @validate_querystring used since no query parameters are needed)
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     if not brands_cache:
