@@ -3,7 +3,6 @@ import asyncio
 import uuid
 import datetime
 import logging
-
 import aiohttp
 from dataclasses import dataclass
 from quart import Quart, request, jsonify
@@ -16,10 +15,18 @@ from common.repository.cyoda.cyoda_init import init_cyoda
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Startup initialization
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+        logger.info("CYODA initialization completed.")
+    except Exception as e:
+        logger.exception("Failed to initialize CYODA: %s", e)
 
 # Data classes for request/response validation
 @dataclass
@@ -36,46 +43,55 @@ class JobResponse:
 class QueryJob:
     searchId: str
 
-# Configure logging for debugging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Asynchronous workflow function for "job" entity.
+################################################################################
+# Workflow function for "job" entity.
+# This function is applied asynchronously before the entity is persisted.
+# It modifies the entity state, assigns a unique technical_id (if missing),
+# sets a creation timestamp, and triggers further asynchronous enrichment.
+################################################################################
 async def process_job(entity):
-    # This workflow function is applied to the entity asynchronously before persistence.
-    # Modify the entity state directly.
-    if "technical_id" not in entity or not entity["technical_id"]:
-        entity["technical_id"] = str(uuid.uuid4())
-    entity["addedAt"] = datetime.datetime.utcnow().isoformat()
-    # Start the enrichment processing asynchronously.
-    company_name = entity.get("companyName")
-    if company_name:
-        # Fire-and-forget the external processing task.
+    try:
+        # Ensure a technical_id is present; do not reassign if already exists.
+        if "technical_id" not in entity or not entity["technical_id"]:
+            entity["technical_id"] = str(uuid.uuid4())
+        # Add a timestamp for when the entity was added.
+        entity["addedAt"] = datetime.datetime.utcnow().isoformat()
+        # Validate required field for processing.
+        company_name = entity.get("companyName")
+        if not company_name:
+            logger.error("Missing companyName in the job entity; skipping enrichment process.")
+            entity["status"] = "error"
+            entity["error"] = "Missing companyName"
+            return entity
+        # Immediately mark the status as processing.
+        entity["status"] = "processing"
+        # Launch asynchronous enrichment processing as a fire-and-forget task.
         asyncio.create_task(process_entity(entity["technical_id"], {"companyName": company_name}))
-    else:
-        logger.error("Company name missing in entity workflow")
+    except Exception as e:
+        logger.exception("Error in process_job workflow: %s", e)
+        entity["status"] = "error"
+        entity["error"] = str(e)
     return entity
 
+################################################################################
+# Asynchronous processing function to enrich the job entity.
+# It calls external APIs to fetch company registry data and LEI lookup.
+# On failure, it updates the job status with error details.
+# The update_item call here is for a different phase (updating job results)
+# and is safe because it targets an already persisted entity.
+################################################################################
 async def process_entity(search_id, request_data):
-    """
-    Processing task:
-      1. Call the Finnish Companies Registry API with the provided companyName.
-      2. Filter out inactive companies.
-      3. For each active company, call an external LEI lookup API.
-      4. Update enriched results using the external entity_service.
-    """
     results = []
     company_name = request_data.get("companyName")
-    
     async with aiohttp.ClientSession() as session:
-        # 1. Retrieve data from the Finnish Companies Registry API
+        # Call Finnish Companies Registry API
         registry_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
         params = {"name": company_name}
         try:
             async with session.get(registry_url, params=params) as resp:
                 if resp.status != 200:
-                    logger.error("Finnish Registry API request failed with status %s", resp.status)
-                    # Update job status with error details via external service
+                    error_msg = f"Registry API returned status {resp.status}"
+                    logger.error(error_msg)
                     entity_service.update_item(
                         token=cyoda_token,
                         entity_model="job",
@@ -83,14 +99,14 @@ async def process_entity(search_id, request_data):
                         entity={
                             "technical_id": search_id,
                             "status": "error",
-                            "error": f"Registry API returned status {resp.status}"
+                            "error": error_msg
                         },
                         meta={}
                     )
                     return
                 registry_data = await resp.json()
         except Exception as e:
-            logger.exception("Exception during Finnish Registry API request")
+            logger.exception("Exception calling Finnish Registry API")
             entity_service.update_item(
                 token=cyoda_token,
                 entity_model="job",
@@ -105,32 +121,27 @@ async def process_entity(search_id, request_data):
             return
 
         companies = registry_data.get("results", [])
-        logger.info("Retrieved %d companies from registry", len(companies))
-
-        # 2. Filter out inactive companies and retain only active companies
-        active_companies = []
-        for company in companies:
-            if company.get("status", "").lower() == "active":
-                active_companies.append(company)
-
-        logger.info("Filtered to %d active companies", len(active_companies))
-
-        # 3. For each active company, call an external LEI lookup service
+        logger.info("Retrieved %d companies for '%s'", len(companies), company_name)
+        
+        # Filter only active companies.
+        active_companies = [company for company in companies if company.get("status", "").lower() == "active"]
+        logger.info("Found %d active companies", len(active_companies))
+        
+        # For every active company, perform LEI lookup.
         for company in active_companies:
+            lei = "Not Available"
             lei_service_url = "https://dummy-lei-lookup.com/api/lei"
-            params = {"businessId": company.get("businessId")}
+            lookup_params = {"businessId": company.get("businessId")}
             try:
-                async with session.get(lei_service_url, params=params) as lei_resp:
+                async with session.get(lei_service_url, params=lookup_params) as lei_resp:
                     if lei_resp.status == 200:
                         lei_data = await lei_resp.json()
-                        lei = lei_data.get("lei", "Not Available")
+                        lei = lei_data.get("lei", lei)
                     else:
-                        lei = "Not Available"
-                        logger.warning("LEI service returned status %s", lei_resp.status)
-            except Exception as e:
-                logger.exception("Exception during LEI lookup for company %s", company.get("businessId"))
-                lei = "Not Available"
-
+                        logger.warning("LEI lookup returned status %s for businessId %s", lei_resp.status, company.get("businessId"))
+            except Exception as exc:
+                logger.exception("Exception during LEI lookup for businessId %s", company.get("businessId"))
+            # Compose enriched company data.
             enriched_company = {
                 "companyName": company.get("companyName", "Unknown"),
                 "businessId": company.get("businessId", "Unknown"),
@@ -140,69 +151,81 @@ async def process_entity(search_id, request_data):
                 "lei": lei,
             }
             results.append(enriched_company)
+        
+        # Update the job record with enrichment results.
+        try:
+            entity_service.update_item(
+                token=cyoda_token,
+                entity_model="job",
+                entity_version=ENTITY_VERSION,
+                entity={
+                    "technical_id": search_id,
+                    "status": "done",
+                    "completedAt": datetime.datetime.utcnow().isoformat(),
+                    "results": results
+                },
+                meta={}
+            )
+            logger.info("Enrichment process completed for job %s", search_id)
+        except Exception as e:
+            logger.exception("Failed to update job entity after processing: %s", e)
 
-        # 4. Update job record with results and mark processing as complete.
-        entity_service.update_item(
+################################################################################
+# POST endpoint to trigger company enrichment.
+# It validates the incoming JSON request, adds a job entity using the external
+# service with the workflow function, and returns the unique searchId.
+################################################################################
+@app.route("/api/company-enrichment", methods=["POST"])
+@validate_request(CompanyRequest)  # Validation occurs on the request body
+@validate_response(JobResponse, 202)
+async def company_enrichment(data: CompanyRequest):
+    requested_at = datetime.datetime.utcnow().isoformat()
+    # job_data includes the companyName to be used by the workflow function.
+    job_data = {
+        "status": "pending",  # initial status; will be updated in workflow
+        "requestedAt": requested_at,
+        "results": None,
+        "companyName": data.companyName,
+    }
+    try:
+        # Add job entity with the process_job workflow.
+        job_id = entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
             entity_version=ENTITY_VERSION,
-            entity={
-                "technical_id": search_id,
-                "status": "done",
-                "completedAt": datetime.datetime.utcnow().isoformat(),
-                "results": results
-            },
-            meta={}
+            entity=job_data,
+            workflow=process_job
         )
-        logger.info("Completed processing job %s", search_id)
-
-# POST endpoint to trigger company enrichment.
-@app.route("/api/company-enrichment", methods=["POST"])
-@validate_request(CompanyRequest)  # Workaround: For POST, validation decorators go after the route decorator.
-@validate_response(JobResponse, 202)
-async def company_enrichment(data: CompanyRequest):
-    """
-    Expects JSON like: {"companyName": "Example Company"}.
-    Returns a searchId for later retrieval.
-    """
-    requested_at = datetime.datetime.utcnow().isoformat()
-    job_data = {
-        "status": "processing",
-        "requestedAt": requested_at,
-        "results": None,
-        "companyName": data.companyName,  # Include companyName for workflow processing.
-    }
-    # Add job item via external service with the workflow function.
-    job_id = entity_service.add_item(
-        token=cyoda_token,
-        entity_model="job",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,  # the validated data object
-        workflow=process_job  # Workflow function applied to the entity asynchronously before persistence.
-    )
+    except Exception as e:
+        logger.exception("Failed to add job entity: %s", e)
+        return jsonify({"error": "Internal server error"}), 500
     return JobResponse(searchId=job_id, status="processing", requestedAt=requested_at), 202
 
-# GET endpoint to retrieve enrichment results using a searchId query parameter.
-@validate_querystring(QueryJob)  # Workaround: For GET, validation decorators go before the route decorator.
+################################################################################
+# GET endpoint to retrieve enrichment results based on the searchId query parameter.
+################################################################################
+@validate_querystring(QueryJob)  # Validation occurs on query parameters
 @app.route("/api/results", methods=["GET"])
 async def results():
-    """
-    Example: GET /api/results?searchId=<job_uuid>
-    """
     search_id = request.args.get("searchId")
     if not search_id:
         return jsonify({"error": "Missing searchId query parameter"}), 400
-
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="job",
-        entity_version=ENTITY_VERSION,
-        technical_id=search_id
-    )
+    try:
+        job = entity_service.get_item(
+            token=cyoda_token,
+            entity_model="job",
+            entity_version=ENTITY_VERSION,
+            technical_id=search_id
+        )
+    except Exception as e:
+        logger.exception("Failed to retrieve job entity: %s", e)
+        return jsonify({"error": "Internal server error"}), 500
     if not job:
         return jsonify({"error": "No job found with the provided searchId"}), 404
-
     return jsonify(job), 200
 
+################################################################################
+# Main entry point to run the Quart app.
+################################################################################
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
