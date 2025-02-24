@@ -1,0 +1,21 @@
+{
+    "entities": [
+        {
+            "entity_name": "companies",
+            "entity_data_example": {
+                "status": "completed",
+                "enriched_companies": [
+                    {
+                        "company_name": "Example Company",
+                        "business_id": "1234567-8",
+                        "company_type": "Limited Company",
+                        "registration_date": "2020-01-01",
+                        "status": "Active",
+                        "lei": "FAKE_LEI_1234567-8"
+                    }
+                ],
+                "completedAt": "2023-10-01T12:00:00Z"
+            }
+        }
+    ]
+}
