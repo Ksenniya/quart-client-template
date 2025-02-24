@@ -74,13 +74,13 @@ async def fetch_lei_for_company(company: dict):
     else:
         return "Not Available"
 
-async def process_entity(job_id: str, data: dict):
+async def process_entity(job_id: str, request_data: dict):
     """
-    Process the request: retrieve company info, filter active companies, enrich with LEI info.
+    Process the job: retrieve company info, filter active companies, enrich with LEI info.
     After processing, update the job status using entity_service.
     """
     try:
-        external_data = await fetch_company_data(data)
+        external_data = await fetch_company_data(request_data)
         companies = external_data.get("results", [])
         active_companies = [c for c in companies if str(c.get("status", "")).lower() == "active"]
         results = []
@@ -121,10 +121,16 @@ async def process_entity(job_id: str, data: dict):
             meta={}
         )
 
-async def process_job(entity):
-    # This workflow function will be applied to the job entity before it is persisted.
-    # For demonstration, we add a timestamp indicating when the workflow was applied.
+async def process_job(entity: dict):
+    # Add a timestamp indicating when the workflow was applied.
     entity["workflow_processed_at"] = datetime.datetime.utcnow().isoformat()
+    # Generate a unique job_id if not already provided.
+    if "job_id" not in entity:
+        entity["job_id"] = str(uuid.uuid4())
+    # Schedule asynchronous processing of the job.
+    # Remove request_data from the entity before persisting.
+    request_data = entity.pop("request_data", {})
+    asyncio.create_task(process_entity(entity["job_id"], request_data))
     return entity
 
 # -------------------------------
@@ -136,20 +142,21 @@ async def process_job(entity):
 async def enrich_companies(data: EnrichRequest):
     if not data.companyName:
         return jsonify({"error": "Missing required field: companyName"}), 400
+    # Prepare the job entity with minimal required fields.
     job = {
         "status": "processing",
-        "requestedAt": datetime.datetime.utcnow().isoformat()
+        "requestedAt": datetime.datetime.utcnow().isoformat(),
+        # Pass the original request data for further processing.
+        "request_data": data.__dict__
     }
-    # Add workflow function as parameter to entity_service.add_item
+    # Invoke the workflow function process_job before persisting the entity.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
         entity=job,
-        workflow=process_job  # Workflow function applied to the entity before persistence.
+        workflow=process_job  # Workflow function applied asynchronously before persistence.
     )
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data.__dict__))
     return jsonify({"job_id": job_id}), 201
 
 @validate_querystring(JobQuery)
