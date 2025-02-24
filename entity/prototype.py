@@ -2,16 +2,22 @@ import asyncio
 import uuid
 import json
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
 
 # In-memory storage for report data
 reports = {}
+
+# Dataclass for POST /job validation (no fields required as body is empty)
+@dataclass
+class JobRequest:
+    pass
 
 # A placeholder for asynchronous processing of the report
 async def process_entity(job_id: str) -> dict:
@@ -64,8 +70,10 @@ async def process_entity(job_id: str) -> dict:
     reports[job_id] = report
     return report
 
+# For POST endpoints, we apply validate_request after the route decorator as a workaround for an issue in quart-schema.
 @app.route("/job", methods=["POST"])
-async def create_job():
+@validate_request(JobRequest)  # Workaround: For POST endpoints, decorator is applied after route decorator.
+async def create_job(data: JobRequest):
     # Generate a unique job id
     job_id = str(uuid.uuid4())
     # Initially store the job as processing
@@ -79,6 +87,7 @@ async def create_job():
     # Return report with conversion rates
     return jsonify(report), 200
 
+# GET /report/<job_id> does not require validation decorator as it uses a path parameter.
 @app.route("/report/<string:job_id>", methods=["GET"])
 async def get_report(job_id):
     # Retrieve a single report by its ID
@@ -87,6 +96,7 @@ async def get_report(job_id):
         return jsonify(report), 200
     return jsonify({"error": "Report not found"}), 404
 
+# GET /reports does not require validation as no request parameters are expected.
 @app.route("/reports", methods=["GET"])
 async def get_reports():
     # Retrieve all stored reports
