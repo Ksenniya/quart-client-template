@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_name": "companies_job",
+            "entity_data_example": {
+                "job_id": "string",
+                "message": "string",
+                "requestedAt": "string",
+                "results": [
+                    {
+                        "companyName": "string",
+                        "businessId": "string",
+                        "companyType": "string",
+                        "registrationDate": "string",
+                        "status": "string",
+                        "LEI": "string"
+                    }
+                ]
+            }
+        }
+    ]
+}
