@@ -1,11 +1,10 @@
 ```python
 import asyncio
-import uuid
 from datetime import datetime
 from dataclasses import dataclass
 
 from aiohttp import ClientSession
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request, validate_response
 
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -27,25 +26,24 @@ async def fetch_lei_data(company):
     business_id = company.get("business_id", "")
     return f"FAKE_LEI_{business_id}" if business_id else "Not Available"
 
-async def process_entity(job_id, input_data: CompanySearchRequest):
-    """Background task to query the Finnish Companies Registry API, filter and enrich company data."""
+# Workflow function applied to the entity asynchronously before persistence.
+# This function replaces fire-and-forget background tasks.
+async def process_companies(entity):
+    # Use the company name provided in the initial entity
+    company_name = entity.get("company_name")
+    if not company_name:
+        entity["status"] = "error"
+        entity["message"] = "Missing company_name in the request data."
+        return entity
+
     try:
         async with ClientSession() as session:
-            params = {"name": input_data.company_name}
+            params = {"name": company_name}
             async with session.get(PRH_API_URL, params=params) as response:
                 if response.status != 200:
-                    error_data = {
-                        "status": "error",
-                        "message": "Failed to fetch company data"
-                    }
-                    entity_service.update_item(
-                        token=cyoda_token,
-                        entity_model="companies",
-                        entity_version=ENTITY_VERSION,
-                        entity=error_data,
-                        meta={"technical_id": job_id}
-                    )
-                    return
+                    entity["status"] = "error"
+                    entity["message"] = "Failed to fetch company data"
+                    return entity
                 data = await response.json()
                 companies_raw = data.get("results", [])
         
@@ -67,53 +65,35 @@ async def process_entity(job_id, input_data: CompanySearchRequest):
             }
             enriched_companies.append(enriched_company)
         
-        result_data = {
-            "status": "completed",
-            "enriched_companies": enriched_companies,
-            "completedAt": datetime.utcnow().isoformat()
-        }
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="companies",
-            entity_version=ENTITY_VERSION,
-            entity=result_data,
-            meta={"technical_id": job_id}
-        )
+        # Update the current entity directly with the enriched results.
+        entity["status"] = "completed"
+        entity["enriched_companies"] = enriched_companies
+        entity["completedAt"] = datetime.utcnow().isoformat()
+        entity["workflow_executed"] = True
+        entity["workflow_timestamp"] = datetime.utcnow().isoformat()
     except Exception as e:
-        error_data = {
-            "status": "error",
-            "message": str(e)
-        }
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="companies",
-            entity_version=ENTITY_VERSION,
-            entity=error_data,
-            meta={"technical_id": job_id}
-        )
-
-# Workflow function applied before persisting the entity
-def process_companies(entity):
-    # Modify entity state if needed before persistence
-    entity["workflow_executed"] = True
-    entity["workflow_timestamp"] = datetime.utcnow().isoformat()
+        entity["status"] = "error"
+        entity["message"] = str(e)
     return entity
 
 @app.route('/companies/search', methods=['POST'])
 @validate_request(CompanySearchRequest)
 @validate_response(dict, 200)
 async def search_companies(data: CompanySearchRequest):
-    # Create an initial record in the external entity service with a processing status
-    job_data = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
+    # Create an initial record in the external entity service with a processing status.
+    # Also include the company_name to be used later in the workflow.
+    job_data = {
+        "status": "processing",
+        "requestedAt": datetime.utcnow().isoformat(),
+        "company_name": data.company_name
+    }
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies",
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_companies  # Workflow function applied to the entity before persistence
+        workflow=process_companies  # Asynchronous workflow function applied before persistence.
     )
-    # Fire and forget the background processing task
-    asyncio.create_task(process_entity(job_id, data))
     return jsonify({"result_id": job_id, "status": "processing"})
 
 @app.route('/companies/results/<job_id>', methods=['GET'])
