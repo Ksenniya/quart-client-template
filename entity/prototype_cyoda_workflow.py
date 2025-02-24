@@ -40,7 +40,6 @@ async def fetch_companies(company_name, filters):
     Fetch companies from the Finnish Companies Registry API.
     """
     params = {"name": company_name}
-    # Add additional filters if provided
     if filters:
         params.update(filters)
     async with aiohttp.ClientSession() as session:
@@ -74,21 +73,16 @@ async def fetch_lei(business_id):
             print(f"Error fetching LEI for {business_id}: {e}")
             return "Not Available"
 
-async def process_entity(job_id, input_data):
+async def process_entity(job_id, search_params):
     """
     Process the search request: fetch, filter, enrich and update the results.
     """
-    company_name = input_data.companyName
-    filters = input_data.filters if input_data.filters is not None else {}
-
-    # Fetch companies from external API.
+    company_name = search_params.get("companyName")
+    filters = search_params.get("filters") or {}
     companies = await fetch_companies(company_name, filters)
-
-    # Filter out inactive companies.
     active_companies = [comp for comp in companies if comp.get("status", "").lower() == "active"]
 
     enriched_results = []
-    # For each active company, fetch the LEI.
     for company in active_companies:
         business_id = company.get("businessId")
         lei = await fetch_lei(business_id)
@@ -116,9 +110,16 @@ async def process_entity(job_id, input_data):
     )
 
 async def process_companies_search_job(entity):
-    # Workflow function applied to the entity before persistence.
-    # For example, add a timestamp to indicate workflow processing.
+    # This workflow function is invoked asynchronously before persisting the entity.
+    # Modify the entity state directly.
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat()
+    # Schedule the asynchronous enrichment processing as a fire-and-forget task.
+    # It uses supplementary data stored within the entity.
+    search_params = entity.get("searchParams", {})
+    # The entity already has a unique identifier in 'id'
+    job_id = entity.get("id")
+    if job_id and search_params:
+        asyncio.create_task(process_entity(job_id, search_params))
     return entity
 
 @app.route("/companies/search", methods=["POST"])
@@ -126,19 +127,26 @@ async def process_companies_search_job(entity):
 @validate_response(SearchResponse, 201)
 async def search_companies(data: CompanySearchRequest):
     """
-    POST endpoint to trigger the company data retrieval, filtering, and enrichment process.
+    POST endpoint to trigger the company data retrieval, filtering, enrichment and asynchronous processing.
+    The search parameters are stored with the job and processed via the workflow function.
     """
     requested_at = datetime.datetime.utcnow().isoformat()
-    job_data = {"status": "processing", "requestedAt": requested_at}
-    job_id = await entity_service.add_item(
+    # Pre-generate a unique job id and include the search parameters to be used later by the workflow.
+    job_id = str(uuid.uuid4())
+    job_data = {
+        "id": job_id,  # Unique identifier for this job
+        "status": "processing",
+        "requestedAt": requested_at,
+        "searchParams": {"companyName": data.companyName, "filters": data.filters}
+    }
+    # The workflow function 'process_companies_search_job' will be invoked before persisting the entity.
+    await entity_service.add_item(
         token=cyoda_token,
         entity_model="companies_search_job",
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_companies_search_job  # Workflow function applied before persistence.
+        workflow=process_companies_search_job
     )
-
-    asyncio.create_task(process_entity(job_id, data))
 
     return jsonify({
         "requestId": job_id,
