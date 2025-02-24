@@ -40,13 +40,20 @@ class QueryJob:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Workflow function for "job" entity.
-def process_job(entity):
-    # This workflow function is applied to the entity before it is persisted.
-    # For example, assign a technical_id if not present and add a timestamp.
+# Asynchronous workflow function for "job" entity.
+async def process_job(entity):
+    # This workflow function is applied to the entity asynchronously before persistence.
+    # Modify the entity state directly.
     if "technical_id" not in entity or not entity["technical_id"]:
         entity["technical_id"] = str(uuid.uuid4())
     entity["addedAt"] = datetime.datetime.utcnow().isoformat()
+    # Start the enrichment processing asynchronously.
+    company_name = entity.get("companyName")
+    if company_name:
+        # Fire-and-forget the external processing task.
+        asyncio.create_task(process_entity(entity["technical_id"], {"companyName": company_name}))
+    else:
+        logger.error("Company name missing in entity workflow")
     return entity
 
 async def process_entity(search_id, request_data):
@@ -163,6 +170,7 @@ async def company_enrichment(data: CompanyRequest):
         "status": "processing",
         "requestedAt": requested_at,
         "results": None,
+        "companyName": data.companyName,  # Include companyName for workflow processing.
     }
     # Add job item via external service with the workflow function.
     job_id = entity_service.add_item(
@@ -172,8 +180,6 @@ async def company_enrichment(data: CompanyRequest):
         entity=job_data,  # the validated data object
         workflow=process_job  # Workflow function applied to the entity asynchronously before persistence.
     )
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data.__dict__))
     return JobResponse(searchId=job_id, status="processing", requestedAt=requested_at), 202
 
 # GET endpoint to retrieve enrichment results using a searchId query parameter.
