@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "companies_search_job", "entity_data_example": {"status": "completed", "results": [{"companyName": "Example Company", "businessId": "1234567-8", "companyType": "OY", "registrationDate": "2020-05-15", "status": "Active", "lei": "XYZ1234567890"}], "completedAt": "2023-10-01T12:00:00Z"}}]}
