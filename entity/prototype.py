@@ -2,15 +2,22 @@ import asyncio
 import uuid
 import datetime
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # Setup QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response  # Note: Workaround for a known quart-schema issue: for POST endpoints, @validate_request must be placed after the @app.route decorator.
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
+# Data model for POST /companies/enrich
+@dataclass
+class EnrichRequest:
+    companyName: str
+    registrationDateStart: str = ""
+    registrationDateEnd: str = ""
+
 # Mock persistence storage
 entity_jobs = {}
-
 
 async def fetch_companies_from_prh(company_name: str):
     """
@@ -31,7 +38,6 @@ async def fetch_companies_from_prh(company_name: str):
             # TODO: Add proper exception logging/handling.
             print(f"Error while fetching companies from PRH API: {e}")
             return []
-
 
 async def fetch_lei_for_company(company, session: aiohttp.ClientSession):
     """
@@ -54,7 +60,6 @@ async def fetch_lei_for_company(company, session: aiohttp.ClientSession):
         print(f"Error fetching LEI for businessId {business_id}: {e}")
         lei = "Not Available"
     return lei
-
 
 async def process_entity(job_id: str, request_data: dict):
     """
@@ -99,10 +104,11 @@ async def process_entity(job_id: str, request_data: dict):
         "requestedAt": datetime.datetime.utcnow().isoformat()
     }
 
-
 @app.route("/companies/enrich", methods=["POST"])
-async def enrich_companies():
-    request_data = await request.get_json()
+@validate_request(EnrichRequest)  # Workaround: POST validation decorator is placed after route decorator.
+@validate_response(dict, 202)
+async def enrich_companies(data: EnrichRequest):
+    request_data = data.__dict__
     job_id = str(uuid.uuid4())
     entity_jobs[job_id] = {
         "status": "processing",
@@ -112,14 +118,12 @@ async def enrich_companies():
     asyncio.create_task(process_entity(job_id, request_data))
     return jsonify({"jobId": job_id, "status": "processing"}), 202
 
-
 @app.route("/companies/results/<job_id>", methods=["GET"])
 async def get_results(job_id):
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify({"jobId": job_id, **job}), 200
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
