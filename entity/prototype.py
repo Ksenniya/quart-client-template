@@ -2,10 +2,11 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 from aiohttp import ClientSession
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response  # Workaround: For POST, route is declared first then validations.
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -16,19 +17,24 @@ job_cache = {}
 # External API endpoint for Finnish Companies Registry
 PRH_API_URL = 'https://avoindata.prh.fi/opendata-ytj-api/v3/companies'
 
+@dataclass
+class CompanySearchRequest:
+    company_name: str
+
+# TODO: Additional fields from company search request can be added as needed.
+
 async def fetch_lei_data(company):
     # TODO: Replace with a call to an official LEI registry or reliable financial data source.
     # This is a placeholder that simulates network latency.
     await asyncio.sleep(0.1)
-    # For now, return a fake LEI if business_id exists, otherwise "Not Available".
     business_id = company.get("business_id", "")
     return f"FAKE_LEI_{business_id}" if business_id else "Not Available"
 
-async def process_entity(job_id, input_data):
+async def process_entity(job_id, input_data: CompanySearchRequest):
     """Background task to query the Finnish Companies Registry API, filter and enrich company data."""
     try:
         async with ClientSession() as session:
-            params = {"name": input_data.get("company_name")}
+            params = {"name": input_data.company_name}
             async with session.get(PRH_API_URL, params=params) as response:
                 if response.status != 200:
                     job_cache[job_id] = {
@@ -75,17 +81,15 @@ async def process_entity(job_id, input_data):
         }
 
 @app.route('/companies/search', methods=['POST'])
-async def search_companies():
-    input_data = await request.get_json()
-    if not input_data or "company_name" not in input_data:
-        return jsonify({"error": "Missing company_name in request"}), 400
-    
+@validate_request(CompanySearchRequest)  # Workaround: Validation decorators for POST are applied after the route decorator.
+@validate_response(dict, 200)
+async def search_companies(data: CompanySearchRequest):
     # Generate a unique job id
     job_id = str(uuid.uuid4())
     job_cache[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, input_data))
+    asyncio.create_task(process_entity(job_id, data))
     
     return jsonify({"result_id": job_id, "status": "processing"})
 
