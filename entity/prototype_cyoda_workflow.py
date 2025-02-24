@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import asyncio
-import uuid
 from datetime import datetime
 from dataclasses import dataclass, asdict
 
@@ -34,34 +33,24 @@ class EnrichResponse:
     taskId: str
     message: str
 
-# Workflow function to be applied to the job entity before persistence
+# Workflow function applied to the job entity asynchronously before persistence.
+# This function takes the job entity (with embedded input data) as the sole argument,
+# performs the asynchronous enrichment tasks and updates the entity state.
 async def process_companies_jobs(entity):
-    # Modify job entity before persistence e.g. add createdAt timestamp and a workflow flag
-    entity["workflowProcessed"] = True
-    entity["createdAt"] = datetime.utcnow().isoformat()
-    return entity
-
-async def process_entity(job_id, input_data):
-    """
-    Process the data enrichment in background:
-      • Calls the Finnish Companies Registry API.
-      • Filters out inactive companies.
-      • Enriches active companies with LEI data from an external API.
-    """
+    # Retrieve input data submitted with the job
+    input_data = entity.get("input", {})
     company_name = input_data.get("companyName")
     filters = input_data.get("filters") or {}
 
     # Step 1: Retrieve company data from the Finnish Companies Registry API
     async with aiohttp.ClientSession() as session:
         prh_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
-        # Prepare query parameters: companyName and any additional filters.
         params = {"name": company_name}
-        params.update(filters)  # TODO: Map additional filters to actual API query parameters if necessary.
+        params.update(filters)  # Map additional filters if necessary.
         try:
             async with session.get(prh_url, params=params) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    # Assuming data contains a "results" field with the companies list.
                     companies = data.get("results", [])
                 else:
                     companies = []
@@ -95,7 +84,6 @@ async def process_entity(job_id, input_data):
     for company in active_companies:
         async with aiohttp.ClientSession() as session:
             lei_api_url = "https://example.com/lei"  # TODO: Replace with the real external LEI API endpoint.
-            # Mock request payload - using Business ID to search for the LEI.
             payload = {"businessId": company["Business ID"]}
             try:
                 async with session.post(lei_api_url, json=payload) as resp:
@@ -110,32 +98,17 @@ async def process_entity(job_id, input_data):
         if not company.get("LEI"):
             company["LEI"] = "LEI1234567890"  # TODO: Replace with actual logic in production.
 
-    # Step 4: Update the job status with the enriched results.
-    # Retrieve the latest job data from the external service.
-    job = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model=ENTITY_MODEL,
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
-    if job is None:
-        # In case the job could not be retrieved, exit without failing.
-        print(f"Job {job_id} not found during update.")
-        return
+    # Step 4: Update the job entity with the enrichment results.
+    entity["results"] = active_companies
+    entity["status"] = "completed"
+    entity["completedAt"] = datetime.utcnow().isoformat()
 
-    job["results"] = active_companies
-    job["status"] = "completed"
-    job["completedAt"] = datetime.utcnow().isoformat()
+    # Additional workflow modifications (if needed)
+    entity["workflowProcessed"] = True
+    # The updated entity state will be persisted automatically.
+    return entity
 
-    await entity_service.update_item(
-        token=cyoda_token,
-        entity_model=ENTITY_MODEL,
-        entity_version=ENTITY_VERSION,
-        entity=job,
-        meta={}
-    )
-
-# POST endpoint: Fire and forget processing task.
+# POST endpoint: Create job and invoke workflow function before persistence.
 @app.route('/companies/enrich', methods=['POST'])
 @validate_request(CompanyEnrichRequest)  # For POST, validation comes after route decorator (workaround)
 @validate_response(EnrichResponse, 201)
@@ -146,22 +119,21 @@ async def enrich_companies(data: CompanyEnrichRequest):  # data is already valid
         return jsonify({"error": "companyName is required"}), 400
 
     requested_at = datetime.utcnow().isoformat()
+    # Include input_data in the job entity so that the workflow function can access it.
     job_data = {
         "status": "processing",
         "requestedAt": requested_at,
+        "input": input_data,
         "results": None
     }
-    # Create a new job entry using the external entity_service with added workflow function
+    # Persist the job with the workflow function that performs asynchronous enrichment.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model=ENTITY_MODEL,
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,  # the validated data object for job persistence
-        workflow=process_companies_jobs  # Workflow function applied to the entity asynchronously before persistence.
+        entity=job_data,  # the job entity containing input data
+        workflow=process_companies_jobs  # Workflow function applied asynchronously before persistence.
     )
-
-    # Fire and forget the background task.
-    asyncio.create_task(process_entity(job_id, input_data))
 
     return EnrichResponse(taskId=job_id, message="Data retrieval and enrichment in progress or completed."), 201
 
