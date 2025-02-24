@@ -1,0 +1,1 @@
+{"technical_id": "string", "status": "string", "requestedAt": "string", "completedAt": "string", "results": [{"companyName": "string", "businessId": "string", "companyType": "string", "registrationDate": "string", "status": "string", "lei": "string"}], "error": "string"}
