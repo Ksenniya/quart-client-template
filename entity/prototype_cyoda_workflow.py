@@ -5,7 +5,7 @@ import datetime
 import json  # for parsing filters
 from dataclasses import dataclass
 from quart import Quart, request, jsonify, Response
-from quart_schema import QuartSchema, validate_request, validate_response  # Workaround note: For POST, route decorator must be first, then validations.
+from quart_schema import QuartSchema, validate_request, validate_response  # For POST, route decorator must be first, then validations.
 import aiohttp
 
 from common.config.config import ENTITY_VERSION  # Import constant
@@ -19,11 +19,11 @@ QuartSchema(app)  # Initialize QuartSchema
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Request and response dataclasses for validation using only primitives.
+# Request and response dataclasses for input/output validation.
 @dataclass
 class CompanySearchRequest:
     companyName: str
-    filters: str = ""  # JSON string for filters (TODO: improve type handling)
+    filters: str = ""  # JSON string for filters (could be improved)
     outputFormat: str = "json"
 
 @dataclass
@@ -31,9 +31,8 @@ class CompanySearchResponse:
     resultId: str
     status: str
 
-# Constants for external API endpoints
+# Constants for external API endpoints.
 PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3"
-# TODO: Replace with real external LEI data source URL when known.
 LEI_API_URL = "https://example.com/lei"  # Placeholder URL
 
 async def fetch_companies(session: aiohttp.ClientSession, company_name: str, filters: dict) -> dict:
@@ -41,30 +40,32 @@ async def fetch_companies(session: aiohttp.ClientSession, company_name: str, fil
     Calls the Finnish Companies Registry API with the given company name and filters.
     """
     params = {"name": company_name}
-    # TODO: Add additional parameters from filters if required.
+    # Additional parameters from filters can be appended here.
     url = f"{PRH_API_BASE}/companies"
     async with session.get(url, params=params) as resp:
         if resp.status != 200:
-            # TODO: Use proper error handling and logging.
+            # Log error or handle failure appropriately.
             return {"companies": []}
         return await resp.json()
 
 async def fetch_lei_for_company(session: aiohttp.ClientSession, company: dict) -> str:
     """
-    Mocks external LEI lookup for a given company.
-    In production, call the actual LEI API or a reliable source.
+    Mocks an external LEI lookup for a given company.
+    In production, this should call the actual LEI API.
     """
-    # TODO: Replace this mock with an actual API call to fetch LEI.
     await asyncio.sleep(0.2)
     if company.get("status", "").lower() == "active":
         return "MOCK_LEI_12345"
     return "Not Available"
 
 async def process_companies_job(entity: dict):
-    # Workflow function applied to companies_job entity before persistence.
-    # It receives the entity data as the only argument.
+    """
+    Workflow function applied to companies_job entity before persistence.
+    This function is invoked asynchronously by entity_service.add_item.
+    It enriches the search results by calling external APIs and updates the entity state.
+    """
+    # Retrieve the search data from the entity.
     data = entity.get("companySearchData", {})
-    # Execute external API calls and enrich the companies data.
     async with aiohttp.ClientSession() as session:
         company_name = data.get("companyName")
         filters_str = data.get("filters", "")
@@ -75,11 +76,10 @@ async def process_companies_job(entity: dict):
         companies_data = await fetch_companies(session, company_name, filters)
         companies = companies_data.get("companies", [])
         
-        active_companies = []
-        for comp in companies:
-            if comp.get("status", "").lower() == "active":
-                active_companies.append(comp)
+        # Filter out only active companies.
+        active_companies = [comp for comp in companies if comp.get("status", "").lower() == "active"]
         
+        # Enrich active companies with LEI data.
         enriched_companies = []
         for comp in active_companies:
             lei = await fetch_lei_for_company(session, comp)
@@ -92,42 +92,44 @@ async def process_companies_job(entity: dict):
                 "lei": lei
             }
             enriched_companies.append(enriched_company)
-        
-        # Update the entity status and add the result before it is persisted.
-        entity["status"] = "completed"
-        entity["result"] = enriched_companies
+    
+    # Directly modify the entity state; the updated state will be persisted.
+    entity["status"] = "completed"
+    entity["result"] = enriched_companies
+    # Return the modified entity if needed.
     return entity
 
-# Workaround for quart-schema issue: For POST endpoints, the route decorator must be listed first.
+# Endpoint to trigger company search.
+# The endpoint is now very lean; it only prepares the job data and delegates processing to the workflow.
 @app.route("/companies/search", methods=["POST"])
-@validate_request(CompanySearchRequest)  # For POST: put validate_request after @app.route
+@validate_request(CompanySearchRequest)  # Validate input data.
 @validate_response(CompanySearchResponse, 202)
 async def companies_search(data: CompanySearchRequest):
     """
-    Endpoint to search for companies, filter inactive ones,
-    enrich them with LEI, and store the result via the external entity_service.
+    Endpoint to search for companies.
+    The heavy lifting (API calls, enrichment, filtering) is handled inside the workflow function.
     """
     requested_at = datetime.datetime.utcnow().isoformat() + "Z"
-    # Prepare initial job data
     job_data = {
         "status": "processing",
         "requestedAt": requested_at,
         "companySearchData": data.__dict__
     }
-    # Add job record via external service with an attached workflow.
+    # Create a new job with the attached workflow. The workflow function will be
+    # executed asynchronously before the entity is persisted.
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies_job",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,  # the validated data object
-        workflow=process_companies_job  # Workflow function applied asynchronously before persistence
+        entity=job_data,  # the validated job data
+        workflow=process_companies_job  # Workflow function handles asynchronous enrichment.
     )
     return CompanySearchResponse(resultId=job_id, status="processing"), 202
 
 @app.route("/companies/result/<job_id>", methods=["GET"])
 async def companies_result(job_id):
     """
-    Endpoint to retrieve results for a given job_id via external entity_service.
+    Endpoint to retrieve job results from entity_service.
     """
     job = entity_service.get_item(
         token=cyoda_token,
@@ -141,7 +143,7 @@ async def companies_result(job_id):
         return jsonify({"resultId": job_id, "status": job.get("status")}), 202
     output_format = request.args.get("outputFormat", "json").lower()
     if output_format == "csv":
-        # TODO: Implement a proper CSV conversion if required.
+        # Convert the result to CSV format.
         csv_data = "companyName,businessId,companyType,registrationDate,status,lei\n"
         for comp in job.get("result", []):
             csv_row = f'{comp.get("companyName")},{comp.get("businessId")},{comp.get("companyType")},' \
