@@ -1,0 +1,1 @@
+{"id": "string", "status": "string", "requestedAt": "string", "result": {"searchId": "string", "retrievedAt": "string", "companies": [{"companyName": "string", "businessId": "string", "companyType": "string", "registrationDate": "string", "status": "string", "LEI": "string"}]}, "error": "string"}
