@@ -1,9 +1,9 @@
 import asyncio
 import uuid
 import datetime
-import json
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # Using QuartSchema as required
+from quart_schema import QuartSchema, validate_request, validate_response  # Workaround: For POST, decorators placed in order route then validate_request then validate_response
 import aiohttp
 
 app = Quart(__name__)
@@ -17,6 +17,18 @@ PRH_API_URL = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
 
 # Placeholder URL for LEI lookup (TODO: replace with official LEI registry API)
 LEI_API_URL = "https://lei.example.com/api/get"
+
+# Data classes for request/response validation
+@dataclass
+class CompanySearchRequest:
+    companyName: str
+    filters: dict = None  # TODO: refine structure of filters if needed
+
+@dataclass
+class SearchResponse:
+    requestId: str
+    status: str
+    message: str
 
 async def fetch_companies(company_name, filters):
     """
@@ -34,7 +46,6 @@ async def fetch_companies(company_name, filters):
                     data = await response.json()
                     return data.get("results", [])  # Assuming a 'results' key with list of companies.
                 else:
-                    # Log and handle non-200 responses as needed.
                     return []
         except Exception as e:
             # TODO: Add proper error logging.
@@ -64,8 +75,8 @@ async def process_entity(job, input_data):
     """
     Process the search request: fetch, filter, enrich and store the results.
     """
-    company_name = input_data.get("companyName")
-    filters = input_data.get("filters", {})
+    company_name = input_data.companyName
+    filters = input_data.filters if input_data.filters is not None else {}
 
     # Fetch companies from external API.
     companies = await fetch_companies(company_name, filters)
@@ -94,35 +105,28 @@ async def process_entity(job, input_data):
     job["status"] = "completed"
     job["results"] = enriched_results
     job["completedAt"] = datetime.datetime.utcnow().isoformat()
-    # In a real implementation, proper error handling/logging would be added.
 
 @app.route("/companies/search", methods=["POST"])
-async def search_companies():
+@validate_request(CompanySearchRequest)  # For POST requests, decorators are placed after route decorator as a workaround for quart-schema issue.
+@validate_response(SearchResponse, 201)
+async def search_companies(data: CompanySearchRequest):
     """
     POST endpoint to trigger the company data retrieval, filtering, and enrichment process.
     """
-    try:
-        input_data = await request.get_json()
-        if not input_data or "companyName" not in input_data:
-            return jsonify({"error": "companyName field is required"}), 400
+    # Create a unique request/job ID.
+    job_id = str(uuid.uuid4())
+    requested_at = datetime.datetime.utcnow().isoformat()
+    # Mock persistence: store the job in in-memory cache.
+    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-        # Create a unique request/job ID.
-        job_id = str(uuid.uuid4())
-        requested_at = datetime.datetime.utcnow().isoformat()
-        # Mock persistence: store the job in in-memory cache.
-        entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
-        
-        # Fire and forget the processing task.
-        asyncio.create_task(process_entity(entity_jobs[job_id], input_data))
-        
-        return jsonify({
-            "requestId": job_id,
-            "status": "processing",
-            "message": "Your request is being processed. Retrieve results using GET /companies/result/{requestId}"
-        })
-    except Exception as e:
-        # TODO: Add proper logging and specific error handling.
-        return jsonify({"error": str(e)}), 500
+    # Fire and forget the processing task.
+    asyncio.create_task(process_entity(entity_jobs[job_id], data))
+
+    return jsonify({
+        "requestId": job_id,
+        "status": "processing",
+        "message": "Your request is being processed. Retrieve results using GET /companies/result/{requestId}"
+    }), 201
 
 @app.route("/companies/result/<string:request_id>", methods=["GET"])
 async def get_company_results(request_id):
@@ -132,7 +136,7 @@ async def get_company_results(request_id):
     job = entity_jobs.get(request_id)
     if not job:
         return jsonify({"error": "Request ID not found"}), 404
-    
+
     if job.get("status") != "completed":
         return jsonify({
             "requestId": request_id,
