@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_name": "companies_jobs",
+            "entity_data_example": {
+                "companyName": "string",
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "taskId": "string",
+                "message": "string",
+                "status": "string",
+                "requestedAt": "string",
+                "completedAt": "string",
+                "results": [
+                    {
+                        "Company Name": "string",
+                        "Business ID": "string",
+                        "Company Type": "string",
+                        "Registration Date": "string",
+                        "Status": "string",
+                        "LEI": "string"
+                    }
+                ]
+            }
+        }
+    ]
+}
