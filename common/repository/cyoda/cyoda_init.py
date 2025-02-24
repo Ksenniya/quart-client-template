@@ -35,7 +35,7 @@ async def init_entities_schema(entity_dir, token):
                     meta = await cyoda_repository.get_meta(token, entity_name, ENTITY_VERSION)
                     await cyoda_repository.save(meta=meta, entity=json.loads(entity))
                     #await init_trino(entity_name=entity_name, token=token)
-                    await init_workflow(entity_dir=json_file.parent, token=token)
+                    await init_workflow(entity_dir=json_file.parent, token=token, entity_name = entity_name)
 
                     # cyoda_repository._lock_entity_schema(token, entity_name, ENTITY_VERSION, None)
         except Exception as e:
@@ -43,7 +43,7 @@ async def init_entities_schema(entity_dir, token):
             logger.exception(e)
 
 
-async def init_workflow(entity_dir, token):
+async def init_workflow(entity_dir, token, entity_name):
     # Traverse the directory structure
     for root, dirs, files in os.walk(entity_dir):
         # Look for 'workflow.json' files
@@ -51,6 +51,7 @@ async def init_workflow(entity_dir, token):
             file_path = Path(root) / 'workflow.json'
             workflow_contents = file_path.read_text()
             workflow_contents = workflow_contents.replace("ENTITY_VERSION_VAR", ENTITY_VERSION)
+            workflow_contents = workflow_contents.replace("ENTITY_MODEL_VAR", entity_name)
             workflow_contents = workflow_contents.replace("CHAT_ID_VAR", CHAT_ID)
             data = json.dumps({
                 "workflow_json": f"{workflow_contents}",
