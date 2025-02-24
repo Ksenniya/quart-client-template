@@ -3,7 +3,6 @@ from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request
 import asyncio
 import aiohttp
-import uuid
 import datetime
 from dataclasses import dataclass
 
@@ -14,38 +13,59 @@ from app_init.app_init import cyoda_token, entity_service
 app = Quart(__name__)
 QuartSchema(app)
 
-# Removed in‐memory caches and job trackers; using external service instead
-
+# Dataclass for filtering brands; kept minimal on purpose
 @dataclass
 class BrandFilter:
     filter: str = ""  # Optional filter criteria; using only primitives
 
-# Generic processing function (if needed elsewhere)
+# Fire-and-forget function example: logs supplementary data by adding a new entity of a different model.
+async def log_brand_processing(brand_data):
+    # Example: Add a log entry to the "brands_log" entity_model.
+    log_entry = {
+        "brand_id": brand_data.get("id"),
+        "logged_at": datetime.datetime.utcnow().isoformat(),
+        "info": "Brand processing initiated"
+    }
+    # We assume entity_service.add_item for "brands_log" works without risk of recursion
+    await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="brands_log",
+        entity_version=ENTITY_VERSION,
+        entity=log_entry,
+        workflow=process_entity  # Reuse a generic processing if needed.
+    )
+
+# Generic processing function, available for any workflow that does not require brand-specific logic.
 async def process_entity(data):
-    await asyncio.sleep(1)
+    await asyncio.sleep(0.1)  # Minimal delay; adjust as needed
     return data
 
-# Workflow function for 'brands' entity; can modify the data prior to persistence
-async def process_brands(data):
-    # Simulate processing delay and update entity state, e.g. add a processing timestamp
-    await asyncio.sleep(1)
-    # Example of modifying the data; adjust as needed for business logic
-    data['processed'] = True
-    data['processed_at'] = datetime.datetime.now().isoformat()
-    return data
+# Workflow function for 'brands' entities.
+# This function is applied asynchronously on the entity before persistence.
+async def process_brands(entity_data):
+    # Example: add processing metadata directly to the entity.
+    entity_data['processed'] = True
+    entity_data['processed_at'] = datetime.datetime.utcnow().isoformat()
 
+    # Initiate any asynchronous fire-and-forget tasks (e.g. logging or supplemental processing)
+    asyncio.create_task(log_brand_processing(entity_data))
+    
+    # Additional business logic can be placed here without cluttering the controller.
+    # e.g., entity_data['new_attribute'] = compute_value(entity_data)
+
+    return entity_data
+
+# Startup: initialize external components before serving requests.
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
 
-# For POST endpoints, route decorator comes first and validate_request comes second (workaround for quart-schema issue)
+# POST endpoint for creating brands.
+# The controller logic is minimized: it simply fetches external data and hands off processing to the workflow.
 @app.route('/brands', methods=['POST'])
 @validate_request(BrandFilter)
 async def create_brands(data: BrandFilter):
-    # Access validated data from the request body; currently not being used directly in processing
-    request_data = data
-
-    # Retrieve data from the external API
+    # Retrieve data from an external API.
     async with aiohttp.ClientSession() as session:
         async with session.get(
             "https://api.practicesoftwaretesting.com/brands",
@@ -55,22 +75,20 @@ async def create_brands(data: BrandFilter):
                 return jsonify({"error": "Failed to fetch external data"}), 500
             external_data = await resp.json()
 
-    # Process the external data (simulate delay and apply any needed business logic)
-    processed_data = await process_entity(external_data)
-
-    # Add the processed data to the external service via entity_service using the workflow function for brands
+    # Submit the external data to the entity service.
+    # The workflow function process_brands will be invoked asynchronously before persistence.
     item_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="brands",
         entity_version=ENTITY_VERSION,
-        entity=processed_data,
-        workflow=process_brands  # Workflow function applied asynchronously before persistence
+        entity=external_data,
+        workflow=process_brands  # Offload additional async tasks & state modifications here.
     )
 
-    # Return only the id in the response (retrieval of the item is via a separate endpoint)
+    # Return the created item id.
     return jsonify({"id": item_id}), 200
 
-# GET endpoint to retrieve brands data from the external service
+# GET endpoint to retrieve brands data from the external service.
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     items = await entity_service.get_items(
