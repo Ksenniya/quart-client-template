@@ -17,6 +17,7 @@ from common.repository.cyoda.cyoda_init import init_cyoda
 app = Quart(__name__)
 QuartSchema(app)
 
+# Initialize external services before serving requests.
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
@@ -25,7 +26,7 @@ async def startup():
 PRH_API_URL = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
 LEI_API_URL = "https://example.com/lei"  # TODO: Replace with an official LEI registry endpoint.
 
-# Dataclass for POST search request validation
+# Dataclass for validating POST request payload for company search.
 @dataclass
 class CompanySearch:
     companyName: str
@@ -35,7 +36,7 @@ class CompanySearch:
     registrationDateStart: Optional[str] = None
     registrationDateEnd: Optional[str] = None
 
-# Dataclass for POST search response validation
+# Dataclass for validating POST response.
 @dataclass
 class SearchResponse:
     searchId: str
@@ -43,12 +44,12 @@ class SearchResponse:
 
 # Workflow function for search_job entities.
 # This function is applied asynchronously to the entity before it is persisted.
-# It performs the asynchronous search processing (including external API calls) and
-# updates the state of the entity accordingly.
+# It performs external API calls and enriches the entity with the search result.
 async def process_search_job(entity):
     try:
-        # Extract criteria stored in the entity.
+        # Get the search criteria stored in the entity
         criteria = entity.get("criteria", {})
+        # Build query parameters for the PRH API based on search criteria.
         params = {"name": criteria.get("companyName", "")}
         if criteria.get("location"):
             params["location"] = criteria["location"]
@@ -62,24 +63,28 @@ async def process_search_job(entity):
             params["registrationDateEnd"] = criteria["registrationDateEnd"]
 
         async with aiohttp.ClientSession() as session:
+            # Call the PRH API to get companies based on the search criteria.
             async with session.get(PRH_API_URL, params=params) as resp:
                 if resp.status != 200:
+                    # In case of error, simulate an empty result.
                     companies_data = {"results": []}
                 else:
                     companies_data = await resp.json()
 
+            # Filter companies with active status.
             active_companies = []
             for company in companies_data.get("results", []):
                 if company.get("status", "").lower() == "active":
                     active_companies.append(company)
 
+            # Enrich the active companies with LEI data.
             enriched_companies = []
             for comp in active_companies:
                 lei = await fetch_lei(session, comp)
                 enriched_companies.append({
                     "companyName": comp.get("name", "Unknown"),
                     "businessId": comp.get("businessId", "Unknown"),
-                    "companyType": comp.get("companyType", "Unknown"),  # TODO: Verify field name.
+                    "companyType": comp.get("companyType", "Unknown"),  # TODO: Verify actual field name if needed.
                     "registrationDate": comp.get("registrationDate", "Unknown"),
                     "status": "Active",
                     "LEI": lei if lei else "Not Available"
@@ -90,7 +95,8 @@ async def process_search_job(entity):
                 "retrievedAt": datetime.utcnow().isoformat() + "Z",
                 "companies": enriched_companies
             }
-            # Update the entity directly. No add/update calls allowed on this entity.
+
+            # Update the entity state directly without calling add/update on the same entity.
             entity["status"] = "completed"
             entity["result"] = result
             entity["workflowProcessedAt"] = datetime.utcnow().isoformat() + "Z"
@@ -98,9 +104,23 @@ async def process_search_job(entity):
         logging.exception("Error in process_search_job workflow")
         entity["status"] = "failed"
         entity["error"] = str(e)
+    # Return entity is not used by entity_service but workflow modifies the entity in place.
     return entity
 
-# POST endpoint: controller is now slim and mainly delegates processing to the workflow function.
+# Helper function to simulate fetching LEI information.
+async def fetch_lei(session, company):
+    try:
+        # Simulate network delay for LEI lookup.
+        await asyncio.sleep(0.1)
+        business_id = company.get("businessId", "")
+        if business_id and business_id[-1] in "02468":
+            return "5493001KJTIIGC8Y1R12"  # Example LEI
+    except Exception as e:
+        logging.exception("Error fetching LEI")
+    return None
+
+# POST endpoint for initiating a company search.
+# The controller logic is slim, handing over processing to the workflow function.
 @app.route("/api/companies/search", methods=["POST"])
 @validate_request(CompanySearch)
 @validate_response(SearchResponse, 202)
@@ -108,9 +128,10 @@ async def search_companies(data: CompanySearch):
     if not data.companyName:
         return jsonify({"error": "companyName is required"}), 400
 
+    # Generate a unique search ID and record the timestamp.
     search_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat() + "Z"
-    # Store search criteria alongside the job so that workflow can access them.
+    # Include search criteria in the persisted entity so the workflow can use them.
     job_data = {
         "id": search_id,
         "status": "processing",
@@ -118,25 +139,19 @@ async def search_companies(data: CompanySearch):
         "result": None,
         "criteria": asdict(data)
     }
-    # The workflow function process_search_job will perform the asynchronous processing.
+    # Persist the entity using the add_item method with workflow processing.
+    # The workflow function process_search_job will be invoked asynchronously before persistence.
     entity_service.add_item(
         token=cyoda_token,
         entity_model="search_job",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,  # the validated data object with criteria included
-        workflow=process_search_job  # Workflow function applied to the entity asynchronously before persistence.
+        entity=job_data,
+        workflow=process_search_job  # The workflow function that processes the search.
     )
+    # Return initial response with searchId.
     return SearchResponse(searchId=search_id, message="Processing started"), 202
 
-async def fetch_lei(session, company):
-    # Placeholder function to simulate LEI lookup.
-    await asyncio.sleep(0.1)  # Simulated network delay
-    business_id = company.get("businessId", "")
-    if business_id and business_id[-1] in "02468":
-        return "5493001KJTIIGC8Y1R12"  # Example LEI
-    return None
-
-# GET endpoint for retrieving processed search results.
+# GET endpoint for retrieving search results.
 @app.route("/api/companies/<search_id>", methods=["GET"])
 async def get_search_result(search_id):
     job = entity_service.get_item(
@@ -186,4 +201,5 @@ journey
 """
 
 if __name__ == '__main__':
+    # Run the application with debug and threaded mode settings.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
