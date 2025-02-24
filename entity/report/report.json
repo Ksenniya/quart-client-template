@@ -1,0 +1,1 @@
+{"report_id": "unique-report-id", "status": "Report created and email sent", "timestamp": "ISO8601 formatted timestamp", "conversion_rates": {"BTC_USD": "rate", "BTC_EUR": "rate"}, "email_status": "Email send confirmation/status"}
