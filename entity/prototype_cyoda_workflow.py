@@ -14,19 +14,26 @@ from app_init.app_init import cyoda_token, entity_service
 app = Quart(__name__)
 QuartSchema(app)  # Integrate QuartSchema
 
-# Workflow function for the "company_job" entity.
-# This asynchronous function is invoked right before persisting the entity.
-# It performs external API calls and updates the entity state accordingly.
+# Asynchronous workflow function for the "company_job" entity.
+# This function is invoked right before persisting the entity.
+# It performs external calls and updates the entity state.
 async def process_company_job(entity):
-    # Add a timestamp for when the workflow is initiated.
+    # Mark the time when workflow processing starts.
     entity["workflow_processed_at"] = datetime.datetime.utcnow().isoformat()
     try:
         # Retrieve search parameters stored in the entity.
         search_params = entity.get("search_params", {})
-        # Use the search criteria for the PRH API call.
+        # Validate that required search parameters exist.
+        if "name" not in search_params or not search_params["name"]:
+            entity["status"] = "failed"
+            entity["results"] = {"error": "Missing required parameter: company name"}
+            return entity
+
         PRH_API_BASE_URL = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
         async with aiohttp.ClientSession() as session:
-            async with session.get(PRH_API_BASE_URL, params=search_params) as response:
+            # Remove any None values which might break the API call.
+            params = {k: v for k, v in search_params.items() if v is not None}
+            async with session.get(PRH_API_BASE_URL, params=params) as response:
                 if response.status != 200:
                     entity["status"] = "failed"
                     entity["results"] = {"error": f"PRH API call failed with status {response.status}"}
@@ -50,17 +57,21 @@ async def process_company_job(entity):
                 entity["status"] = "completed"
                 entity["results"] = results
     except Exception as e:
-        # In case of error, update the entity state directly.
+        # Catch any unexpected errors and mark the entity as failed.
         entity["status"] = "failed"
         entity["results"] = {"error": str(e)}
-    return entity  # The returned entity state will be persisted.
+    return entity  # The new state returned will be persisted.
 
 # Startup initialization for external service.
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        # Log or handle startup issues as necessary.
+        print("Startup initialization failed:", e)
 
-# Data classes for validation
+# Data classes for request and response validation
 @dataclass
 class SearchRequest:
     company_name: str
@@ -68,16 +79,17 @@ class SearchRequest:
     registration_date_end: str = None
     businessId: str = None
     companyForm: str = None
-    # TODO: Add other filters as necessary
+    # Additional filters may be added as needed.
 
 @dataclass
 class SearchResponse:
     search_id: str
     status: str
 
-# The entity_model used for job data will be "company_job".
+# Endpoint to initiate company search.
+# This endpoint only creates a job entity. The workflow function processes the job data.
 @app.route("/companies/search", methods=["POST"])
-@validate_request(SearchRequest)  # For POST, validation decorators come after route decorator as a workaround for quart-schema issue.
+@validate_request(SearchRequest)  # Validation decorator placed after route for POST (quart-schema workaround)
 @validate_response(SearchResponse, 200)
 async def search_companies(data: SearchRequest):
     try:
@@ -86,10 +98,9 @@ async def search_companies(data: SearchRequest):
 
         job_id = str(uuid.uuid4())
         requested_at = datetime.datetime.utcnow().isoformat()
-        # Include search parameters in the entity data; they will be used by the workflow.
+        # Prepare search parameters; filter out None values.
         search_params = {
             "name": data.company_name,
-            # Include additional parameters if provided.
             "registrationDateStart": data.registration_date_start,
             "registrationDateEnd": data.registration_date_end,
             "businessId": data.businessId,
@@ -103,8 +114,8 @@ async def search_companies(data: SearchRequest):
             "search_params": {k: v for k, v in search_params.items() if v is not None}
         }
 
-        # Store job record using the external entity_service.
-        # The workflow function (process_company_job) will be applied asynchronously before persisting.
+        # Persist job using the external service.
+        # The workflow function (process_company_job) is applied asynchronously before persistence.
         job_id = entity_service.add_item(
             token=cyoda_token,
             entity_model="company_job",
@@ -115,38 +126,42 @@ async def search_companies(data: SearchRequest):
 
         return {"search_id": job_id, "status": "processing"}
     except Exception as e:
-        # TODO: Enhance error handling as needed.
         return jsonify({"error": str(e)}), 500
 
+# Endpoint to retrieve job search results.
 @app.route("/companies/search/<job_id>", methods=["GET"])
 async def get_search_results(job_id: str):
-    job = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="company_job",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
-    if not job:
-        return jsonify({"error": "Job ID not found"}), 404
-    if job.get("status") != "completed":
-        return jsonify({"search_id": job_id, "status": job.get("status")})
-    return jsonify({"search_id": job_id, "status": job.get("status"), "results": job.get("results")})
+    try:
+        job = entity_service.get_item(
+            token=cyoda_token,
+            entity_model="company_job",
+            entity_version=ENTITY_VERSION,
+            technical_id=job_id
+        )
+        if not job:
+            return jsonify({"error": "Job ID not found"}), 404
+        # Return current status if job not yet completed.
+        if job.get("status") != "completed":
+            return jsonify({"search_id": job_id, "status": job.get("status")})
+        return jsonify({
+            "search_id": job_id,
+            "status": job.get("status"),
+            "results": job.get("results")
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
+# Helper function to fetch LEI for a company.
 async def fetch_lei(session: aiohttp.ClientSession, company: dict) -> str:
-    """
-    Attempts to retrieve LEI for a given company.
-    Uses placeholder logic until actual LEI service details are provided.
-    TODO: Replace with actual implementation when LEI service details are available.
-    """
     try:
         business_id = company.get("business_id", "")
         if business_id and business_id[-1] in "02468":
-            # TODO: Perform an actual async call to the LEI service when available.
-            return "529900T8BM49AURSDO55"  # Mocked LEI value
+            # Placeholder logic; replace with actual async LEI call when available.
+            return "529900T8BM49AURSDO55"
         else:
             return None
     except Exception as e:
-        # TODO: Handle errors in external LEI fetch properly.
+        # Log error if needed and return none to avoid halting workflow.
         return None
 
 if __name__ == '__main__':
