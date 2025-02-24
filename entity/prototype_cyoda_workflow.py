@@ -42,19 +42,32 @@ async def fetch_lei_for_company(company):
         return "EXAMPLE-LEI-001"
     return "Not Available"
 
-# Workflow function applied to the companies_job entity before it is persisted
+# Workflow function applied to the companies_job entity before it is persisted.
+# This function can perform asynchronous tasks (fire and forget) and modify the entity state.
 async def process_companies_job(entity: dict):
-    # Add a timestamp indicating when the workflow was applied
+    # Mark that the workflow function has been applied
     entity["workflow_applied_at"] = datetime.datetime.utcnow().isoformat()
     entity["workflow_processed"] = True
-    # You can perform additional modifications or asynchronous operations here
+    # Launch asynchronous enrichment processing using the request data stored in the entity.
+    # Note: We are not updating the current entity via entity_service here; instead we schedule
+    # an asynchronous task that can update the entity later.
+    asyncio.create_task(
+        process_entity(
+            job_id=entity["technical_id"],
+            request_data={
+                "companyName": entity.get("companyName"),
+                "registrationDateStart": entity.get("registrationDateStart"),
+                "registrationDateEnd": entity.get("registrationDateEnd")
+            }
+        )
+    )
 
-# Process job asynchronously
-async def process_entity(job_id, data: dict):
+# Process job asynchronously; this function updates the job record (in a fire-and-forget manner)
+async def process_entity(job_id, request_data: dict):
     results = []
-    company_name = data.get("companyName")
-    registration_date_start = data.get("registrationDateStart")
-    registration_date_end = data.get("registrationDateEnd")
+    company_name = request_data.get("companyName")
+    registration_date_start = request_data.get("registrationDateStart")
+    registration_date_end = request_data.get("registrationDateEnd")
     
     params = {"name": company_name}
     # TODO: Include other query parameters if needed.
@@ -131,20 +144,25 @@ async def process_entity(job_id, data: dict):
         meta={}
     )
 
-# For POST endpoints, route decorator is first, then validation decorators.
+# POST endpoint for companies enrichment.
+# Note: The endpoint is now free from any fire-and-forget logic.
 @app.route("/companies/enrich", methods=["POST"])
-@validate_request(EnrichRequest)  # TODO: Workaround for POST ordering: route first then validation decorators.
+@validate_request(EnrichRequest)  # Validate request after the route decorator.
 @validate_response(EnrichResponse, 200)
 async def enrich_companies(data: EnrichRequest):
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat()
-    # Create job record in external service
+    # Include enrichment parameters in the job data so that they are available in the workflow function.
     job_data = {
         "technical_id": job_id,
         "status": "processing",
         "requestedAt": requested_at,
-        "results": None
+        "results": None,
+        "companyName": data.companyName,
+        "registrationDateStart": data.registrationDateStart,
+        "registrationDateEnd": data.registrationDateEnd
     }
+    # The workflow function "process_companies_job" will be invoked before persisting the entity.
     new_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="companies_job",
@@ -152,12 +170,10 @@ async def enrich_companies(data: EnrichRequest):
         entity=job_data,
         workflow=process_companies_job  # Workflow function applied before persistence.
     )
-    # Start asynchronous processing
-    asyncio.create_task(process_entity(job_id, data.__dict__))
     return EnrichResponse(job_id=new_id, message="Processing started", requestedAt=requested_at)
 
-# For GET endpoints, validation decorator is placed first.
-@validate_querystring(ResultsQuery)  # Workaround for GET ordering: validation must be first.
+# GET endpoint to retrieve enrichment results.
+@validate_querystring(ResultsQuery)  # Validate query parameters first.
 @app.route("/companies/results", methods=["GET"])
 async def get_results():
     job_id = request.args.get("job_id")
