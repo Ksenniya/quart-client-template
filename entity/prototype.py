@@ -1,20 +1,30 @@
-Below is the prototype.py file that implements the API design. This prototype uses Quart with QuartSchema (without request validation), aiohttp.ClientSession for external HTTP calls, and a simple in‑memory dictionary (entity_jobs) for caching jobs. In places where a real external API or persistent storage would be used, TODO comments have been added.
-
---------------------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass, asdict
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # Integrates schema support without validations
+from quart_schema import QuartSchema, validate_request, validate_response  # Workaround: for POST endpoints, validation decorators come after @app.route
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
+# Dataclass for POST request validation (only primitives are used)
+@dataclass
+class CompanyEnrichRequest:
+    companyName: str
+    filters: dict = None  # TODO: Consider refining filters schema if required
+
+# Dataclass for POST response validation
+@dataclass
+class EnrichResponse:
+    taskId: str
+    message: str
+
 # Local in-memory cache for job persistence (mock persistence)
-entity_jobs = {}  # Example: entity_jobs[job_id] = {"status": "processing", "requestedAt": "...", "results": [...]}
+entity_jobs = {}  # Example: entity_jobs[job_id] = {"status": "processing", "requestedAt": ..., "results": [...]}
 
 async def process_entity(job_id, input_data):
     """
@@ -25,7 +35,7 @@ async def process_entity(job_id, input_data):
     """
     job = entity_jobs[job_id]
     company_name = input_data.get("companyName")
-    filters = input_data.get("filters", {})
+    filters = input_data.get("filters") or {}
 
     # Step 1: Retrieve company data from the Finnish Companies Registry API
     async with aiohttp.ClientSession() as session:
@@ -71,7 +81,7 @@ async def process_entity(job_id, input_data):
     for company in active_companies:
         async with aiohttp.ClientSession() as session:
             lei_api_url = "https://example.com/lei"  # TODO: Replace with the real external LEI API endpoint.
-            # Mock request payload - here we use Business ID to search for the LEI.
+            # Mock request payload - using Business ID to search for the LEI.
             payload = {"businessId": company["Business ID"]}
             try:
                 async with session.post(lei_api_url, json=payload) as resp:
@@ -83,7 +93,6 @@ async def process_entity(job_id, input_data):
             except Exception as e:
                 print(f"Error calling LEI API: {e}")
                 company["LEI"] = "Not Available"
-        # For the prototype, if no LEI was provided, assign a dummy LEI code.
         if not company.get("LEI"):
             company["LEI"] = "LEI1234567890"  # TODO: Replace with actual logic in production.
 
@@ -92,15 +101,14 @@ async def process_entity(job_id, input_data):
     job["status"] = "completed"
     job["completedAt"] = datetime.utcnow().isoformat()
 
+# POST endpoint: Fire and forget processing task.
 @app.route('/companies/enrich', methods=['POST'])
-async def enrich_companies():
-    """
-    POST endpoint to trigger external data retrieval and enrichment.
-    External API calls (Finnish Companies Registry API and LEI API) occur in this task.
-    """
-    input_data = await request.get_json()
-    # Validate required field
-    if not input_data or "companyName" not in input_data:
+@validate_request(CompanyEnrichRequest)  # For POST, validation comes after route decorator (workaround)
+@validate_response(EnrichResponse, 201)
+async def enrich_companies(data: CompanyEnrichRequest):  # data is already validated as CompanyEnrichRequest
+    # Convert dataclass to dict for further processing.
+    input_data = asdict(data)
+    if not input_data.get("companyName"):
         return jsonify({"error": "companyName is required"}), 400
 
     job_id = str(uuid.uuid4())
@@ -108,19 +116,14 @@ async def enrich_companies():
     # Initialize the job in our local cache
     entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at, "results": None}
 
-    # Fire and forget the background task (processing the entity)
+    # Fire and forget the background task.
     asyncio.create_task(process_entity(job_id, input_data))
 
-    return jsonify({
-        "taskId": job_id,
-        "message": "Data retrieval and enrichment in progress or completed."
-    }), 201
+    return EnrichResponse(taskId=job_id, message="Data retrieval and enrichment in progress or completed."), 201
 
+# GET endpoint: Retrieve enriched results.
 @app.route('/companies/results/<job_id>', methods=['GET'])
 async def get_results(job_id):
-    """
-    GET endpoint for retrieving enriched company data by task/job id.
-    """
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Task ID not found"}), 404
@@ -135,7 +138,3 @@ async def get_results(job_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-
---------------------------------------------------------------
-
-This prototype code should help verify the user experience (UX) and expose any gaps in the requirements. Areas using mocks or simplified logic are marked with TODO comments for future enhancement.
