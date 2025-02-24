@@ -1,15 +1,14 @@
-Below is a prototype implementation in a file named prototype.py. This code uses Quart with aiohttp for making external HTTP requests and an in-memory dictionary for persistence. Note that external API calls and LEI lookup use mocks or placeholders with accompanying TODO comments.
-
-------------------------------------------------
 #!/usr/bin/env python3
 import asyncio
 import aiohttp
 import uuid
 import logging
 from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional
 
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_response, validate_querystring
 
 # Initialize the Quart app and schema.
 app = Quart(__name__)
@@ -22,10 +21,30 @@ entity_jobs = {}
 PRH_API_URL = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
 LEI_API_URL = "https://example.com/lei"  # TODO: Replace with an official LEI registry endpoint.
 
+# Dataclass for POST search request validation
+@dataclass
+class CompanySearch:
+    companyName: str
+    location: Optional[str] = None
+    businessId: Optional[str] = None
+    companyForm: Optional[str] = None
+    registrationDateStart: Optional[str] = None
+    registrationDateEnd: Optional[str] = None
+
+# Dataclass for POST search response validation
+@dataclass
+class SearchResponse:
+    searchId: str
+    message: str
+
+# POST endpoint: Note the decorator order is a workaround for quart-schema issues:
+# For POST endpoints, @app.route comes first, then @validate_request, then @validate_response.
 @app.route("/api/companies/search", methods=["POST"])
-async def search_companies():
-    data = await request.get_json()
-    if not data or "companyName" not in data:
+@validate_request(CompanySearch)  # Works as expected for POST requests.
+@validate_response(SearchResponse, 202)
+async def search_companies(data: CompanySearch):
+    # Use validated data from CompanySearch dataclass.
+    if not data.companyName:
         return jsonify({"error": "companyName is required"}), 400
 
     # Generate a new search ID and register the job.
@@ -35,25 +54,23 @@ async def search_companies():
 
     # Fire and forget the processing task.
     asyncio.create_task(process_search(search_id, data))
-    return jsonify({"searchId": search_id, "message": "Processing started"}), 202
+    return SearchResponse(searchId=search_id, message="Processing started"), 202
 
-async def process_search(search_id, criteria):
+async def process_search(search_id, criteria: CompanySearch):
     try:
         async with aiohttp.ClientSession() as session:
             # Build query parameters based on provided criteria.
-            params = {}
-            if "companyName" in criteria:
-                params["name"] = criteria["companyName"]
-            if "location" in criteria:
-                params["location"] = criteria["location"]
-            if "businessId" in criteria:
-                params["businessId"] = criteria["businessId"]
-            if "companyForm" in criteria:
-                params["companyForm"] = criteria["companyForm"]
-            if "registrationDateStart" in criteria:
-                params["registrationDateStart"] = criteria["registrationDateStart"]
-            if "registrationDateEnd" in criteria:
-                params["registrationDateEnd"] = criteria["registrationDateEnd"]
+            params = {"name": criteria.companyName}
+            if criteria.location:
+                params["location"] = criteria.location
+            if criteria.businessId:
+                params["businessId"] = criteria.businessId
+            if criteria.companyForm:
+                params["companyForm"] = criteria.companyForm
+            if criteria.registrationDateStart:
+                params["registrationDateStart"] = criteria.registrationDateStart
+            if criteria.registrationDateEnd:
+                params["registrationDateEnd"] = criteria.registrationDateEnd
 
             # Call the Finnish Companies Registry API (PRH API).
             async with session.get(PRH_API_URL, params=params) as resp:
@@ -105,6 +122,8 @@ async def fetch_lei(session, company):
         return "5493001KJTIIGC8Y1R12"  # Example LEI
     return None
 
+# GET endpoint for retrieving processed search results.
+# No request body or query parameters; standard route without validation.
 @app.route("/api/companies/<search_id>", methods=["GET"])
 async def get_search_result(search_id):
     job = entity_jobs.get(search_id)
@@ -153,6 +172,3 @@ journey
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-------------------------------------------------
-
-This prototype meets the current requirements and uses mocks or placeholders where details remain uncertain. Further refinements can be made once additional requirements (such as actual API responses and valid LEI endpoints) are defined.
