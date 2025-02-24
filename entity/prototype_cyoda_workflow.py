@@ -53,10 +53,9 @@ async def fetch_conversion_rates():
             try:
                 rates = {
                     "BTC_USD": data["bpi"]["USD"]["rate_float"],
-                    "BTC_EUR": data["bpi"]["EUR"]["rate_float"]  # TODO: Confirm that EUR exists in response; Coindesk API may not provide EUR.
+                    "BTC_EUR": data["bpi"]["EUR"]["rate_float"]  # TODO: Confirm EUR exists in response.
                 }
             except KeyError:
-                # TODO: Consider returning an error or default values.
                 rates = {"BTC_USD": None, "BTC_EUR": None}
             return rates
 
@@ -69,56 +68,29 @@ async def send_email(report):
     print(f"Email sent with report: {json.dumps(report)}")
     return "sent"
 
-async def process_entity(job_id):
+async def process_report(entity):
     """
-    Process the report creation job: fetch rates, update report and trigger email.
+    Workflow function applied to the entity asynchronously before persistence.
+    It fetches conversion rates, sends an email, and updates the entity state.
+    Directly modify the entity dict to update its state.
+    Note: Do not use entity_service.add/update/delete on this entity.
     """
-    # Retrieve existing item details from external service
-    report_record = entity_service.get_item(
-        token=cyoda_token,
-        entity_model="{entity_name}",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id
-    )
-    requested_at = report_record.get("requestedAt")
-
     rates = await fetch_conversion_rates()
     if not rates:
-        # Update record with failure state
-        report_record["status"] = "failed"
-        report_record["error"] = "Failed to fetch conversion rates"
-        entity_service.update_item(
-            token=cyoda_token,
-            entity_model="{entity_name}",
-            entity_version=ENTITY_VERSION,
-            entity=report_record,
-            meta={}
-        )
-        return
+        entity["status"] = "failed"
+        entity["error"] = "Failed to fetch conversion rates"
+        return entity
 
     report = {
-        "report_id": job_id,
+        "report_id": entity.get("job_id", "unknown"),
         "rates": rates,
         "timestamp": datetime.datetime.utcnow().isoformat(),
     }
     email_status = await send_email(report)
-    # Update report with email status and mark as completed
     report["email_status"] = email_status
     report["status"] = "completed"
-    # Update record with final report details
-    entity_service.update_item(
-        token=cyoda_token,
-        entity_model="{entity_name}",
-        entity_version=ENTITY_VERSION,
-        entity=report,
-        meta={}
-    )
-
-def process_report(entity):
-    # Workflow function applied to the entity data before persistence.
-    # Here we can modify the entity's state.
-    entity["workflow_processed"] = True
-    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    # Merge the report details into the original entity
+    entity.update(report)
     return entity
 
 # For POST endpoints, validation decorators are placed after the route decorator.
@@ -128,25 +100,25 @@ def process_report(entity):
 async def create_job(data: JobRequest):
     """
     API endpoint to initiate the report creation process.
-    It fetches BTC conversion rates and triggers an email notification.
+    The asynchronous workflow function 'process_report' enriches the entity with conversion rates,
+    sends an email, and updates its state before persistence.
     """
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat()
+    # Include job_id in the entity data so the workflow can access it.
     data_to_store = {
+        "job_id": job_id,
         "status": "processing",
         "requestedAt": requested_at
     }
-    # Store item in external service and obtain its id.
-    # The workflow function 'process_report' is applied asynchronously before persistence.
+    # Store the item using the workflow function to process additional logic asynchronously.
     job_id = entity_service.add_item(
         token=cyoda_token,
         entity_model="{entity_name}",
         entity_version=ENTITY_VERSION,  # always use this constant
         entity=data_to_store,  # the validated data object
-        workflow=process_report  # Workflow function applied to the entity before persistence.
+        workflow=process_report  # Process entity asynchronously before persistence.
     )
-    # Process the job asynchronously.
-    asyncio.create_task(process_entity(job_id))
     return jsonify({
         "report_id": job_id,
         "status": "Report generation initiated",
