@@ -2,15 +2,29 @@ import asyncio
 import uuid
 import datetime
 import aiohttp
-from quart import Quart, request, jsonify, json
-from quart_schema import QuartSchema
+from dataclasses import dataclass
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request, validate_response
 
 app = Quart(__name__)
 QuartSchema(app)
 
+# Data models using dataclasses
+
+@dataclass
+class CompanyQuery:
+    companyName: str
+    # Using dict for additional search parameters; TODO: Refine this model when requirements are clearer.
+    searchParameters: dict = None
+
+@dataclass
+class QueryResponse:
+    queryId: str
+    status: str
+    message: str
+
 # In-memory cache for query jobs
 entity_jobs = {}
-
 
 async def process_entity(job, payload_data):
     """
@@ -20,8 +34,8 @@ async def process_entity(job, payload_data):
     - Enriches active companies with LEI data.
     """
     # Extract the company name and additional search parameters
-    company_name = payload_data.get("companyName")
-    search_params = payload_data.get("searchParameters", {})
+    company_name = payload_data.companyName
+    search_params = payload_data.searchParameters or {}
 
     # Construct the external API URL and parameters
     registry_url = "https://avoindata.prh.fi/opendata-ytj-api/v3/companies"
@@ -48,7 +62,7 @@ async def process_entity(job, payload_data):
     # Enrich each active company with LEI data.
     for comp in active_companies:
         # TODO: Implement a real LEI lookup by querying official LEI registries.
-        # Here we use a placeholder: if a company has a 'businessId', mock a LEI; otherwise "Not Available".
+        # Using a placeholder: if a company has a 'businessId', mock a LEI; otherwise "Not Available".
         comp["lei"] = "LEI-code-mock" if comp.get("businessId") else "Not Available"
 
     # Construct a simplified results list.
@@ -64,34 +78,33 @@ async def process_entity(job, payload_data):
     job["status"] = "completed"
     job["retrievedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
 
-
+# NOTE: Due to an issue in quart-schema we must apply decorators as follows:
+# For POST requests, use @app.route first, then @validate_request and @validate_response.
 @app.route('/api/companies/query', methods=["POST"])
-async def query_companies():
+@validate_request(CompanyQuery)
+@validate_response(QueryResponse, 201)
+async def query_companies(data: CompanyQuery):
     """
     Initiates the company query process:
     - Receives JSON payload with companyName and optional searchParameters.
     - Fires off asynchronous processing for data retrieval, filtering, and enrichment.
     - Returns a queryId immediately.
     """
-    payload = await request.get_json()
-    if not payload or "companyName" not in payload:
-        return jsonify({"error": "companyName is required"}), 400
-
     # Generate a unique query/job ID and store the initial job status.
     job_id = str(uuid.uuid4())
     job = {"status": "processing", "requestedAt": datetime.datetime.utcnow().isoformat() + "Z"}
     entity_jobs[job_id] = job
 
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job, payload))
+    asyncio.create_task(process_entity(job, data))
 
-    return jsonify({
-        "queryId": job_id,
-        "status": job["status"],
-        "message": "Data retrieval initiated."
-    })
+    return QueryResponse(
+        queryId=job_id,
+        status=job["status"],
+        message="Data retrieval initiated."
+    ), 201
 
-
+# GET endpoint does not use request body; no validation decorators required.
 @app.route('/api/companies/results/<job_id>', methods=["GET"])
 async def get_results(job_id: str):
     """
@@ -108,7 +121,6 @@ async def get_results(job_id: str):
         "results": job.get("results", []),
         "retrievedAt": job.get("retrievedAt")
     })
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
