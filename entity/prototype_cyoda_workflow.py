@@ -17,13 +17,34 @@ QuartSchema(app)
 class FetchRequest:
     dummy: str = ""  # Placeholder field
 
+# Supplementary asynchronous task for additional processing (fire and forget)
+# This task stores an audit record in a different entity_model.
+async def store_audit_record(audit_data):
+    # Simulate additional asynchronous processing before storing the audit record.
+    # Note: Using a different entity_model ("brands_audit") to avoid recursion.
+    await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="brands_audit",
+        entity_version=ENTITY_VERSION,
+        entity=audit_data,
+        workflow=lambda x: x  # No additional workflow required for audit records.
+    )
+
 # Workflow function applied to the entity asynchronously before persistence.
-# It receives the fetched entity data, modifies it and returns the updated data.
+# Any heavy processing and fire-and-forget tasks can be moved inside this function.
 async def process_brands(entity):
-    # Example modification: add a processed flag to the entity data.
-    # You can extend this function to perform additional asynchronous operations if needed.
+    # Example modification: mark the entity as processed.
     if isinstance(entity, dict):
         entity["processed"] = True
+
+        # Create audit data from the entity (only a subset or the full data as needed)
+        audit_record = {
+            "source": "external_api",
+            "entity_id": entity.get("id"),
+            "status": "processed"
+        }
+        # Fire and forget: store the audit record in a different entity model.
+        asyncio.create_task(store_audit_record(audit_record))
     return entity
 
 @app.before_serving
@@ -45,8 +66,8 @@ async def fetch_brands(data: FetchRequest):
         except Exception as e:
             return jsonify({"error": f"Exception occurred: {e}"}), 500
 
-    # Use entity_service.add_item to store the fetched brands data with a workflow function.
-    # The workflow function process_brands is applied to the entity asynchronously before persistence.
+    # The workflow function process_brands now encapsulates additional logic,
+    # relieving the endpoint from heavy processing and fire-and-forget tasks.
     new_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="brands",
