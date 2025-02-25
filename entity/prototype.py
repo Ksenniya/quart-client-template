@@ -1,8 +1,9 @@
 import asyncio
 import datetime
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -10,13 +11,22 @@ QuartSchema(app)
 # In-memory cache for brand data; using placeholder persistence.
 brand_cache = {"data": []}
 
+# Dataclass for POST /brands/update request
+@dataclass
+class BrandUpdateRequest:
+    refresh: bool = False  # Optional flag to force update
+    filter: str = ""       # Optional filter criteria
+
+# Correct ordering workaround for POST requests:
+# @app.route line must come first, then @validate_request.
 @app.route('/brands/update', methods=['POST'])
-async def update_brands():
+@validate_request(BrandUpdateRequest)  # Workaround: placed after route decorator for POST requests.
+async def update_brands(data: BrandUpdateRequest):
     # Create a mock job id and register a simple job state.
     job_id = "job_" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     entity_job = {job_id: {"status": "processing", "requestedAt": datetime.datetime.utcnow().isoformat()}}
     # TODO: In a full implementation, use a proper job queue/identifier mechanism.
-    
+
     # Fire-and-forget processing task.
     asyncio.create_task(process_brands(entity_job))
     
@@ -49,6 +59,7 @@ async def process_brands(entity_job):
             entity_job[job_key]["status"] = "failed"
             return
 
+# GET /brands endpoint does not require validation for query parameters.
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     return jsonify({"data": brand_cache.get("data", [])}), 200
