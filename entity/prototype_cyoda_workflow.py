@@ -4,7 +4,7 @@ import datetime
 from dataclasses import dataclass
 
 import aiohttp
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -24,9 +24,8 @@ class UpdateTrigger:
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Workflow function to process the brands entity before persistence.
-# This function takes the entity data as the only argument, fetches external brand data,
-# and updates the entity state.
+# Workflow function applied to the "brands" entity asynchronously before persistence.
+# This function modifies the entity state using asynchronous code.
 async def process_brands(entity):
     async with aiohttp.ClientSession() as session:
         try:
@@ -36,37 +35,36 @@ async def process_brands(entity):
             ) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    # Update the entity with external data and mark as completed
+                    # Update the entity state with external data and mark as completed
                     entity["data"] = data
                     entity["status"] = "completed"
-                    entity["requestedAt"] = datetime.datetime.utcnow().isoformat()
                 else:
-                    # In case of error, update the entity status accordingly
+                    # Update the entity state to indicate an error based on the response status
                     entity["status"] = f"error_{resp.status}"
-                    entity["requestedAt"] = datetime.datetime.utcnow().isoformat()
         except Exception as e:
-            # Update entity status to reflect exception if needed
+            # Update the entity state to indicate failure
             entity["status"] = "failed"
-            entity["requestedAt"] = datetime.datetime.utcnow().isoformat()
+    # Set the processing timestamp
+    entity["requestedAt"] = datetime.datetime.utcnow().isoformat()
     return entity
 
 # Endpoint to trigger a brand data update
 @app.route('/brands/update', methods=['POST'])
 @validate_request(UpdateTrigger)
 async def update_brands(data: UpdateTrigger):
-    # Create a new record for asynchronous processing; the response will be retrieved later via GET /brands
+    # Create a new record with minimal data; it will be fully processed using the workflow function
     record = {
         "trigger": data.trigger,
         "status": "processing",
         "requestedAt": datetime.datetime.utcnow().isoformat()
     }
-    # Pass the workflow function process_brands to be applied before persisting the record
+    # The process_brands workflow function will be applied asynchronously before persisting the record.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="brands",
         entity_version=ENTITY_VERSION,  # always use this constant
         entity=record,  # the validated data object
-        workflow=process_brands  # Workflow function applied to the entity asynchronously before persistence.
+        workflow=process_brands  # Workflow function to modify the entity state
     )
     return jsonify({
         "status": "success",
@@ -77,7 +75,6 @@ async def update_brands(data: UpdateTrigger):
 # Endpoint to retrieve brands data from external service
 @app.route('/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve all records for the "brands" entity
     items = await entity_service.get_items(
         token=cyoda_token,
         entity_model="brands",
