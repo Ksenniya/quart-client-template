@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
 import uuid
-import time
 import base64
 from datetime import datetime
 from dataclasses import dataclass
@@ -22,27 +21,33 @@ async def process_user(entity):
     # Add creation timestamp if not already present
     if "createdAt" not in entity:
         entity["createdAt"] = datetime.utcnow().isoformat()
-    # Additional processing logic for users can be added here
+    # Additional asynchronous business logic can be placed here, e.g.
+    # result = await external_api_call(entity)
+    # entity["external_data"] = result
     return entity
 
 async def process_post(entity):
-    # Mark the post as newly processed by the workflow function
+    # Simulate asynchronous processing logic
+    await asyncio.sleep(1)
+    # Update the entity state prior to persistence
+    entity["processedAt"] = datetime.utcnow().isoformat()
     entity["workflow_processed"] = True
-    # Additional processing logic for posts can be added here
+    # Additional processing logic (e.g., fetching supplementary data)
+    # result = await external_api_call(entity)
+    # entity["supplementary"] = result
     return entity
 
 async def process_comment(entity):
-    # Add creation timestamp for comment if not already present
+    # Add a creation timestamp if not already present
     if "createdAt" not in entity:
         entity["createdAt"] = datetime.utcnow().isoformat()
-    # Additional processing logic for comments can be added here
     return entity
 
 async def process_image(entity):
-    # Add upload timestamp for image if not already present
+    # Ensure the upload timestamp is set asynchronously
+    await asyncio.sleep(0.5)
     if "uploadedAt" not in entity:
         entity["uploadedAt"] = datetime.utcnow().isoformat()
-    # Additional processing logic for images can be added here
     return entity
 
 # Helper function to simulate external API call for demonstration purposes
@@ -50,27 +55,6 @@ async def external_api_call(data):
     async with aiohttp.ClientSession() as session:
         async with session.post("http://example.com/external", json=data) as resp:
             return await resp.json() if resp.status == 200 else {"result": "default"}
-
-# Async processing task (Fire and forget pattern) for additional post processing
-async def process_entity(job_data, post_id):
-    # Simulate processing delay
-    await asyncio.sleep(1)
-    post = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="post",
-        entity_version=ENTITY_VERSION,
-        technical_id=post_id
-    )
-    if post:
-        post["processedAt"] = datetime.utcnow().isoformat()
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="post",
-            entity_version=ENTITY_VERSION,
-            entity=post,
-            meta={}
-        )
-    # Optionally, update job status if required
 
 # Startup initialization
 @app.before_serving
@@ -124,7 +108,6 @@ class PaginationSchema:
 @app.route('/users/create', methods=['POST'])
 @validate_request(CreateUserSchema)
 async def create_user(data: CreateUserSchema):
-    # Prepare user data for external storage
     new_user = {
         "username": data.username,
         "email": data.email,
@@ -137,7 +120,6 @@ async def create_user(data: CreateUserSchema):
         entity=new_user,
         workflow=process_user  # Workflow function applied before persistence
     )
-    # Return only the generated user id as per instructions
     return jsonify({
         "user_id": user_id,
         "message": "User created successfully."
@@ -146,7 +128,6 @@ async def create_user(data: CreateUserSchema):
 @app.route('/users/login', methods=['POST'])
 @validate_request(LoginUserSchema)
 async def login_user(data: LoginUserSchema):
-    # Use condition-based retrieval from external service to find matching user
     condition = {"email": data.email, "password": data.password}
     users = await entity_service.get_items_by_condition(
         token=cyoda_token,
@@ -157,8 +138,7 @@ async def login_user(data: LoginUserSchema):
     if users and len(users) > 0:
         user = users[0]
         user_id = user.get("user_id", "unknown")
-        # For demonstration, generate a dummy JWT token
-        token = f"token-{user_id}"
+        token = f"token-{user_id}"  # For demonstration, generate a dummy JWT token
         return jsonify({
             "user_id": user_id,
             "token": token,
@@ -188,11 +168,8 @@ async def create_post(data: CreatePostSchema):
         entity_model="post",
         entity_version=ENTITY_VERSION,
         entity=post_data,
-        workflow=process_post  # Workflow function applied before persistence
+        workflow=process_post  # Asynchronous workflow processing before persistence
     )
-    # Simulate external business logic processing by launching a background task
-    job_data = {"status": "processing", "requestedAt": time.time()}
-    asyncio.create_task(process_entity(job_data, post_id))
     return jsonify({
         "post_id": new_post_id,
         "message": "Post created successfully."
@@ -278,7 +255,6 @@ async def vote_post(data: VotePayload, post_id):
 @app.route('/posts/<post_id>/comments', methods=['POST'])
 @validate_request(AddCommentSchema)
 async def add_comment(data: AddCommentSchema, post_id):
-    # Check if the post exists
     post = await entity_service.get_item(
         token=cyoda_token,
         entity_model="post",
@@ -313,7 +289,6 @@ async def add_comment(data: AddCommentSchema, post_id):
 @app.route('/posts/<post_id>/comments', methods=['GET'])
 @validate_querystring(PaginationSchema)
 async def get_comments(post_id):
-    # Validate post existence
     post = await entity_service.get_item(
         token=cyoda_token,
         entity_model="post",
@@ -390,7 +365,6 @@ async def vote_comment(data: VotePayload, post_id, comment_id):
 @app.route('/posts/<post_id>/images', methods=['POST'])
 @validate_request(UploadImageSchema)
 async def upload_image(data: UploadImageSchema, post_id):
-    # Check if post exists
     post = await entity_service.get_item(
         token=cyoda_token,
         entity_model="post",
