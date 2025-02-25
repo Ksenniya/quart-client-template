@@ -1,17 +1,27 @@
 import asyncio
 import datetime
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
 import aiohttp
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # validate_querystring is not needed as GET /brands has no query parameters
 
 app = Quart(__name__)
 QuartSchema(app)
 
-# Global cache to store brand data
-brand_data = []  # TODO: Replace with a persistent storage solution when requirements are clear
+# TODO: Replace with a persistent storage solution when requirements are clear
+brand_data = []
 
-# Global dictionary to store job statuses
 entity_jobs = {}
+
+# Dataclass for POST request to update brands
+@dataclass
+class UpdateTrigger:
+    trigger: str  # simple primitive for trigger, e.g., "manual"
+
+# Workaround note:
+# For POST endpoints: Route decorator should be first and then the @validate_request decorator.
+# For GET endpoints with query parameters, the @validate_querystring decorator should be placed first.
+# Since GET /brands has no query parameters, no validation is applied.
 
 async def process_entity(job):
     async with aiohttp.ClientSession() as session:
@@ -34,7 +44,8 @@ async def process_entity(job):
     job["status"] = "completed"
 
 @app.route('/brands/update', methods=['POST'])
-async def update_brands():
+@validate_request(UpdateTrigger)  # Workaround: For POST endpoints, validation is after the route decorator.
+async def update_brands(data: UpdateTrigger):
     job_id = datetime.datetime.utcnow().isoformat()
     entity_job = {
         "status": "processing",
