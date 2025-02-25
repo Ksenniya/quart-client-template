@@ -23,21 +23,14 @@ async def init_cyoda(token):
 async def init_entities_schema(entity_dir, token):
     for json_file in entity_dir.glob('*/**/*.json'):
         # Ensure the JSON file is in an immediate subdirectory
-        if json_file.parent.parent.name != entity_dir.name or json_file.parent.name != json_file.name.replace(".json",                                                                                                  ""):
+        if json_file.parent.parent.name != "entity" or json_file.name != 'workflow.json':
             continue
 
         try:
-            with open(json_file, 'r') as file:
-                entity = file.read()
-                entity_name = json_file.name.replace(".json", "")
-                model_exists = await cyoda_repository._model_exists(token, entity_name, ENTITY_VERSION)
-                if not model_exists:
-                    meta = await cyoda_repository.get_meta(token, entity_name, ENTITY_VERSION)
-                    await cyoda_repository.save(meta=meta, entity=json.loads(entity))
-                    #await init_trino(entity_name=entity_name, token=token)
-                    await init_workflow(entity_dir=json_file.parent, token=token, entity_name = entity_name)
-
-                    # cyoda_repository._lock_entity_schema(token, entity_name, ENTITY_VERSION, None)
+            entity_name = json_file.parent.name
+            model_exists = await cyoda_repository._model_exists(token, entity_name, ENTITY_VERSION)
+            if not model_exists:
+                await init_workflow(entity_dir=json_file.parent, token=token, entity_name = entity_name)
         except Exception as e:
             print(f"Error reading {json_file}: {e}")
             logger.exception(e)
