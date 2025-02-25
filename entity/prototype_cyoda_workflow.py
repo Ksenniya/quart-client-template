@@ -16,45 +16,70 @@ from common.repository.cyoda.cyoda_init import init_cyoda
 app = Quart(__name__)
 QuartSchema(app)
 
-# Workflow functions applied to entities before persistence
+# Helper function to simulate external API calls safely
+async def external_api_call(data):
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post("http://example.com/external", json=data) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+    except Exception as e:
+        # In production, consider logging the exception
+        pass
+    return {"result": "default"}
+
+# Workflow functions applied to entities before persistence.
+# NOTE: DO NOT use entity_service.add/update/delete on the current entity.
+# Instead, modify the entity object and let the new state be persisted.
 async def process_user(entity):
-    # Add creation timestamp if not already present
-    if "createdAt" not in entity:
-        entity["createdAt"] = datetime.utcnow().isoformat()
-    # Additional asynchronous business logic can be placed here, e.g.
-    # result = await external_api_call(entity)
-    # entity["external_data"] = result
+    try:
+        # Add creation timestamp if missing
+        if "createdAt" not in entity:
+            entity["createdAt"] = datetime.utcnow().isoformat()
+        # Optionally, call an external API for supplementary user data
+        supplementary = await external_api_call({"email": entity.get("email")})
+        entity["supplementary"] = supplementary
+    except Exception as e:
+        # Handle errors if needed (log error, etc.)
+        entity["workflow_error"] = "process_user failed"
     return entity
 
 async def process_post(entity):
-    # Simulate asynchronous processing logic
-    await asyncio.sleep(1)
-    # Update the entity state prior to persistence
-    entity["processedAt"] = datetime.utcnow().isoformat()
-    entity["workflow_processed"] = True
-    # Additional processing logic (e.g., fetching supplementary data)
-    # result = await external_api_call(entity)
-    # entity["supplementary"] = result
+    try:
+        # Simulate asynchronous processing delay
+        await asyncio.sleep(1)
+        # Update the entity state synchronously before persistence
+        entity["processedAt"] = datetime.utcnow().isoformat()
+        entity["workflow_processed"] = True
+        # Optionally fetch supplementary data from an external API
+        supplementary = await external_api_call({"post_id": entity.get("post_id")})
+        entity["supplementary"] = supplementary
+    except Exception as e:
+        entity["workflow_error"] = "process_post failed"
     return entity
 
 async def process_comment(entity):
-    # Add a creation timestamp if not already present
-    if "createdAt" not in entity:
-        entity["createdAt"] = datetime.utcnow().isoformat()
+    try:
+        # Ensure createdAt timestamp is added if missing
+        if "createdAt" not in entity:
+            entity["createdAt"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        entity["workflow_error"] = "process_comment failed"
     return entity
 
 async def process_image(entity):
-    # Ensure the upload timestamp is set asynchronously
-    await asyncio.sleep(0.5)
-    if "uploadedAt" not in entity:
-        entity["uploadedAt"] = datetime.utcnow().isoformat()
+    try:
+        # Simulate asynchronous processing delay
+        await asyncio.sleep(0.5)
+        # Ensure uploadedAt is recorded if missing
+        if "uploadedAt" not in entity:
+            entity["uploadedAt"] = datetime.utcnow().isoformat()
+        # Optionally, process image metadata or call an external image service here
+        supplementary = await external_api_call({"image_id": entity.get("image_id")})
+        entity["supplementary"] = supplementary
+    except Exception as e:
+        entity["workflow_error"] = "process_image failed"
     return entity
-
-# Helper function to simulate external API call for demonstration purposes
-async def external_api_call(data):
-    async with aiohttp.ClientSession() as session:
-        async with session.post("http://example.com/external", json=data) as resp:
-            return await resp.json() if resp.status == 200 else {"result": "default"}
 
 # Startup initialization
 @app.before_serving
@@ -62,7 +87,6 @@ async def startup():
     await init_cyoda(cyoda_token)
 
 # Data Schemas for validation
-
 @dataclass
 class CreateUserSchema:
     username: str
@@ -103,22 +127,24 @@ class PaginationSchema:
     limit: int = 20
     offset: int = 0
 
-# 1. User Authentication
+# 1. User Authentication Endpoints
 
 @app.route('/users/create', methods=['POST'])
 @validate_request(CreateUserSchema)
 async def create_user(data: CreateUserSchema):
+    # Prepare user data
     new_user = {
         "username": data.username,
         "email": data.email,
         "password": data.password  # Reminder: Do not store plain passwords in production.
     }
+    # Persist the user with workflow processing
     user_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="user",
         entity_version=ENTITY_VERSION,
         entity=new_user,
-        workflow=process_user  # Workflow function applied before persistence
+        workflow=process_user
     )
     return jsonify({
         "user_id": user_id,
@@ -128,6 +154,7 @@ async def create_user(data: CreateUserSchema):
 @app.route('/users/login', methods=['POST'])
 @validate_request(LoginUserSchema)
 async def login_user(data: LoginUserSchema):
+    # Validate login credentials using condition-based retrieval
     condition = {"email": data.email, "password": data.password}
     users = await entity_service.get_items_by_condition(
         token=cyoda_token,
@@ -138,7 +165,8 @@ async def login_user(data: LoginUserSchema):
     if users and len(users) > 0:
         user = users[0]
         user_id = user.get("user_id", "unknown")
-        token = f"token-{user_id}"  # For demonstration, generate a dummy JWT token
+        # Generate a dummy JWT token for demonstration purposes
+        token = f"token-{user_id}"
         return jsonify({
             "user_id": user_id,
             "token": token,
@@ -146,7 +174,7 @@ async def login_user(data: LoginUserSchema):
         })
     return jsonify({"message": "Invalid credentials"}), 401
 
-# 2. Post Management
+# 2. Post Management Endpoints
 
 @app.route('/posts', methods=['POST'])
 @validate_request(CreatePostSchema)
@@ -163,12 +191,13 @@ async def create_post(data: CreatePostSchema):
         "images": data.images if data.images is not None else [],
         "createdAt": datetime.utcnow().isoformat()
     }
+    # Persist the post with workflow processing integrated
     new_post_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="post",
         entity_version=ENTITY_VERSION,
         entity=post_data,
-        workflow=process_post  # Asynchronous workflow processing before persistence
+        workflow=process_post
     )
     return jsonify({
         "post_id": new_post_id,
@@ -250,11 +279,12 @@ async def vote_post(data: VotePayload, post_id):
         "message": "Vote recorded."
     })
 
-# 3. Comment Management
+# 3. Comment Management Endpoints
 
 @app.route('/posts/<post_id>/comments', methods=['POST'])
 @validate_request(AddCommentSchema)
 async def add_comment(data: AddCommentSchema, post_id):
+    # Ensure the post exists before adding a comment
     post = await entity_service.get_item(
         token=cyoda_token,
         entity_model="post",
@@ -274,12 +304,13 @@ async def add_comment(data: AddCommentSchema, post_id):
         "downvotes": 0,
         "createdAt": datetime.utcnow().isoformat()
     }
+    # Persist the comment via workflow processing
     new_comment_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="comment",
         entity_version=ENTITY_VERSION,
         entity=comment,
-        workflow=process_comment  # Workflow function applied before persistence
+        workflow=process_comment
     )
     return jsonify({
         "comment_id": new_comment_id,
@@ -289,6 +320,7 @@ async def add_comment(data: AddCommentSchema, post_id):
 @app.route('/posts/<post_id>/comments', methods=['GET'])
 @validate_querystring(PaginationSchema)
 async def get_comments(post_id):
+    # Validate that the post exists
     post = await entity_service.get_item(
         token=cyoda_token,
         entity_model="post",
@@ -360,11 +392,12 @@ async def vote_comment(data: VotePayload, post_id, comment_id):
         "message": "Vote recorded."
     })
 
-# 4. Image Management
+# 4. Image Management Endpoints
 
 @app.route('/posts/<post_id>/images', methods=['POST'])
 @validate_request(UploadImageSchema)
 async def upload_image(data: UploadImageSchema, post_id):
+    # Ensure the post exists before uploading an image
     post = await entity_service.get_item(
         token=cyoda_token,
         entity_model="post",
@@ -375,7 +408,7 @@ async def upload_image(data: UploadImageSchema, post_id):
         return jsonify({"message": "Post not found"}), 404
 
     image_id = str(uuid.uuid4())
-    image_data = {
+    image_record = {
         "image_id": image_id,
         "post_id": post_id,
         "user_id": data.user_id,
@@ -383,12 +416,13 @@ async def upload_image(data: UploadImageSchema, post_id):
         "metadata": data.metadata,
         "uploadedAt": datetime.utcnow().isoformat()
     }
+    # Persist the image record with workflow processing
     new_image_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="image",
         entity_version=ENTITY_VERSION,
-        entity=image_data,
-        workflow=process_image  # Workflow function applied before persistence
+        entity=image_record,
+        workflow=process_image
     )
     return jsonify({
         "image_id": new_image_id,
@@ -406,7 +440,10 @@ async def retrieve_image(post_id, image_id):
     if not image_record or image_record.get("post_id") != post_id:
         return jsonify({"message": "Image not found"}), 404
 
-    image_bytes = base64.b64decode(image_record.get("image_data"))
+    try:
+        image_bytes = base64.b64decode(image_record.get("image_data"))
+    except Exception as e:
+        return jsonify({"message": "Failed to decode image data"}), 500
     content_type = image_record.get("metadata", {}).get("content_type", "application/octet-stream")
     return Response(image_bytes, mimetype=content_type)
 
