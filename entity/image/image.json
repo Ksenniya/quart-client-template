@@ -1,0 +1,1 @@
+{"image_id": "string", "post_id": "string", "user_id": "string", "image_data": "base64-encoded-string", "metadata": {"filename": "string", "content_type": "string"}, "uploadedAt": "string"}
