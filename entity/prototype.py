@@ -7,8 +7,9 @@ TODO: Replace any mocks/placeholders (e.g. in-memory cache) with persistent solu
 
 import asyncio
 import datetime
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # noqa: E402
+from quart_schema import QuartSchema, validate_request  # noqa: E402
 import aiohttp
 
 app = Quart(__name__)
@@ -20,6 +21,11 @@ cache = {}
 # In-memory job store for tracking processing tasks (mock)
 jobs = {}
 
+# Data class for POST /brands request validation.
+# Note: Only primitives are allowed.
+@dataclass
+class BrandRequest:
+    refresh: bool = False
 
 async def process_entity(job, data):
     """
@@ -34,17 +40,18 @@ async def process_entity(job, data):
     job["status"] = "completed"
     job["completedAt"] = datetime.datetime.utcnow().isoformat()
 
-
+# For POST endpoints, the route decorator goes first, then the validation decorator.
+# This is a workaround for an issue in the quart-schema library.
 @app.route("/brands", methods=["POST"])
-async def post_brands():
+@validate_request(BrandRequest)
+async def post_brands(data: BrandRequest):
     """
     POST /brands
     Retrieves brand data from an external API and processes the data asynchronously.
     """
-    payload = await request.get_json(silent=True) or {}
-    refresh = payload.get("refresh", False)
+    refresh = data.refresh
 
-    # If not refreshing and data exists in cache, we can immediately return a message.
+    # If not refreshing and data exists in cache, we can immediately return the cached data.
     if not refresh and cache.get("brands"):
         return jsonify({
             "success": True,
@@ -82,7 +89,7 @@ async def post_brands():
         "jobId": job_id
     })
 
-
+# GET endpoint does not require validation since no query parameters are used.
 @app.route("/brands", methods=["GET"])
 async def get_brands():
     """
@@ -95,7 +102,6 @@ async def get_brands():
         return jsonify({"success": False, "error": "No brand data available. Initiate processing via POST."}), 404
 
     return jsonify(brands_data)
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
