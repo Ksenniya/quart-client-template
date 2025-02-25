@@ -1,0 +1,1 @@
+{"post_id": "string", "title": "string", "user_id": "string", "topics": ["string"], "upvotes": 0, "downvotes": 0, "body": "string", "images": ["optional_image_id_string"], "createdAt": "string"}
