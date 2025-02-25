@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import aiohttp
 from dataclasses import dataclass
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
@@ -23,12 +23,12 @@ class BrandUpdateRequest:
     refresh: bool = False  # Optional flag to force update
     filter: str = ""       # Optional filter criteria
 
+# Endpoint remains clean; business and async logic moved to workflow function.
 @app.route('/brands/update', methods=['POST'])
 @validate_request(BrandUpdateRequest)
 async def update_brands(data: BrandUpdateRequest):
-    # Create a mock job id and register a simple job state.
     job_id = "job_" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    # Fire-and-forget processing task.
+    # Fetch and add brands with workflow processing; no extra logic in the controller.
     asyncio.create_task(process_brands())
     return jsonify({
         "message": "Brands data update initiated.",
@@ -36,10 +36,24 @@ async def update_brands(data: BrandUpdateRequest):
     }), 200
 
 # Workflow function for 'brands' entity.
+# This function is applied to each brand entity before persistence.
 async def brand_workflow(entity):
-    # Example workflow: add a flag to indicate processing.
-    entity["workflow_processed"] = True
-    # Additional processing logic can be added here.
+    # Add a timestamp to mark processing time.
+    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    # Example of asynchronous supplementary processing:
+    # Fetch supplementary metadata from a different entity_model.
+    try:
+        metadata_list = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="brand_metadata",
+            entity_version=ENTITY_VERSION,
+        )
+        if metadata_list:
+            # For example, attach first metadata item.
+            entity["metadata"] = metadata_list[0]
+    except Exception:
+        pass
+    # Additional asynchronous operations can be placed here.
     return entity
 
 async def process_brands():
@@ -47,12 +61,11 @@ async def process_brands():
         try:
             async with session.get("https://api.practicesoftwaretesting.com/brands") as response:
                 if response.status != 200:
-                    # In a real implementation, log the error or update job status.
                     return
                 brands_data = await response.json()
-                # Process each brand item using the external persistence service.
                 for brand in brands_data:
-                    # Add each brand item with the workflow function applied before persistence.
+                    # Instead of having asynchronous logic here,
+                    # the workflow function will handle any additional operations.
                     await entity_service.add_item(
                         token=cyoda_token,
                         entity_model="brands",
@@ -60,8 +73,7 @@ async def process_brands():
                         entity=brand,
                         workflow=brand_workflow
                     )
-        except Exception as e:
-            # Log exception as needed in a real implementation.
+        except Exception:
             return
 
 @app.route('/brands', methods=['GET'])
