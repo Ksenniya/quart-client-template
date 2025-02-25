@@ -16,22 +16,72 @@ QuartSchema(app)  # Initialize QuartSchema
 async def startup():
     await init_cyoda(cyoda_token)
 
+# Request schema for the fetch endpoint; additional parameters could be added here
 @dataclass
 class FetchRequest:
     refresh: bool = False  # Optional flag to force refresh; primitive type as required
 
+# Workflow function for processing an individual brand entity
+async def process_brand(entity):
+    # Example: add a processed timestamp to the brand entity
+    entity["processedAt"] = datetime.datetime.utcnow().isoformat()
+    # You may add additional async tasks here such as fetching supplementary info
+    return entity
+
+# Workflow function for processing the fetch job entity.
+# This function fetches external brand data and adds each brand entity using its workflow.
+async def process_brands_fetch(entity):
+    external_api_url = 'https://api.practicesoftwaretesting.com/brands'
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(external_api_url, headers={"accept": "application/json"}) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    # For each brand item, add it via entity_service with its workflow function.
+                    for item in data:
+                        await entity_service.add_item(
+                            token=cyoda_token,
+                            entity_model="brands",
+                            entity_version=ENTITY_VERSION,
+                            entity=item,
+                            workflow=process_brand  # Apply async processing before persistence.
+                        )
+                    # Update the job entity state with success details.
+                    entity["status"] = "completed"
+                    entity["completedAt"] = datetime.datetime.utcnow().isoformat()
+                    entity["processedCount"] = len(data)
+                else:
+                    entity["status"] = "failed"
+                    entity["error"] = f"HTTP error: {resp.status}"
+    except Exception as e:
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+    return entity
+
+# Endpoint to initiate fetching brands.
+# Instead of running a fire-and-forget task in the controller, we delegate processing to a workflow.
 @app.route('/api/brands/fetch', methods=['POST'])
 @validate_request(FetchRequest)
 async def fetch_brands(data: FetchRequest):
-    # Generate a simple job id (TODO: Consider using uuid in production)
+    # Generate a job id based on the current UTC time
     requested_at = datetime.datetime.utcnow().isoformat()
     job_id = f"job_{requested_at}"
-    # Using a temporary local job tracker (not persisted in external service)
-    entity_job = {}
-    entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
-    
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(entity_job, job_id))
+    # Prepare a job entity for the fetch task.
+    job_entity = {
+        "jobId": job_id,
+        "requestedAt": requested_at,
+        "status": "processing"
+    }
+    # Add the job entity using entity_service.
+    # The workflow function process_brands_fetch will perform the external API call
+    # and handle adding each brand entity with its own workflow (process_brand).
+    await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="brands_fetch_job",
+        entity_version=ENTITY_VERSION,
+        entity=job_entity,
+        workflow=process_brands_fetch
+    )
     
     return jsonify({
         "status": "success",
@@ -39,42 +89,9 @@ async def fetch_brands(data: FetchRequest):
         "jobId": job_id
     })
 
-async def process_brands(entity):
-    # Workflow function applied to the entity asynchronously before persistence.
-    # You can change entity state here. For example, add processed timestamp.
-    entity["processedAt"] = datetime.datetime.utcnow().isoformat()
-    return entity
-
-async def process_entity(entity_job, job_id):
-    """
-    Asynchronous task to fetch data from the external API, process it,
-    and store the results via the external entity_service.
-    """
-    external_api_url = 'https://api.practicesoftwaretesting.com/brands'
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(external_api_url, headers={"accept": "application/json"}) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    # For each brand item, add it via the external service with a workflow function.
-                    for item in data:
-                        await entity_service.add_item(
-                            token=cyoda_token,
-                            entity_model="brands",
-                            entity_version=ENTITY_VERSION,
-                            entity=item,
-                            workflow=process_brands  # Workflow function applied before persistence.
-                        )
-                    entity_job[job_id]["status"] = "completed"
-                else:
-                    entity_job[job_id]["status"] = "failed"
-        except Exception as e:
-            # Log error as needed.
-            entity_job[job_id]["status"] = "failed"
-
+# Endpoint to retrieve all brand items.
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve all brand items via entity_service.
     data = await entity_service.get_items(
         token=cyoda_token,
         entity_model="brands",
@@ -82,9 +99,9 @@ async def get_brands():
     )
     return jsonify({"data": data})
 
+# Endpoint to retrieve a single brand item by its id.
 @app.route('/api/brands/<string:brand_id>', methods=['GET'])
 async def get_brand(brand_id: str):
-    # Retrieve a single brand item by id via entity_service.
     brand = await entity_service.get_item(
         token=cyoda_token,
         entity_model="brands",
