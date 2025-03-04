@@ -1,12 +1,13 @@
 import asyncio
-import json
 import logging
 from datetime import datetime
 from uuid import uuid4
+from dataclasses import dataclass
+from typing import List, Optional
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -21,6 +22,45 @@ USERS = {}
 app = Quart(__name__)
 QuartSchema(app)
 
+# Data Models using only primitives (using dataclasses)
+@dataclass
+class Pet:
+    id: Optional[int] = None
+    name: str = ""
+    category: str = ""
+    photoUrls: List[str] = None
+    tags: List[str] = None
+    status: str = ""
+
+@dataclass
+class Order:
+    id: Optional[int] = None
+    petId: int = 0
+    quantity: int = 0
+    shipDate: str = ""
+    status: str = ""
+    complete: bool = False
+
+@dataclass
+class User:
+    id: Optional[int] = None
+    username: str = ""
+    firstName: str = ""
+    lastName: str = ""
+    email: str = ""
+    password: str = ""
+    phone: str = ""
+    userStatus: int = 0
+
+@dataclass
+class LoginRequest:
+    username: str = ""
+    password: str = ""
+
+@dataclass
+class IdRequest:
+    id: int = 0
+
 # Async function to simulate processing entity asynchronously.
 async def process_entity(entity_job, data):
     # TODO: Implement any additional business calculations/logic if needed.
@@ -32,9 +72,10 @@ async def process_entity(entity_job, data):
 # ------------------
 
 @app.route('/pets/create', methods=['POST'])
-async def create_pet():
+@validate_request(Pet)  # For POST endpoints, validation is placed after the route decorator (workaround for quart-schema issue)
+async def create_pet(data: Pet):
     try:
-        pet_data = await request.get_json()
+        pet_data = data.__dict__
         pet_id = pet_data.get("id") or str(uuid4())
         pet_data["id"] = pet_id
         # Simulate external API call for additional data using httpx.AsyncClient
@@ -63,9 +104,10 @@ async def create_pet():
         return jsonify({"success": False, "message": "Error creating pet"}), 500
 
 @app.route('/pets/update', methods=['POST'])
-async def update_pet():
+@validate_request(Pet)
+async def update_pet(data: Pet):
     try:
-        pet_data = await request.get_json()
+        pet_data = data.__dict__
         pet_id = pet_data.get("id")
         if not pet_id or pet_id not in PETS:
             return jsonify({"success": False, "message": "Pet not found"}), 404
@@ -93,10 +135,10 @@ async def get_pet(pet_id):
         return jsonify({"success": False, "message": "Error retrieving pet"}), 500
 
 @app.route('/pets/delete', methods=['POST'])
-async def delete_pet():
+@validate_request(IdRequest)
+async def delete_pet(data: IdRequest):
     try:
-        data = await request.get_json()
-        pet_id = data.get("id")
+        pet_id = data.__dict__.get("id")
         if pet_id in PETS:
             del PETS[pet_id]
             logger.info(f"Deleted pet with id {pet_id}")
@@ -115,7 +157,6 @@ async def upload_pet_image():
         file = (await request.files).get('file')
         if not pet_id or not file:
             return jsonify({"success": False, "message": "Missing pet id or image file"}), 400
-        # Just simulate saving file by printing filename.
         logger.info(f"Received image upload for pet {pet_id}: {file.filename}")
         return jsonify({"success": True, "message": "Image uploaded successfully"})
     except Exception as e:
@@ -127,13 +168,13 @@ async def upload_pet_image():
 # ------------------
 
 @app.route('/orders/create', methods=['POST'])
-async def create_order():
+@validate_request(Order)
+async def create_order(data: Order):
     try:
-        order_data = await request.get_json()
+        order_data = data.__dict__
         order_id = order_data.get("id") or str(uuid4())
         order_data["id"] = order_id
         # TODO: Validate pet exists; for now, we proceed regardless.
-        # Fire and forget processing task for order if any additional processing is required.
         job_id = str(uuid4())
         entity_job = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
         asyncio.create_task(process_entity(entity_job, order_data))
@@ -161,10 +202,10 @@ async def get_order(order_id):
         return jsonify({"success": False, "message": "Error retrieving order"}), 500
 
 @app.route('/orders/delete', methods=['POST'])
-async def delete_order():
+@validate_request(IdRequest)
+async def delete_order(data: IdRequest):
     try:
-        data = await request.get_json()
-        order_id = data.get("id")
+        order_id = data.__dict__.get("id")
         if order_id in ORDERS:
             del ORDERS[order_id]
             logger.info(f"Deleted order with id {order_id}")
@@ -180,9 +221,10 @@ async def delete_order():
 # ------------------
 
 @app.route('/users/create', methods=['POST'])
-async def create_user():
+@validate_request(User)
+async def create_user(data: User):
     try:
-        user_data = await request.get_json()
+        user_data = data.__dict__
         user_id = user_data.get("id") or str(uuid4())
         user_data["id"] = user_id
         USERS[user_id] = user_data
@@ -197,9 +239,10 @@ async def create_user():
         return jsonify({"success": False, "message": "Error creating user"}), 500
 
 @app.route('/users/update', methods=['POST'])
-async def update_user():
+@validate_request(User)
+async def update_user(data: User):
     try:
-        user_data = await request.get_json()
+        user_data = data.__dict__
         user_id = user_data.get("id")
         if not user_id or user_id not in USERS:
             return jsonify({"success": False, "message": "User not found"}), 404
@@ -215,21 +258,20 @@ async def update_user():
         return jsonify({"success": False, "message": "Error updating user"}), 500
 
 @app.route('/users/login', methods=['POST'])
-async def login_user():
+@validate_request(LoginRequest)
+async def login_user(data: LoginRequest):
     try:
-        credentials = await request.get_json()
+        credentials = data.__dict__
         username = credentials.get("username")
         password = credentials.get("password")
         # TODO: Replace with proper authentication logic.
-        # For prototype, we simply loop through USERS.
         user_found = None
         for user in USERS.values():
             if user.get("username") == username and user.get("password") == password:
                 user_found = user
                 break
         if user_found:
-            # Simulate token generation (e.g., JWT)
-            token = str(uuid4())
+            token = str(uuid4())  # Simulate token generation (e.g., JWT)
             logger.info(f"User {username} logged in successfully")
             return jsonify({
                 "success": True,
