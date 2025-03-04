@@ -47,14 +47,13 @@ class UserLoginData:
     username: str
     password: str
 
-# Workflow functions must have prefix "process_" followed by the entity name.
-# They take the entity data (a dict) as the only argument and can modify it.
+# Workflow functions: they are applied asynchronously to the entity before it is persisted.
+# They take the entity dict as the only argument and can modify it directly.
 
 async def process_pet(pet: dict):
     """
-    Process pet data using an external service.
-    This function calls a real external Petstore API to add a pet,
-    and enriches the pet record with external data.
+    Enrich the pet entity by calling an external API.
+    The external data is added to pet['externalData'].
     """
     try:
         async with httpx.AsyncClient() as client:
@@ -69,9 +68,8 @@ async def process_pet(pet: dict):
 
 async def process_order(order: dict):
     """
-    Process order data using an external calculation service.
-    This function calls the real Petstore API to place an order,
-    and enriches the order record with calculation data.
+    Enrich the order entity by calling an external API.
+    The calculation result is added to order['externalCalculation'].
     """
     try:
         async with httpx.AsyncClient() as client:
@@ -80,37 +78,31 @@ async def process_order(order: dict):
             calculation_data = response.json()  # Real calculation/order result.
     except Exception as e:
         logger.exception(e)
-        calculation_data = {"calculation": "default value"}  # Fallback calculation data.
+        calculation_data = {"calculation": "default value"}  # Fallback data.
     order["externalCalculation"] = calculation_data
     return order
 
 async def process_user(user: dict):
     """
-    Process user data.
-    Currently, this workflow function performs no additional processing.
-    """
-    return user
-
-async def process_user_login(username: str, credentials: dict):
-    """
-    Process user login with an external authentication service.
-    This function calls the real Petstore API login endpoint.
-    Note: The Petstore API defines login as a GET request.
+    Process the user entity by calling an external authentication API.
+    The authentication result is added to user['authResult'].
+    Note: This workflow function is only applied when creating a new user.
+    When logging in an existing user, it can be invoked separately on a copy.
     """
     try:
         async with httpx.AsyncClient() as client:
-            params = {"username": credentials.get("username"), "password": credentials.get("password")}
+            params = {"username": user.get("username"), "password": user.get("password")}
             response = await client.get("https://petstore.swagger.io/v2/user/login", params=params)
             response.raise_for_status()
             auth_result = response.json()  # Real authentication response.
     except Exception as e:
         logger.exception(e)
         auth_result = {"authenticated": True}  # Fallback dummy authentication.
-    # For this prototype, if no error occurs, we assume authentication is successful.
-    return {"authenticated": True, "details": auth_result}
+    user["authResult"] = auth_result
+    return user
 
 @app.route('/api/pet', methods=['POST'])
-@validate_request(PetData)  # Workaround: For POST endpoints, put this after the route decorator.
+@validate_request(PetData)  # For POST endpoints, put this after the route decorator.
 async def create_pet(data: PetData):
     pet = data.__dict__.copy()
     try:
@@ -119,7 +111,7 @@ async def create_pet(data: PetData):
             entity_model="pet",
             entity_version=ENTITY_VERSION,
             entity=pet,
-            workflow=process_pet  # Apply the pet workflow before persistence.
+            workflow=process_pet  # Run asynchronous pet enrichment before persistence.
         )
         logger.info(f"Created pet with ID {pet_id}")
         return jsonify({"id": pet_id}), 201
@@ -144,7 +136,7 @@ async def retrieve_pet(pet_id: int):
         abort(500, description="Failed to retrieve pet")
 
 @app.route('/api/order', methods=['POST'])
-@validate_request(OrderData)  # Workaround: For POST endpoints, put this after the route decorator.
+@validate_request(OrderData)  # For POST endpoints, put this after the route decorator.
 async def place_order(data: OrderData):
     order = data.__dict__.copy()
     try:
@@ -153,7 +145,7 @@ async def place_order(data: OrderData):
             entity_model="order",
             entity_version=ENTITY_VERSION,
             entity=order,
-            workflow=process_order  # Apply the order workflow before persistence.
+            workflow=process_order  # Run asynchronous order enrichment before persistence.
         )
         logger.info(f"Placed order with ID {order_id}")
         return jsonify({"id": order_id}), 201
@@ -178,7 +170,7 @@ async def retrieve_order(order_id: int):
         abort(500, description="Failed to retrieve order")
 
 @app.route('/api/user/login', methods=['POST'])
-@validate_request(UserLoginData)  # Workaround: For POST endpoints, put this after the route decorator.
+@validate_request(UserLoginData)  # For POST endpoints, put this after the route decorator.
 async def user_login(data: UserLoginData):
     credentials = data.__dict__.copy()
     username = credentials.get("username")
@@ -186,7 +178,6 @@ async def user_login(data: UserLoginData):
     if not username or not password:
         abort(400, description="Username and password are required")
     try:
-        # Try to fetch the user from the external service
         user = await entity_service.get_item(
             token=cyoda_token,
             entity_model="user",
@@ -197,9 +188,11 @@ async def user_login(data: UserLoginData):
         logger.exception(e)
         user = None
     if not user:
+        # Create a basic user with password included for authentication in workflow.
         basic_user = {
             "id": str(uuid.uuid4()),
             "username": username,
+            "password": password,
             "firstName": "TODO",         # TODO: Replace with actual details if available.
             "lastName": "TODO",          # TODO: Replace with actual details if available.
             "email": "TODO@example.com", # TODO: Replace with actual details if available.
@@ -207,18 +200,22 @@ async def user_login(data: UserLoginData):
             "userStatus": 1
         }
         try:
-            # Use username as the technical id for the user.
-            await entity_service.add_item(
+            # Persist the new user with asynchronous processing via workflow.
+            user = await entity_service.add_item(
                 token=cyoda_token,
                 entity_model="user",
                 entity_version=ENTITY_VERSION,
                 entity=basic_user,
-                workflow=process_user  # Apply the user workflow before persistence.
+                workflow=process_user
             )
         except Exception as e:
             logger.exception(e)
-    auth_result = await process_user_login(username, credentials)
-    if not auth_result.get("authenticated", False):
+            abort(500, description="Failed to create user")
+    else:
+        # For an existing user, invoke the workflow function on a copy to get latest auth data.
+        # (Do not persist an update on the current user to avoid recursion.)
+        user = await process_user(user.copy())
+    if not user.get("authResult", {}).get("authenticated", False):
         abort(401, description="Authentication failed")
     token_str = f"dummy-token-{username}"  # TODO: Replace with secure token generation.
     expires_at = (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).isoformat() + "Z"
