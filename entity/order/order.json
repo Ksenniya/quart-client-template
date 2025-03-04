@@ -1,0 +1,1 @@
+{"petId": "numeric", "quantity": "integer", "shipDate": "ISO 8601 date string", "status": "placed | approved | delivered", "complete": "boolean", "externalCalculation": {}}
