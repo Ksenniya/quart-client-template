@@ -2,10 +2,11 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -20,6 +21,11 @@ job_store = {}
 
 # TODO: In a production system, persistence would be handled using a database or external cache.
 #       Here we mock persistence using in-memory dictionaries.
+
+@dataclass
+class InventoryFetchPayload:
+    externalApiUrl: str = "https://petstore.swagger.io/v2/store/inventory"
+    apiKey: str = "special-key"
 
 async def process_entity(job_id: str, data: dict):
     """
@@ -39,23 +45,23 @@ async def process_entity(job_id: str, data: dict):
         logger.exception(e)
         job_store[job_id]["status"] = "failed"
 
+# For POST endpoints, the decorator order is: first @app.route, then @validate_request.
 @app.route('/inventory/fetch', methods=['POST'])
-async def fetch_inventory():
+@validate_request(InventoryFetchPayload)
+async def fetch_inventory(data: InventoryFetchPayload):
     """
     POST endpoint to fetch inventory data from an external pet store API.
     """
     try:
-        # Retrieve configuration from the request (if provided)
-        payload = await request.get_json(silent=True) or {}
-        external_api_url = payload.get("externalApiUrl", "https://petstore.swagger.io/v2/store/inventory")
-        api_key = payload.get("apiKey", "special-key")
+        external_api_url = data.externalApiUrl
+        api_key = data.apiKey
 
         headers = {"api_key": api_key}
 
         async with httpx.AsyncClient() as client:
             response = await client.get(external_api_url, headers=headers)
             response.raise_for_status()
-            data = response.json()
+            api_data = response.json()
 
         # Create a job to process the retrieved data
         job_id = str(uuid.uuid4())
@@ -64,7 +70,7 @@ async def fetch_inventory():
         logger.info(f"Job {job_id} started at {requested_at}.")
 
         # Fire and forget the processing task.
-        asyncio.create_task(process_entity(job_id, data))
+        asyncio.create_task(process_entity(job_id, api_data))
 
         return jsonify({
             "status": "success",
@@ -84,6 +90,7 @@ async def fetch_inventory():
             "message": f"An unexpected error occurred: {str(e)}"
         }), 500
 
+# GET endpoint does not require validation since no query parameters are expected.
 @app.route('/inventory', methods=['GET'])
 async def get_inventory():
     """
