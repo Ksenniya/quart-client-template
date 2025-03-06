@@ -3,11 +3,12 @@ import datetime
 import io
 import logging
 import uuid
+from dataclasses import dataclass
 
 import httpx
 import pandas as pd
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -17,15 +18,22 @@ logging.basicConfig(level=logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Data model for POST /data/analyze request
+@dataclass
+class AnalyzeRequest:
+    data_source_url: str
+    analysis_params: dict = None  # Optional; default to None
+
 # In-memory persistence for reports
 reports_cache = {}
 
+# WORKAROUND: For POST requests, the route decorator should come first, followed by the validate_request decorator.
 @app.route("/data/analyze", methods=["POST"])
-async def analyze_data():
+@validate_request(AnalyzeRequest)
+async def analyze_data(data: AnalyzeRequest):
     try:
-        req = await request.get_json()
-        data_source_url = req.get("data_source_url")
-        analysis_params = req.get("analysis_params", {})
+        data_source_url = data.data_source_url
+        analysis_params = data.analysis_params or {}
 
         if not data_source_url:
             return jsonify({"error": "data_source_url is required"}), 400
@@ -58,14 +66,14 @@ async def process_data(report_id, data_source_url, analysis_params):
         df = pd.read_csv(io.StringIO(csv_content))
         
         # TODO: Apply additional data filtering and transformation based on analysis_params.
-        filters = analysis_params.get("filters", {})
+        filters = analysis_params.get("filters", {}) if analysis_params else {}
         if "min_price" in filters and "price" in df.columns:
             df = df[df["price"] >= filters["min_price"]]
         if "max_price" in filters and "price" in df.columns:
             df = df[df["price"] <= filters["max_price"]]
 
         # Calculate summary statistics for provided metrics.
-        metrics = analysis_params.get("metrics", [])
+        metrics = analysis_params.get("metrics", []) if analysis_params else []
         analysis_result = {}
         for metric in metrics:
             if metric in df.columns:
@@ -73,14 +81,18 @@ async def process_data(report_id, data_source_url, analysis_params):
             else:
                 analysis_result[metric] = f"Metric '{metric}' not found in data."
         
-        # Create a simple report. In a complete solution, this might be written to a file (e.g., CSV or PDF).
+        # Create a simple report.
         report = {
             "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
             "analysis": analysis_result
         }
 
         # Update the cache with the completed report.
-        reports_cache[report_id] = {"status": "available", "report": report, "generated_at": datetime.datetime.utcnow().isoformat() + "Z"}
+        reports_cache[report_id] = {
+            "status": "available",
+            "report": report,
+            "generated_at": datetime.datetime.utcnow().isoformat() + "Z"
+        }
         logger.info(f"Report {report_id} generated successfully.")
     
     except Exception as e:
