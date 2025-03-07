@@ -2,8 +2,11 @@ import asyncio
 import uuid
 import logging
 from datetime import datetime
+from dataclasses import dataclass
+from typing import List, Optional, Dict, Any
+
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Workaround: For POST requests, route decorator comes first.
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -12,6 +15,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Dataclass for POST request validation for /api/fetch-data.
+@dataclass
+class FetchDataRequest:
+    entities: Optional[List[str]] = None
+    filter: Optional[Dict[str, Any]] = None
+
 # In-memory cache for entity jobs.
 JOB_CACHE = {}
 
@@ -19,11 +28,12 @@ JOB_CACHE = {}
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
 @app.route("/api/fetch-data", methods=["POST"])
-async def fetch_data():
+@validate_request(FetchDataRequest)  # Workaround: For POST endpoints, validate_request goes second.
+async def fetch_data(data: FetchDataRequest):
     try:
-        payload = await request.get_json()
-        entities = payload.get("entities", ["pets", "orders", "users"])
-        filter_params = payload.get("filter", {})
+        # Use validated data from request.
+        entities = data.entities if data.entities is not None else ["pets", "orders", "users"]
+        filter_params = data.filter if data.filter is not None else {}
 
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat() + "Z"
@@ -97,8 +107,10 @@ async def get_results(job_id):
         if not job:
             return jsonify({"error": "Result not found."}), 404
         if job.get("status") != "completed":
-            return jsonify({"status": "processing",
-                            "message": "Data is still being processed."}), 202
+            return jsonify({
+                "status": "processing",
+                "message": "Data is still being processed."
+            }), 202
         return jsonify(job.get("result")), 200
     except Exception as e:
         logger.exception(e)
