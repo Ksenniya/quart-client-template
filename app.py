@@ -1,6 +1,6 @@
-
 import asyncio
 import logging
+import aiohttp
 
 from quart import Quart, jsonify
 from quart_schema import QuartSchema
@@ -34,12 +34,10 @@ async def shutdown():
 
 @app.route('/store/inventory', methods=['GET'])
 async def get_inventory():
-    inventory = {
-        'pets': 10,
-        'toys': 5,
-        'accessories': 20
-    }
-    return jsonify(inventory)
+    async with aiohttp.ClientSession() as session:
+        async with session.get('https://api.example.com/store/inventory', headers={'api_key': 'special-key'}) as response:
+            inventory = await response.json()
+            return jsonify(inventory)
 
 #put_application_code_here
 
