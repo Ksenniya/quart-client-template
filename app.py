@@ -1,1 +1,1 @@
-<updated app.py content>
+<updated app.py content with /store/inventory endpoint>
