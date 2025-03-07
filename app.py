@@ -26,12 +26,7 @@ async def shutdown():
     await app.background_task
 
 
-# New endpoint to fetch inventory data
-@app.route('/store/inventory', methods=['GET'])
-async def get_inventory():
-    async with httpx.AsyncClient() as client:
-        response = await client.get('https://petstore.swagger.io/v2/store/inventory')
-        return jsonify(response.json())
+
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
