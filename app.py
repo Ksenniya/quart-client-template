@@ -1,7 +1,8 @@
+
 import asyncio
 import logging
 
-from quart import Quart
+from quart import Quart, jsonify
 from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -20,11 +21,16 @@ async def startup():
     await init_cyoda(cyoda_token)
     app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
 
-
 @app.after_serving
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
+
+@app.route('/store/inventory', methods=['GET'])
+async def get_inventory():
+    # This would generally involve calling a service or database to fetch inventory data.
+    inventory_data = {}  # Placeholder for actual inventory data fetching logic.
+    return jsonify(inventory_data)
 
 #put_application_code_here
 
