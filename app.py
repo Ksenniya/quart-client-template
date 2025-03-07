@@ -1,4 +1,3 @@
-
 import httpx
 
 @app.route('/store/inventory', methods=['GET'])
