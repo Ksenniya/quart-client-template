@@ -1,7 +1,8 @@
+
 import asyncio
 import logging
 
-from quart import Quart
+from quart import Quart, jsonify
 from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -30,6 +31,15 @@ async def shutdown():
             await app.background_task
         except Exception as e:
             logging.error(f'Error during shutdown: {e}')
+
+@app.route('/store/inventory', methods=['GET'])
+async def get_inventory():
+    inventory = {
+        'pets': 10,
+        'toys': 5,
+        'accessories': 20
+    }
+    return jsonify(inventory)
 
 #put_application_code_here
 
