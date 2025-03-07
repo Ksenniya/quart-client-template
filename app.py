@@ -6,7 +6,6 @@ from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
-#please update this line to your entity
 from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 import httpx
 
@@ -27,7 +26,12 @@ async def shutdown():
     await app.background_task
 
 
-#put_application_code_here
+# New endpoint to fetch inventory data
+@app.route('/store/inventory', methods=['GET'])
+async def get_inventory():
+    async with httpx.AsyncClient() as client:
+        response = await client.get('https://petstore.swagger.io/v2/store/inventory')
+        return jsonify(response.json())
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
