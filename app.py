@@ -1,1 +1,37 @@
-import asyncio\nimport logging\n\nfrom quart import Quart\nfrom quart_schema import QuartSchema\nfrom common.grpc_client.grpc_client import grpc_stream\nfrom common.repository.cyoda.cyoda_init import init_cyoda\nfrom app_init.app_init import cyoda_token\nfrom entity.my_entity.api import api_bp_my_entity\n\nlogging.basicConfig(level=logging.INFO)\n\napp = Quart(__name__)\nQuartSchema(app)\napp.register_blueprint(api_bp_my_entity, url_prefix='/api/my_entity')\n\n@app.before_serving\nasync def startup():\n    await init_cyoda(cyoda_token)\n    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))\n\n@app.after_serving\nasync def shutdown():\n    if app.background_task:\n        app.background_task.cancel()\n        await app.background_task\n\n#put_application_code_here\n\nif __name__ == '__main__':\n    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+import asyncio
+import logging
+
+from quart import Quart
+from quart_schema import QuartSchema
+from common.grpc_client.grpc_client import grpc_stream
+from common.repository.cyoda.cyoda_init import init_cyoda
+from app_init.app_init import cyoda_token
+from entity.my_entity.api import api_bp_my_entity
+
+logging.basicConfig(level=logging.INFO)
+
+app = Quart(__name__)
+QuartSchema(app)
+app.register_blueprint(api_bp_my_entity, url_prefix='/api/my_entity')
+
+@app.before_serving
+async def startup():
+    try:
+        await init_cyoda(cyoda_token)
+        app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+    except Exception as e:
+        logging.error(f'Error during startup: {e}')
+
+@app.after_serving
+async def shutdown():
+    if hasattr(app, 'background_task'):
+        app.background_task.cancel()
+        try:
+            await app.background_task
+        except Exception as e:
+            logging.error(f'Error during shutdown: {e}')
+
+#put_application_code_here
+
+if __name__ == '__main__':
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
