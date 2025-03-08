@@ -119,7 +119,7 @@ async def main():
     entity = await process_orders(entity)
     entity = await process_users(entity)
     entity = await process_summary(entity)
-    entity = await process_job_verification(entity)  # New verification step
+    entity = await process_job_verification(entity)  # Verification step
     print(entity)
 
 if __name__ == "__main__":
