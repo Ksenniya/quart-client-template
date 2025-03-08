@@ -7,7 +7,7 @@ import httpx
 async def process_pets(entity: dict):
     try:
         status = entity.get("fetchFilter", {}).get("status", "available")
-        url = "https://petstore.swagger.io/v3/pet/findByStatus"
+        url = "https://petstore.swagger.io/v2/pet/findByStatus"
         params = {"status": status}
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params)
@@ -23,7 +23,7 @@ async def process_pets(entity: dict):
 # process_orders fetches orders data and updates the entity state.
 async def process_orders(entity: dict):
     try:
-        url = "https://petstore.swagger.io/v3/store/inventory"
+        url = "https://petstore.swagger.io/v2/store/inventory"
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
             response.raise_for_status()
