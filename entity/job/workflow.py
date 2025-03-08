@@ -89,6 +89,26 @@ async def process_summary(entity: dict):
     
     return entity
 
+# process_verification verifies the job data and updates the entity state.
+async def process_job_verification(entity: dict):
+    try:
+        # Example verification logic
+        job_result = entity.get("result", {})
+        if job_result.get("summary", {}).get("petCount", 0) > 0:
+            entity["jobVerified"] = True
+            entity["verificationStatus"] = "Job verified successfully"
+            logging.info("Job verification successful.")
+        else:
+            entity["jobVerified"] = False
+            entity["verificationStatus"] = "Job verification failed: No pets found"
+            logging.warning("Job verification failed: No pets found.")
+    except Exception as e:
+        logging.exception(e)
+        entity["jobVerified"] = False
+        entity["verificationStatus"] = "Job verification encountered an error"
+    
+    return entity
+
 # Example usage (for testing purposes)
 async def main():
     entity = {
@@ -99,6 +119,7 @@ async def main():
     entity = await process_orders(entity)
     entity = await process_users(entity)
     entity = await process_summary(entity)
+    entity = await process_job_verification(entity)  # New verification step
     print(entity)
 
 if __name__ == "__main__":
