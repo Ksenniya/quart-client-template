@@ -89,7 +89,7 @@ async def process_summary(entity: dict):
     
     return entity
 
-# process_verification verifies the job data and updates the entity state.
+# process_job_verification verifies the job data and updates the entity state.
 async def process_job_verification(entity: dict):
     try:
         # Example verification logic
