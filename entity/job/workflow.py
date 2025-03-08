@@ -2,6 +2,9 @@ import logging
 from datetime import datetime
 import httpx
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 # process_pets fetches pets data and updates the entity state.
 async def process_pets(entity: dict):
     try:
@@ -85,3 +88,19 @@ async def process_summary(entity: dict):
         entity["processedAt"] = datetime.utcnow().isoformat() + "Z"
     
     return entity
+
+# Example usage (for testing purposes)
+# async def main():
+#     entity = {
+#         "fetchFilter": {"status": "available"},
+#         "result": {}
+#     }
+#     entity = await process_pets(entity)
+#     entity = await process_orders(entity)
+#     entity = await process_users(entity)
+#     entity = await process_summary(entity)
+#     print(entity)
+
+# if __name__ == "__main__":
+#     import asyncio
+#     asyncio.run(main())
