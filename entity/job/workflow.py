@@ -90,17 +90,17 @@ async def process_summary(entity: dict):
     return entity
 
 # Example usage (for testing purposes)
-# async def main():
-#     entity = {
-#         "fetchFilter": {"status": "available"},
-#         "result": {}
-#     }
-#     entity = await process_pets(entity)
-#     entity = await process_orders(entity)
-#     entity = await process_users(entity)
-#     entity = await process_summary(entity)
-#     print(entity)
+async def main():
+    entity = {
+        "fetchFilter": {"status": "available"},
+        "result": {}
+    }
+    entity = await process_pets(entity)
+    entity = await process_orders(entity)
+    entity = await process_users(entity)
+    entity = await process_summary(entity)
+    print(entity)
 
-# if __name__ == "__main__":
-#     import asyncio
-#     asyncio.run(main())
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
