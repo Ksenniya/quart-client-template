@@ -7,9 +7,6 @@ def process_fetch_entities(entity):
         orders = entity['result']['data']['orders']
         users = entity['result']['data']['users']
         
-        # Here you can implement logic to handle the fetched entities,
-        # such as storing them in a database or processing them further.
-        
         print(f"Fetched Pets: {pets}")
         print(f"Fetched Orders: {orders}")
         print(f"Fetched Users: {users}")
