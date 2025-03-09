@@ -1,1 +1,1 @@
-{"post": {"userId": 0, "id": 0, "title": "", "body": "", "status": "", "createdAt": "2023-10-01T00:00:00Z", "updatedAt": "2023-10-01T00:00:00Z", "reviewedAt": "2023-10-01T00:00:00Z", "approved": false}}
+{"Post": {"userId": "integer", "id": "integer", "title": "string", "body": "string", "status": "string", "created_at": "string", "updated_at": "string"}}
