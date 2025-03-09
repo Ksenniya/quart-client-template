@@ -1,1 +1,78 @@
-{"name": "Supplementary Job Workflow", "description": "Workflow for processing supplementary jobs with entity fetching, summary creation, and job completion.", "transitions": [{"name": "fetch_entities", "description": "Fetch pets, orders, users", "start_state": "None", "start_state_description": "Initial state", "end_state": "entities_fetched", "end_state_description": "Entities data fetched", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_fetch_entities", "description": ""}]}}, {"name": "create_summary", "description": "Compute summary", "start_state": "entities_fetched", "start_state_description": "Entities data fetched", "end_state": "summary_created", "end_state_description": "Summary created", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_create_summary", "description": ""}]}}, {"name": "verify_job", "description": "Verify job details", "start_state": "summary_created", "start_state_description": "Summary created", "end_state": "job_verified", "end_state_description": "Job verified", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_verify_job", "description": ""}]}}, {"name": "complete_job", "description": "Finalize job processing", "start_state": "job_verified", "start_state_description": "Job verified", "end_state": "job_completed", "end_state_description": "Job completed", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_complete_job", "description": ""}]}}]}
+{
+  "name": "Supplementary Job Workflow",
+  "description": "Workflow for processing supplementary jobs with entity fetching, summary creation, and job completion.",
+  "transitions": [
+    {
+      "name": "fetch_entities",
+      "description": "Fetch pets, orders, users",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "entities_fetched",
+      "end_state_description": "Entities data fetched",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_fetch_entities",
+            "description": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "create_summary",
+      "description": "Compute summary",
+      "start_state": "entities_fetched",
+      "start_state_description": "Entities data fetched",
+      "end_state": "summary_created",
+      "end_state_description": "Summary created",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_create_summary",
+            "description": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "verify_job",
+      "description": "Verify job details",
+      "start_state": "summary_created",
+      "start_state_description": "Summary created",
+      "end_state": "job_verified",
+      "end_state_description": "Job verified",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_verify_job",
+            "description": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "complete_job",
+      "description": "Finalize job processing",
+      "start_state": "job_verified",
+      "start_state_description": "Job verified",
+      "end_state": "job_completed",
+      "end_state_description": "Job completed",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_complete_job",
+            "description": ""
+          }
+        ]
+      }
+    }
+  ]
+}

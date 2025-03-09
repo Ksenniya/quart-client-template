@@ -1,1 +1,12 @@
-{"post": {"userId": 0, "id": 0, "title": "", "body": "", "status": "", "createdAt": "", "updatedAt": "", "approvedBy": null}}
+{
+  "post": {
+    "userId": 0,
+    "id": 0,
+    "title": "",
+    "body": "",
+    "status": "",
+    "createdAt": "",
+    "updatedAt": "",
+    "approvedBy": null
+  }
+}
