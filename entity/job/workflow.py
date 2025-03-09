@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-
 import httpx
 
 # process_pets fetches pets data and updates the entity state.
@@ -74,4 +73,32 @@ async def process_summary(entity: dict):
         entity["error"] = str(e)
         entity["workflowProcessed"] = True
         entity["processedAt"] = datetime.utcnow().isoformat() + "Z"
+    return entity
+
+# process_verification checks the validity of the job data before finalizing.
+async def process_verification(entity: dict):
+    try:
+        # Example verification logic
+        if entity.get("result") and entity["result"].get("summary"):
+            logging.info("Verification successful.")
+            entity["status"] = "verified"
+        else:
+            raise ValueError("Verification failed: Missing result or summary data.")
+    except Exception as e:
+        logging.exception(e)
+        entity["status"] = "verification_failed"
+        entity["error"] = str(e)
+    return entity
+
+# process_job finalizes the job and updates the entity state.
+async def process_job(entity: dict):
+    try:
+        # Finalization logic (could include sending notifications, etc.)
+        entity["status"] = "completed"
+        entity["finalizedAt"] = datetime.utcnow().isoformat() + "Z"
+        logging.info("Job completed successfully.")
+    except Exception as e:
+        logging.exception(e)
+        entity["status"] = "failed"
+        entity["error"] = str(e)
     return entity
