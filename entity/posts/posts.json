@@ -1,1 +1,1 @@
-{"entity": "Post", "fields": {"userId": {"type": "integer", "description": "ID of the user who created the post"}, "id": {"type": "integer", "description": "Unique identifier for the post"}, "title": {"type": "string", "description": "Title of the post"}, "body": {"type": "string", "description": "Content of the post"}}}
+{"userId": "integer", "id": "integer", "title": "string", "body": "string"}
