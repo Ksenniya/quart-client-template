@@ -1,1 +1,1 @@
-{"post": {"userId": 1, "id": 1, "title": "Sample Title", "body": "This is a sample body of the post."}}
+{"post": {"userId": 0, "id": 0, "title": "", "body": "", "status": "", "createdAt": "", "updatedAt": "", "approvedBy": null}}
