@@ -1,1 +1,1 @@
-{"id": 1, "title": "Sample Title", "body": "This is the content of the post.", "userId": 1}
+{"Post": {"postId": "string", "title": "string", "content": "string", "authorId": "string", "createdAt": "datetime", "updatedAt": "datetime", "tags": ["string"], "comments": [{"commentId": "string", "userId": "string", "comment": "string", "createdAt": "datetime"}]}}
