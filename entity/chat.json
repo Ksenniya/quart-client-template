@@ -1033,6 +1033,18 @@
         "max_iteration": 0,
         "stack": "app_building_stack",
         "publish": true
+      },
+      {
+        "question": "Your application is finished! Thank you! Please let me know if I can help!",
+        "prompt": {},
+        "answer": null,
+        "function": null,
+        "index": 2,
+        "iteration": 0,
+        "file_name": "entity/chat.json",
+        "max_iteration": 0,
+        "stack": "app_building_stack",
+        "publish": true
       }
     ]
   },
