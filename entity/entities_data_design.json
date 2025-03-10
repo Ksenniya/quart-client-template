@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "entity/prototype_cyoda.py", "entity_data_example": {"status": "processing", "requestedAt": "2023-10-04T12:00:00Z"}}, {"entity_name": "entity/functional_requirement.md", "entity_data_example": {"fetch_id": "unique_fetch_identifier", "status": "success", "message": "Data fetching initiated successfully."}}]}
