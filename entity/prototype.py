@@ -1,9 +1,11 @@
 import asyncio
 import datetime
 import logging
+from dataclasses import dataclass
+from typing import Optional, Any
 
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 app = Quart(__name__)
@@ -19,22 +21,42 @@ users_cache = {}
 
 job_counter = 1
 
+# Request models
+@dataclass
+class FetchPetsRequest:
+    status: str
+    filters: Optional[Any] = None  # TODO: Define filters schema properly
+
+@dataclass
+class FetchOrdersRequest:
+    orderCriteria: str
+    orderId: Optional[int] = None
+
+@dataclass
+class FetchUsersRequest:
+    username: str
+
+@dataclass
+class QueryJobRequest:
+    job_id: Optional[str] = None
+
 # Dummy processing function to simulate background work.
 async def process_entity(entity_type, job_id, data):
     # TODO: Implement specific processing logic and calculations as required.
     await asyncio.sleep(2)  # Simulate processing delay
     logger.info(f"Processing complete for {entity_type} with job_id {job_id}")
 
+# Workaround: For POST endpoints, route decorator must come first then validate_request.
 @app.route("/pets/fetch", methods=["POST"])
-async def fetch_pets():
+@validate_request(FetchPetsRequest)
+async def fetch_pets(data: FetchPetsRequest):
     """
     Fetch pet data from the external Petstore API based on status and optional filters.
     """
-    data = await request.get_json()
-    status = data.get("status", "available")
-    filters = data.get("filters", {})
+    status = data.status or "available"
+    filters = data.filters or {}
     # TODO: Implement detailed filtering logic based on received filters.
-    
+
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
@@ -57,16 +79,17 @@ async def fetch_pets():
     asyncio.create_task(process_entity("pets", job_id, pets))
     return jsonify({"message": "Data fetched and processing started", "job_id": job_id})
 
+# Workaround: For POST endpoints, route decorator must come first then validate_request.
 @app.route("/orders/fetch", methods=["POST"])
-async def fetch_orders():
+@validate_request(FetchOrdersRequest)
+async def fetch_orders(data: FetchOrdersRequest):
     """
     Fetch order data from the external Petstore API.
     When orderCriteria is 'byId', a specific order is fetched, otherwise, a fallback action is taken.
     """
-    data = await request.get_json()
-    orderCriteria = data.get("orderCriteria", "recent")
-    orderId = data.get("orderId")
-    
+    orderCriteria = data.orderCriteria or "recent"
+    orderId = data.orderId
+
     async with httpx.AsyncClient() as client:
         try:
             if orderCriteria == "byId" and orderId:
@@ -89,13 +112,14 @@ async def fetch_orders():
     asyncio.create_task(process_entity("orders", job_id, orders))
     return jsonify({"message": "Orders data fetched and processing started", "job_id": job_id})
 
+# Workaround: For POST endpoints, route decorator must come first then validate_request.
 @app.route("/users/fetch", methods=["POST"])
-async def fetch_users():
+@validate_request(FetchUsersRequest)
+async def fetch_users(data: FetchUsersRequest):
     """
     Fetch user data from the external Petstore API by username.
     """
-    data = await request.get_json()
-    username = data.get("username")
+    username = data.username
     if not username:
         return jsonify({"message": "username is required"}), 400
 
@@ -117,6 +141,8 @@ async def fetch_users():
     asyncio.create_task(process_entity("users", job_id, user))
     return jsonify({"message": "User data fetched and processing started", "job_id": job_id})
 
+# Workaround: For GET endpoints, validation decorator must come first.
+@validate_querystring(QueryJobRequest)  # Workaround for GET: validation decorator placed first.
 @app.route("/pets", methods=["GET"])
 async def get_pets():
     """
@@ -131,6 +157,8 @@ async def get_pets():
     else:
         return jsonify(list(pets_cache.values()))
 
+# Workaround: For GET endpoints, validation decorator must come first.
+@validate_querystring(QueryJobRequest)  # Workaround for GET: validation decorator placed first.
 @app.route("/orders", methods=["GET"])
 async def get_orders():
     """
@@ -145,6 +173,8 @@ async def get_orders():
     else:
         return jsonify(list(orders_cache.values()))
 
+# Workaround: For GET endpoints, validation decorator must come first.
+@validate_querystring(QueryJobRequest)  # Workaround for GET: validation decorator placed first.
 @app.route("/users", methods=["GET"])
 async def get_users():
     """
