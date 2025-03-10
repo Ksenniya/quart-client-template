@@ -5,13 +5,25 @@ import logging
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data models for request validation
+
+@dataclass
+class FetchDataRequest:
+    external_api: str  # Expected to be "petstore"
+    # TODO: Add more primitive fields as needed for parameters.
+
+@dataclass
+class ResultsQuery:
+    fetch_id: str
 
 # Local in-memory cache for job persistence
 job_store = {}
@@ -36,17 +48,17 @@ async def process_entity(job_id: str, request_data: dict):
             job_store[job_id]["status"] = "failed"
             job_store[job_id]["error"] = str(e)
 
+# For POST requests: route decorator comes first, then validate_request (workaround for quart-schema issue)
 @app.route('/fetch-data', methods=['POST'])
-async def fetch_data():
+@validate_request(FetchDataRequest)
+async def fetch_data(data: FetchDataRequest):
     """
     POST /fetch-data:
     Initiates the process to fetch external data and perform business logic.
     """
-    try:
-        request_data = await request.get_json()
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Invalid JSON payload"}), 400
+    # Use validated request data (data.external_api)
+    if data.external_api.lower() != "petstore":
+        return jsonify({"error": "Unsupported external_api value. Expected 'petstore'."}), 400
 
     # Generate a unique job id and record the request
     job_id = str(uuid.uuid4())
@@ -54,7 +66,7 @@ async def fetch_data():
     job_store[job_id] = {"status": "processing", "requestedAt": requested_at}
     
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, request_data))
+    asyncio.create_task(process_entity(job_id, data.__dict__))
     
     return jsonify({
         "fetch_id": job_id,
@@ -62,12 +74,15 @@ async def fetch_data():
         "message": "Data fetching initiated successfully."
     })
 
+# For GET requests: validate_querystring decorator should be first due to known issue/workaround.
+@validate_querystring(ResultsQuery)
 @app.route('/results', methods=['GET'])
 async def get_results():
     """
     GET /results:
     Retrieves the processed data for a previously initiated job.
     """
+    # Access fetch_id using standard approach for GET query parameters.
     fetch_id = request.args.get('fetch_id')
     if not fetch_id or fetch_id not in job_store:
         return jsonify({"error": "Invalid or missing fetch_id"}), 400
