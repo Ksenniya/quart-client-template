@@ -2,9 +2,10 @@ import asyncio
 import uuid
 import datetime
 import logging
+from dataclasses import dataclass
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -13,10 +14,14 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class FetchDataRequest:
+    endpoint: str
+    params: dict
+
 # In-memory cache for storing job results
 entity_job = {}
 
-# Mapping for external API endpoints
 EXTERNAL_API_BASE = "https://petstore.swagger.io/v2"
 
 # TODO: Add additional endpoint mappings and their parameter formatting logic as requirements evolve.
@@ -55,11 +60,11 @@ async def process_entity(job_id: str, endpoint: str, params: dict):
         })
 
 @app.route('/fetch-data', methods=['POST'])
-async def fetch_data():
+@validate_request(FetchDataRequest)  # Workaround: For POST requests, route decorator comes first, then validation.
+async def fetch_data(data: FetchDataRequest):
     try:
-        req_data = await request.get_json()
-        endpoint = req_data.get("endpoint")
-        params = req_data.get("params", {})
+        endpoint = data.endpoint
+        params = data.params
 
         if not endpoint:
             return jsonify({"error": "Missing 'endpoint' in request body"}), 400
@@ -75,7 +80,7 @@ async def fetch_data():
         }
         logger.info(f"Received fetch-data request. Job ID: {job_id}")
 
-        # Fire and forget the processing task
+        # Fire and forget the processing task.
         asyncio.create_task(process_entity(job_id, endpoint, params))
 
         return jsonify({
