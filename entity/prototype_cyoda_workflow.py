@@ -42,40 +42,40 @@ class FetchUsersRequest:
 class QueryJobRequest:
     job_id: Optional[str] = None
 
-# Dummy processing function to simulate background work.
-async def process_entity(entity_type, job_id, data):
-    # TODO: Implement specific processing logic and calculations as required.
-    await asyncio.sleep(2)  # Simulate processing delay
-    logger.info(f"Processing complete for {entity_type} with job_id {job_id}")
-
 # Workflow function for pets entity
 async def process_pets(entity):
-    # Example: add a processed timestamp to the pet data
+    # Simulate asynchronous processing logic before persistence
+    await asyncio.sleep(2)  # Simulate processing delay
     if isinstance(entity, list):
         for item in entity:
             item["processed_at"] = datetime.datetime.utcnow().isoformat()
     elif isinstance(entity, dict):
         entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    logger.info("Pets workflow processing complete")
     return entity
 
 # Workflow function for orders entity
 async def process_orders(entity):
-    # Example: add a processed flag to orders data
+    # Simulate asynchronous processing logic before persistence
+    await asyncio.sleep(2)  # Simulate processing delay
     if isinstance(entity, list):
         for item in entity:
             item["processed"] = True
     elif isinstance(entity, dict):
         entity["processed"] = True
+    logger.info("Orders workflow processing complete")
     return entity
 
 # Workflow function for users entity
 async def process_users(entity):
-    # Example: add a verification timestamp to user data
+    # Simulate asynchronous processing logic before persistence
+    await asyncio.sleep(2)  # Simulate processing delay
     if isinstance(entity, list):
         for item in entity:
             item["verified_at"] = datetime.datetime.utcnow().isoformat()
     elif isinstance(entity, dict):
         entity["verified_at"] = datetime.datetime.utcnow().isoformat()
+    logger.info("Users workflow processing complete")
     return entity
 
 # Workaround: For POST endpoints, route decorator must come first then validate_request.
@@ -101,6 +101,7 @@ async def fetch_pets(data: FetchPetsRequest):
             return jsonify({"message": "Failed to fetch pets"}), 500
 
     try:
+        # The workflow function process_pets is applied asynchronously before persistence.
         item_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="pets",
@@ -113,7 +114,6 @@ async def fetch_pets(data: FetchPetsRequest):
         return jsonify({"message": "Failed to store pet data"}), 500
 
     logger.info(f"Pets fetched and stored under {item_id} with status {status}")
-    asyncio.create_task(process_entity("pets", item_id, pets))
     return jsonify({"message": "Data fetched and processing started", "job_id": item_id})
 
 # Workaround: For POST endpoints, route decorator must come first then validate_request.
@@ -141,19 +141,19 @@ async def fetch_orders(data: FetchOrdersRequest):
             return jsonify({"message": "Failed to fetch orders"}), 500
 
     try:
+        # The workflow function process_orders is applied asynchronously before persistence.
         item_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="orders",
             entity_version=ENTITY_VERSION,
             entity=orders,
-            workflow=process_orders  # workflow function applied before persistence
+            workflow=process_orders
         )
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Failed to store order data"}), 500
 
     logger.info(f"Orders fetched and stored under {item_id}")
-    asyncio.create_task(process_entity("orders", item_id, orders))
     return jsonify({"message": "Orders data fetched and processing started", "job_id": item_id})
 
 # Workaround: For POST endpoints, route decorator must come first then validate_request.
@@ -177,19 +177,19 @@ async def fetch_users(data: FetchUsersRequest):
             return jsonify({"message": "Failed to fetch user"}), 500
 
     try:
+        # The workflow function process_users is applied asynchronously before persistence.
         item_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="users",
             entity_version=ENTITY_VERSION,
             entity=user,
-            workflow=process_users  # workflow function applied before persistence
+            workflow=process_users
         )
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Failed to store user data"}), 500
 
     logger.info(f"User {username} fetched and stored under {item_id}")
-    asyncio.create_task(process_entity("users", item_id, user))
     return jsonify({"message": "User data fetched and processing started", "job_id": item_id})
 
 # Workaround: For GET endpoints, validation decorator must come first.
