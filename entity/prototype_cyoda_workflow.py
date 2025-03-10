@@ -36,57 +36,26 @@ class FetchDataRequest:
 class ResultsQuery:
     fetch_id: str
 
-# Workflow function applied to the entity before persistence.
-# Function name must have the prefix 'process_' followed by the entity name: in this case, 'prototype'.
+# Workflow function applied to the entity asynchronously before persistence.
+# Must be named with prefix 'process_' followed by the entity name. Here: process_prototype.
 async def process_prototype(entity):
-    # Apply any needed transformations to the entity before it is persisted.
-    # For example, add a flag indicating that the workflow processing has been applied.
-    entity["workflow_applied"] = True
-    return entity
-
-# Background processing function that retrieves external data and updates the job via entity_service
-async def process_entity(job_id: str, request_data: dict):
-    """
-    Process the entity: fetch data from external API and update the job status.
-    Additional business specific transformations can be added here.
-    """
+    # This workflow function fetches external data and updates the entity state accordingly.
     external_api_url = "https://petstore.swagger.io/v2/swagger.json"
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(external_api_url)
             response.raise_for_status()
             data = response.json()
-        # Prepare update payload with fetched data and mark job as completed.
-        updated_entity = {
-            "data": data,
-            "status": "completed"
-        }
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model=ENTITY_MODEL,
-            entity_version=ENTITY_VERSION,
-            entity=updated_entity,
-            technical_id=job_id,
-            meta={}
-        )
-        logger.info(f"Job {job_id} completed successfully.")
+        # Modify the entity directly with fetched data.
+        entity["data"] = data
+        entity["status"] = "completed"
     except Exception as e:
         logger.exception(e)
-        failed_entity = {
-            "status": "failed",
-            "error": str(e)
-        }
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model=ENTITY_MODEL,
-                entity_version=ENTITY_VERSION,
-                entity=failed_entity,
-                technical_id=job_id,
-                meta={}
-            )
-        except Exception as inner_e:
-            logger.exception(inner_e)
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+    # Additional marker to indicate workflow has been applied.
+    entity["workflow_applied"] = True
+    return entity
 
 # POST /fetch-data endpoint to initiate data fetching process.
 @app.route('/fetch-data', methods=['POST'])
@@ -107,7 +76,8 @@ async def fetch_data(data: FetchDataRequest):
     }
     try:
         # Call external service to add the job entity.
-        # Pass workflow function process_prototype so that it is applied before persistence.
+        # Pass workflow function process_prototype so that it is applied asynchronously
+        # before the entity is persisted. The workflow function will update the entity state.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model=ENTITY_MODEL,
@@ -118,9 +88,6 @@ async def fetch_data(data: FetchDataRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to initiate job"}), 500
-
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data.__dict__))
 
     return jsonify({
         "fetch_id": job_id,
