@@ -30,14 +30,22 @@ async def startup():
 
 # Workflow function for user_session entity
 async def process_user_session(entity_data):
-    # Add a timestamp to indicate workflow processing for user_session
+    # You can perform asynchronous tasks here.
+    # For example, add processing timestamp.
+    await asyncio.sleep(0)  # placeholder for async operations if needed
     entity_data["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
     return entity_data
 
 # Workflow function for order entity
 async def process_order(entity_data):
-    # Add a field to indicate the order has been processed by the workflow
-    entity_data["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+    try:
+        # Simulate asynchronous processing delay
+        await asyncio.sleep(2)
+        # Update the order status directly in the entity
+        entity_data["status"] = "processed"
+        entity_data["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+    except Exception as e:
+        logger.exception(e)
     return entity_data
 
 # Dataclass models for request validation
@@ -71,22 +79,19 @@ async def user_login(data: UserLogin):
         if not username or not password:
             return jsonify({"error": "username and password required"}), 400
 
-        # External API for login is defined as GET, so using httpx.AsyncClient for this call
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"https://petstore.swagger.io/v2/user/login",
+                "https://petstore.swagger.io/v2/user/login",
                 params={"username": username, "password": password}
             )
             response.raise_for_status()
-            # External API returns a token as a string; wrapping it into a JSON object for our needs.
             token = response.text
-            # Save session using entity_service instead of local in‐memory cache.
             session_data = {
                 "username": username,
                 "token": token,
                 "loggedInAt": datetime.datetime.utcnow().isoformat()
             }
-            # Call external service to add user session with workflow processing.
+            # Persist user_session with asynchronous workflow processing.
             await entity_service.add_item(
                 token=cyoda_token,
                 entity_model="user_session",
@@ -110,7 +115,6 @@ async def fetch_pets_by_status(data: PetStatusRequest):
         if not statuses or not isinstance(statuses, list):
             return jsonify({"error": "status field must be a list"}), 400
         
-        # Building the query parameters for external API (GET /pet/findByStatus)
         params = [("status", status) for status in statuses]
         
         async with httpx.AsyncClient() as client:
@@ -133,7 +137,6 @@ async def fetch_pets_by_tags(data: PetTagsRequest):
         if not tags or not isinstance(tags, list):
             return jsonify({"error": "tags field must be a list"}), 400
 
-        # Building the query parameters for external API (GET /pet/findByTags - deprecated but used here)
         params = [("tags", tag) for tag in tags]
 
         async with httpx.AsyncClient() as client:
@@ -174,7 +177,6 @@ async def place_order(data: PlaceOrderRequest):
         if not pet_id:
             return jsonify({"error": "petId is required"}), 400
 
-        # Creating an order object based on the external API model.
         order = {
             "petId": pet_id,
             "quantity": quantity,
@@ -183,7 +185,6 @@ async def place_order(data: PlaceOrderRequest):
             "complete": False
         }
 
-        # Place order using external petstore API
         async with httpx.AsyncClient() as client:
             response = await client.post("https://petstore.swagger.io/v2/store/order", json=order)
             response.raise_for_status()
@@ -191,11 +192,10 @@ async def place_order(data: PlaceOrderRequest):
 
             order_id = order_response.get("id")
             if not order_id:
-                # Fallback if external API does not provide an id -- refine logic as needed
                 order_id = 1
                 order_response["id"] = order_id
 
-            # Save order using external service with workflow processing.
+            # Persist the order entity with asynchronous workflow processing.
             order_id = await entity_service.add_item(
                 token=cyoda_token,
                 entity_model="order",
@@ -203,7 +203,6 @@ async def place_order(data: PlaceOrderRequest):
                 entity=order_response,
                 workflow=process_order
             )
-            # Return only the id as the creation response.
             return jsonify({"id": order_id})
     except Exception as e:
         logger.exception(e)
