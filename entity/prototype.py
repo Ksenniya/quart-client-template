@@ -2,10 +2,11 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,8 +15,14 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
+# Dataclass for POST /external-data request parameters
+@dataclass
+class ExternalDataParams:
+    # Optional parameter for transformation/calculation; default value used if not provided.
+    param: str = ""
+
 # In-memory storage mocks
-entity_job = {}        # Stores job statuses
+entity_job = {}         # Stores job statuses
 processed_results = []  # Stores processed data results
 
 # Asynchronous processing function for the external data
@@ -36,13 +43,13 @@ async def process_entity(job_id: str, data: dict):
         logger.exception(e)
         entity_job[job_id]["status"] = "failed"
 
+# For POST endpoints, remember to place the route decorator first, then the validation decorator.
+# This is a workaround for an issue in quart-schema.
 @app.route('/external-data', methods=['POST'])
-async def fetch_external_data():
+@validate_request(ExternalDataParams)
+async def fetch_external_data(data: ExternalDataParams):
     try:
-        # Read optional parameters from the request body
-        request_data = await request.get_json() or {}
-        logger.info("Received POST /external-data request with parameters: %s", request_data)
-
+        logger.info("Received POST /external-data request with parameters: %s", data)
         # Fetch external data using httpx.AsyncClient
         async with httpx.AsyncClient() as client:
             response = await client.get("https://jsonplaceholder.typicode.com/posts/1")
@@ -56,7 +63,7 @@ async def fetch_external_data():
         entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
         logger.info("Created job %s with status 'processing'.", job_id)
 
-        # Fire-and-forget asynchronous processing task
+        # Fire-and-forget asynchronous processing task.
         asyncio.create_task(process_entity(job_id, external_data))
 
         return jsonify({"job_id": job_id, "message": "Processing started."})
@@ -64,6 +71,7 @@ async def fetch_external_data():
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
+# GET endpoint without request parameters does not require validation.
 @app.route('/results', methods=['GET'])
 async def get_results():
     try:
