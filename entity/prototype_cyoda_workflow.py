@@ -38,9 +38,9 @@ class ResultsQuery:
 
 async def process_job(entity: dict):
     # Workflow function applied to the 'job' entity before persistence.
-    # The provided entity is the raw job data; modify its state directly.
+    # This function processes external API data and updates the entity state directly.
     try:
-        # Retrieve the payload provided by the client.
+        # Retrieve the client payload stored in the entity if available.
         payload = entity.get("payload", {})
         # Call the external API to retrieve data.
         async with httpx.AsyncClient() as client:
@@ -49,23 +49,25 @@ async def process_job(entity: dict):
             external_data = response.json()
         logger.info("External API data retrieved successfully in process_job")
 
-        # Process the external data based on payload input.
+        # Process the external data based on the payload details.
         data_type = payload.get("data_type")
-        processed_data = external_data  # Placeholder for actual processing logic
+        processed_data = external_data  # Default processed data
         if data_type:
-            # TODO: Add filtering/processing logic based on data_type and payload.get("filter")
-            processed_data = external_data  # Adjust as needed
+            # Add filtering/processing logic based on data_type and optional filter.
+            # For demonstration, we keep the external_data unchanged.
+            processed_data = external_data
 
-        # Modify the entity state directly.
+        # Update the entity's state directly.
         entity["status"] = "completed"
         entity["processedAt"] = datetime.utcnow().isoformat()
         entity["data"] = processed_data
-    except Exception as e:
-        logger.exception(e)
+    except Exception as ex:
+        logger.exception(ex)
         entity["status"] = "failed"
-        entity["error"] = str(e)
-    # Add a generic workflow processing timestamp.
-    entity["workflowProcessedAt"] = datetime.utcnow().isoformat()
+        entity["error"] = str(ex)
+    finally:
+        # Record the time when workflow processing finished.
+        entity["workflowProcessedAt"] = datetime.utcnow().isoformat()
     return entity
 
 @app.route("/fetch_data", methods=["POST"])
@@ -79,16 +81,15 @@ async def fetch_data(data: FetchDataRequest):
         # Create a unique job id and record initial job data.
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat()
-        # Include the client payload in the initial entity to be used in the workflow.
+        # Include the payload in the initial entity for use in the workflow.
         initial_job_data = {
             "status": "processing",
             "requestedAt": requested_at,
             "data": None,
             "payload": payload
         }
-        # Save the job using the external service with workflow processing.
-        # The workflow function (process_job) will be invoked asynchronously
-        # to update the entity state before persistence.
+        # Save the job entity. The workflow function process_job will be invoked
+        # asynchronously to update the entity state before it gets persisted.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
@@ -99,7 +100,7 @@ async def fetch_data(data: FetchDataRequest):
         logger.info("Job %s started processing at %s", job_id, requested_at)
         return jsonify({
             "status": "success",
-            "message": "Data has been fetched and processing has started.",
+            "message": "Data has been fetched and is being processed.",
             "data_id": job_id
         }), 202
     except Exception as e:
