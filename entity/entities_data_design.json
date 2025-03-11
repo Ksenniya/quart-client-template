@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "pet", "entity_data_example": {"name": "doggie", "category": {"id": 1, "name": "Dogs"}, "photoUrls": ["url1", "url2"], "tags": [{"id": 1, "name": "tag1"}], "status": "available"}}]}
