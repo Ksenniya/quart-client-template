@@ -1,8 +1,9 @@
 import asyncio
-import logging
 import datetime
+import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 import httpx
 
 # Setup logging
@@ -15,6 +16,25 @@ logger.addHandler(handler)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Dataclass models for request validation
+@dataclass
+class UserLogin:
+    username: str
+    password: str
+
+@dataclass
+class PetStatusRequest:
+    status: list  # list of status strings
+
+@dataclass
+class PetTagsRequest:
+    tags: list  # list of tag strings
+
+@dataclass
+class PlaceOrderRequest:
+    petId: int
+    quantity: int = 1
 
 # Local cache to mock persistence for orders and user sessions
 orders_cache = {}
@@ -39,22 +59,29 @@ async def process_order(order_id, order_data):
 ###############################
 # Endpoint: User Login
 ###############################
+# For POST endpoints, we put the route decorator first then validate_request as a workaround for quart-schema limitations.
 @app.route('/api/user/login', methods=['POST'])
-async def user_login():
+@validate_request(UserLogin)
+async def user_login(data: UserLogin):
     try:
-        data = await request.get_json()
-        username = data.get("username")
-        password = data.get("password")
+        username = data.username
+        password = data.password
         if not username or not password:
             return jsonify({"error": "username and password required"}), 400
 
         # External API for login is defined as GET, so using httpx.AsyncClient for this call
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{PETSTORE_BASE_URL}/user/login", params={"username": username, "password": password})
+            response = await client.get(
+                f"{PETSTORE_BASE_URL}/user/login",
+                params={"username": username, "password": password}
+            )
             response.raise_for_status()
             # External API returns a token as a string; wrapping it into a JSON object for our needs.
             token = response.text
-            user_sessions[username] = {"token": token, "loggedInAt": datetime.datetime.utcnow().isoformat()}
+            user_sessions[username] = {
+                "token": token,
+                "loggedInAt": datetime.datetime.utcnow().isoformat()
+            }
             return jsonify({"token": token})
     except Exception as e:
         logger.exception(e)
@@ -64,10 +91,10 @@ async def user_login():
 # Endpoint: Fetch Pets by Status
 ###############################
 @app.route('/api/pets/status', methods=['POST'])
-async def fetch_pets_by_status():
+@validate_request(PetStatusRequest)
+async def fetch_pets_by_status(data: PetStatusRequest):
     try:
-        data = await request.get_json()
-        statuses = data.get("status")
+        statuses = data.status
         if not statuses or not isinstance(statuses, list):
             return jsonify({"error": "status field must be a list"}), 400
         
@@ -87,10 +114,10 @@ async def fetch_pets_by_status():
 # Endpoint: Fetch Pets by Tags
 ###############################
 @app.route('/api/pets/tags', methods=['POST'])
-async def fetch_pets_by_tags():
+@validate_request(PetTagsRequest)
+async def fetch_pets_by_tags(data: PetTagsRequest):
     try:
-        data = await request.get_json()
-        tags = data.get("tags")
+        tags = data.tags
         if not tags or not isinstance(tags, list):
             return jsonify({"error": "tags field must be a list"}), 400
 
@@ -109,10 +136,10 @@ async def fetch_pets_by_tags():
 ###############################
 # Endpoint: Get Pet by ID
 ###############################
+# No request body validation here as petId is provided via URL path.
 @app.route('/api/pets/<int:petId>', methods=['POST'])
 async def get_pet_by_id(petId):
     try:
-        # No additional JSON payload is required as petId is in the URL.
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{PETSTORE_BASE_URL}/pet/{petId}")
             if response.status_code == 404:
@@ -128,11 +155,11 @@ async def get_pet_by_id(petId):
 # Endpoint: Place Order for a Pet
 ###############################
 @app.route('/api/order', methods=['POST'])
-async def place_order():
+@validate_request(PlaceOrderRequest)
+async def place_order(data: PlaceOrderRequest):
     try:
-        data = await request.get_json()
-        pet_id = data.get("petId")
-        quantity = data.get("quantity", 1)
+        pet_id = data.petId
+        quantity = data.quantity
         if not pet_id:
             return jsonify({"error": "petId is required"}), 400
 
