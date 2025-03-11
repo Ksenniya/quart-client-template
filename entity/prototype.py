@@ -2,10 +2,11 @@ import asyncio
 import uuid
 import logging
 from datetime import datetime
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Note: For GET endpoints with query strings, use validate_querystring if needed
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,10 +19,25 @@ deployment_jobs = {}
 
 # TeamCity endpoint configuration (using provided URLs)
 TEAMCITY_BUILD_URL = "https://teamcity.cyoda.org/app/rest/buildQueue"
-# Note: For status and statistics, we would use endpoints like:
+# Note: For status and statistics, endpoints like:
 #   GET https://teamcity.cyoda.org/app/rest/buildQueue/id:{build_id}
 #   GET https://teamcity.cyoda.org/app/rest/builds/id:{build_id}/statistics/
-# Here we simulate the responses.
+# are simulated in this prototype.
+
+@dataclass
+class DeployCyodaEnvRequest:
+    user_name: str
+
+@dataclass
+class DeployUserAppRequest:
+    repository_url: str
+    is_public: str
+    user_name: str
+
+@dataclass
+class CancelUserAppDeploymentRequest:
+    comment: str
+    readdIntoQueue: bool
 
 async def trigger_teamcity_build(build_type: str, properties: dict) -> str:
     """
@@ -73,17 +89,15 @@ async def process_deployment(job_id: str, payload: dict):
             "success": False
         }
 
+# For POST requests, the route decorator comes first then the validation decorator.
 @app.route("/deploy/cyoda-env", methods=["POST"])
-async def deploy_cyoda_env():
+@validate_request(DeployCyodaEnvRequest)
+async def deploy_cyoda_env(data: DeployCyodaEnvRequest):
     """
     Deploys a Cyoda environment based on a provided user_name.
     Triggers a TeamCity build and returns a build_id.
     """
-    data = await request.get_json()
-    user_name = data.get("user_name")
-    if not user_name:
-        return jsonify({"error": "user_name is required"}), 400
-
+    user_name = data.user_name
     build_type = "KubernetesPipeline_CyodaSaas"
     properties = {
         "user_defined_keyspace": user_name,
@@ -98,22 +112,19 @@ async def deploy_cyoda_env():
     }
 
     # Fire and forget the asynchronous processing task.
-    asyncio.create_task(process_deployment(build_id, data))
+    asyncio.create_task(process_deployment(build_id, data.__dict__))
 
     return jsonify({"build_id": build_id}), 201
 
 @app.route("/deploy/user_app", methods=["POST"])
-async def deploy_user_app():
+@validate_request(DeployUserAppRequest)
+async def deploy_user_app(data: DeployUserAppRequest):
     """
     Deploys a user application using repository URL and user_name.
     Invokes the TeamCity build and returns a build_id.
     """
-    data = await request.get_json()
-    repository_url = data.get("repository_url")
-    user_name = data.get("user_name")
-    if not repository_url or not user_name:
-        return jsonify({"error": "repository_url and user_name are required"}), 400
-
+    repository_url = data.repository_url
+    user_name = data.user_name
     build_type = "KubernetesPipeline_CyodaSaasUserEnv"
     properties = {
         "repository_url": repository_url,  # TODO: Verify if this should use repository_url or another parameter
@@ -126,10 +137,11 @@ async def deploy_user_app():
         "requestedAt": datetime.utcnow().isoformat()
     }
 
-    asyncio.create_task(process_deployment(build_id, data))
+    asyncio.create_task(process_deployment(build_id, data.__dict__))
 
     return jsonify({"build_id": build_id}), 201
 
+# GET endpoints without request body do not use validation decorators.
 @app.route("/deploy/cyoda-env/status/<string:build_id>", methods=["GET"])
 async def get_cyoda_env_status(build_id):
     """
@@ -181,11 +193,11 @@ async def get_user_app_statistics(build_id):
     return jsonify(job["statistics"])
 
 @app.route("/deploy/cancel/user_app/<string:build_id>", methods=["POST"])
-async def cancel_user_app_deployment(build_id):
+@validate_request(CancelUserAppDeploymentRequest)
+async def cancel_user_app_deployment(data: CancelUserAppDeploymentRequest, build_id):
     """
     Cancels an ongoing user application deployment.
     """
-    data = await request.get_json()
     job = deployment_jobs.get(build_id)
     if not job:
         return jsonify({"error": "build_id not found"}), 404
