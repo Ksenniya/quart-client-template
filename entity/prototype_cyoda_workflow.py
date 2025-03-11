@@ -2,11 +2,10 @@ import asyncio
 import httpx
 import logging
 import time
-import uuid
 from dataclasses import dataclass
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
@@ -21,27 +20,50 @@ logger.setLevel(logging.INFO)
 # Retaining entity_jobs for the job status endpoint (even though no new jobs are created)
 entity_jobs = {}     # {job_id: job_status}
 
+# Supplementary async tasks for fire and forget processing
+
+async def send_pet_notification(entity):
+    # Simulate sending a notification for the pet entity
+    await asyncio.sleep(0)
+    # For example, add supplementary data or notify another service
+    return
+
+async def send_order_notification(entity):
+    # Simulate sending a notification for the order entity
+    await asyncio.sleep(0)
+    return
+
+async def send_welcome_email(entity):
+    # Simulate sending a welcome email for the user entity
+    await asyncio.sleep(0)
+    return
+
 # Workflow functions applied to entities before persistence
+
 async def process_pet(entity):
-    # Example: mark the pet as processed, you can modify other attributes as needed
+    # Modify the pet entity state
     entity["processed"] = True
-    await asyncio.sleep(0)  # simulate asynchronous processing
+    entity["processed_timestamp"] = time.time()
+    # Fire and forget any async tasks such as sending notifications
+    asyncio.create_task(send_pet_notification(entity))
     return entity
 
 async def process_order(entity):
-    # Example: add a validated flag to the order
+    # Modify the order entity state
     entity["validated"] = True
-    await asyncio.sleep(0)
+    entity["order_processed_timestamp"] = time.time()
+    # Fire and forget sending order notification
+    asyncio.create_task(send_order_notification(entity))
     return entity
 
 async def process_user(entity):
-    # Example: hash the password and update the user entity
+    # Update sensitive information, e.g., hash the password
     entity["password"] = "hashed_" + entity["password"]
-    await asyncio.sleep(0)
+    # Fire and forget sending welcome email (do not modify entity state in fire and forget tasks)
+    asyncio.create_task(send_welcome_email(entity))
     return entity
 
 # Data classes for request validation
-# Using only primitives per quart-schema guidelines.
 @dataclass
 class PetData:
     id: str  # Expect client to send string id; if not provided, a uuid will be used.
@@ -51,7 +73,7 @@ class PetData:
 
 @dataclass
 class PetStatusRequest:
-    # Workaround: Instead of list, we use a comma separated string.
+    # Instead of list, we use a comma separated string.
     status: str
 
 @dataclass
@@ -81,17 +103,17 @@ async def startup():
 
 # Endpoint: Add a new pet
 @app.route('/pet', methods=['POST'])
-@validate_request(PetData)  # For POST, validation is placed after the route decorator.
+@validate_request(PetData)
 async def add_pet(data: PetData):
     try:
         pet_dict = data.__dict__
-        # Call external entity_service to add the pet with workflow function process_pet
+        # Persist the pet after applying asynchronous workflow processing
         pet_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="pet",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=pet_dict,  # the validated data object
-            workflow=process_pet  # Workflow function applied to the entity asynchronously before persistence
+            workflow=process_pet  # Workflow function applied to the entity before persistence
         )
         logger.info(f"Added pet with id: {pet_id}")
         return jsonify({"id": pet_id, "message": "Pet submission received"}), 200
@@ -105,10 +127,9 @@ async def add_pet(data: PetData):
 async def find_pet_by_status(data: PetStatusRequest):
     try:
         # data.status is expected as a comma separated string.
-        status_list = data.status.split(',')
-        params = {'status': ','.join([s.strip() for s in status_list])}
+        status_list = [s.strip() for s in data.status.split(',')]
+        params = {'status': ','.join(status_list)}
         async with httpx.AsyncClient() as client:
-            # The external API requires a GET request; we invoke it within our POST endpoint.
             response = await client.get("https://petstore.swagger.io/v2/pet/findByStatus", params=params)
             response.raise_for_status()
             pets = response.json()
@@ -124,12 +145,13 @@ async def find_pet_by_status(data: PetStatusRequest):
 async def place_order(data: OrderData):
     try:
         order_dict = data.__dict__
+        # Persist the order after applying async workflow processing
         order_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="order",
             entity_version=ENTITY_VERSION,
             entity=order_dict,
-            workflow=process_order  # Workflow function applied to the order
+            workflow=process_order  # Workflow function applied to the order entity
         )
         logger.info(f"Order placed with id: {order_id}")
         return jsonify({"id": order_id}), 200
@@ -143,12 +165,13 @@ async def place_order(data: OrderData):
 async def create_user(data: UserData):
     try:
         user_dict = data.__dict__
+        # Persist the user after applying async workflow processing
         user_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="user",
             entity_version=ENTITY_VERSION,
             entity=user_dict,
-            workflow=process_user  # Workflow function applied to the user
+            workflow=process_user  # Workflow function applied to the user entity
         )
         logger.info(f"User created with id: {user_id}")
         return jsonify({"id": user_id, "message": "User created"}), 200
