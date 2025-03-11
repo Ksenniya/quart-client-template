@@ -2,10 +2,11 @@ import asyncio
 import uuid
 import logging
 from datetime import datetime
+from dataclasses import dataclass, field
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # For GET endpoints, use validate_querystring if needed
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -16,12 +17,18 @@ QuartSchema(app)
 # In-memory cache for job persistence
 jobs_cache = {}
 
+@dataclass
+class FetchDataRequest:
+    resource: str
+    options: dict = field(default_factory=dict)
+
+# For POST endpoints, route decorator comes first, then validate_request decorator.
 @app.route('/api/fetch-data', methods=["POST"])
-async def fetch_data():
+@validate_request(FetchDataRequest)  # Workaround: for POST, validation decorator is placed after route decorator.
+async def fetch_data(data: FetchDataRequest):
     try:
-        data = await request.get_json()
-        resource = data.get("resource")
-        options = data.get("options", {})
+        resource = data.resource
+        options = data.options
 
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat()
@@ -38,6 +45,7 @@ async def fetch_data():
         logger.exception(e)
         return jsonify({"error": "Internal Server Error"}), 500
 
+# GET endpoint: no validation required as there is no request body or query parameters.
 @app.route('/api/results/<job_id>', methods=["GET"])
 async def get_results(job_id: str):
     job = jobs_cache.get(job_id)
@@ -56,7 +64,6 @@ async def process_entity(job_id: str, resource: str, options: dict):
         if resource == "pet":
             # Retrieve pets by status from external Petstore API.
             statuses = options.get("status", ["available"])
-            # httpx will automatically handle list parameters correctly.
             params = {"status": statuses}
             async with httpx.AsyncClient() as client:
                 # The external API endpoint for finding pets by status.
@@ -74,7 +81,6 @@ async def process_entity(job_id: str, resource: str, options: dict):
         else:
             result = {"error": f"Unsupported resource '{resource}'."}
         
-        # Mock additional processing/calculations if needed.
         # TODO: Perform any specific calculations here if required.
         
         jobs_cache[job_id]["data"] = result
