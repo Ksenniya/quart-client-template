@@ -4,8 +4,8 @@ import datetime
 from dataclasses import dataclass
 from typing import Optional
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 import httpx
 
 from common.config.config import ENTITY_VERSION
@@ -25,26 +25,23 @@ class DataSourceParameters:
     optional_parameter2: Optional[str] = None
 
 # Workflow function applied to the entity before persistence.
-# It fetches external data, processes it, and updates the entity accordingly.
+# It runs asynchronously and modifies the entity state directly.
+# Do not call entity_service.add/update/delete for the current entity within this function.
 async def process_data_sources(entity):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get("https://jsonplaceholder.typicode.com/posts/1")
             response.raise_for_status()
             external_data = response.json()
-        # Business logic: combine title and body as processed result
         processed_result = f"Processed: {external_data.get('title', '')} & {external_data.get('body', '')}"
-        # Update the entity's data with external data and processed result
-        entity["data"] = {
-            "title": external_data.get("title"),
-            "body": external_data.get("body"),
-            "processedResult": processed_result,
-            "status": "done"
-        }
-        logger.info("Entity processed successfully in workflow")
+        # Modify the entity's state directly; these changes will be persisted.
+        entity["title"] = external_data.get("title")
+        entity["body"] = external_data.get("body")
+        entity["processedResult"] = processed_result
+        entity["status"] = "done"
+        logger.info("Workflow processed entity successfully")
     except Exception as e:
-        # In case of error, update the entity with failed status
-        entity["data"] = {"status": "failed"}
+        entity["status"] = "failed"
         logger.exception(e)
     return entity
 
@@ -53,12 +50,13 @@ async def startup():
     await init_cyoda(cyoda_token)
 
 # POST endpoint for data_sources. Validation is done via Quart Schema.
+# All asynchronous processing logic has been moved inside the workflow function.
 @app.route('/data_sources', methods=['POST'])
 @validate_request(DataSourceParameters)
 async def data_sources(data: DataSourceParameters):
     try:
         requested_at = datetime.datetime.utcnow().isoformat()
-        # Prepare the entity data for creation
+        # Prepare the entity data for creation with minimal initial state.
         job_data = {
             "status": "processing",
             "requestedAt": requested_at
