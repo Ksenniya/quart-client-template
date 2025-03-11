@@ -16,64 +16,84 @@ QuartSchema(app)  # initialize QuartSchema
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Removed local in‐memory caches: pets_cache, orders_cache, users_cache
-# Retaining entity_jobs for the job status endpoint (even though no new jobs are created)
-entity_jobs = {}     # {job_id: job_status}
+# This dict is used for tracking asynchronous job statuses (if needed)
+entity_jobs = {}  # {job_id: job_status}
 
-# Supplementary async tasks for fire and forget processing
+# Supplementary asynchronous tasks (fire-and-forget) for secondary actions
 
 async def send_pet_notification(entity):
-    # Simulate sending a notification for the pet entity
-    await asyncio.sleep(0)
-    # For example, add supplementary data or notify another service
-    return
+    try:
+        # Simulate sending a notification for the pet entity
+        await asyncio.sleep(0)  # Replace with actual async email/sms service call
+        logger.info(f"Pet notification sent for pet id {entity.get('id')}")
+    except Exception as e:
+        logger.exception(f"Error in send_pet_notification: {e}")
 
 async def send_order_notification(entity):
-    # Simulate sending a notification for the order entity
-    await asyncio.sleep(0)
-    return
+    try:
+        # Simulate sending a notification for the order entity
+        await asyncio.sleep(0)  # Replace with actual async notification service call
+        logger.info(f"Order notification sent for order id {entity.get('id')}")
+    except Exception as e:
+        logger.exception(f"Error in send_order_notification: {e}")
 
 async def send_welcome_email(entity):
-    # Simulate sending a welcome email for the user entity
-    await asyncio.sleep(0)
-    return
+    try:
+        # Simulate sending a welcome email for the user entity
+        await asyncio.sleep(0)  # Replace with actual async email service call
+        logger.info(f"Welcome email sent to user id {entity.get('id')}")
+    except Exception as e:
+        logger.exception(f"Error in send_welcome_email: {e}")
 
-# Workflow functions applied to entities before persistence
+# Workflow functions applied to entities before persistence.
+# These functions modify the entity state and fire off any supplementary asynchronous tasks.
 
 async def process_pet(entity):
-    # Modify the pet entity state
-    entity["processed"] = True
-    entity["processed_timestamp"] = time.time()
-    # Fire and forget any async tasks such as sending notifications
-    asyncio.create_task(send_pet_notification(entity))
+    try:
+        # Modify pet entity with additional attributes before it is persisted
+        entity["processed"] = True
+        entity["processed_timestamp"] = time.time()
+        # Fire and forget any asynchronous task(s) for pet notifications
+        asyncio.create_task(send_pet_notification(entity))
+    except Exception as e:
+        logger.exception(f"Error in process_pet: {e}")
     return entity
 
 async def process_order(entity):
-    # Modify the order entity state
-    entity["validated"] = True
-    entity["order_processed_timestamp"] = time.time()
-    # Fire and forget sending order notification
-    asyncio.create_task(send_order_notification(entity))
+    try:
+        # Modify order entity state prior to persistence
+        entity["validated"] = True
+        entity["order_processed_timestamp"] = time.time()
+        # Fire and forget notification for the order entity
+        asyncio.create_task(send_order_notification(entity))
+    except Exception as e:
+        logger.exception(f"Error in process_order: {e}")
     return entity
 
 async def process_user(entity):
-    # Update sensitive information, e.g., hash the password
-    entity["password"] = "hashed_" + entity["password"]
-    # Fire and forget sending welcome email (do not modify entity state in fire and forget tasks)
-    asyncio.create_task(send_welcome_email(entity))
+    try:
+        # Modify user entity state (e.g., hash the password)
+        if "password" in entity:
+            entity["password"] = "hashed_" + entity["password"]
+        # Fire and forget welcome email for the new user registration
+        asyncio.create_task(send_welcome_email(entity))
+    except Exception as e:
+        logger.exception(f"Error in process_user: {e}")
     return entity
 
 # Data classes for request validation
+# Using only primitive types per quart-schema guidelines
+
 @dataclass
 class PetData:
-    id: str  # Expect client to send string id; if not provided, a uuid will be used.
+    id: str  # if not provided, a uuid should be generated at client side or within business logic
     name: str
     photoUrls: str  # Comma separated URLs
     status: str
 
 @dataclass
 class PetStatusRequest:
-    # Instead of list, we use a comma separated string.
+    # Instead of a list, we use a comma separated string
     status: str
 
 @dataclass
@@ -96,10 +116,14 @@ class UserData:
     phone: str
     userStatus: int
 
-# Startup initialization of cyoda
+# Startup hook for initializing external systems, such as cyoda
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+        logger.info("Cyoda initialization complete")
+    except Exception as e:
+        logger.exception(f"Error during startup initialization: {e}")
 
 # Endpoint: Add a new pet
 @app.route('/pet', methods=['POST'])
@@ -107,18 +131,18 @@ async def startup():
 async def add_pet(data: PetData):
     try:
         pet_dict = data.__dict__
-        # Persist the pet after applying asynchronous workflow processing
+        # Persist the pet after applying asynchronous workflow processing (process_pet)
         pet_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="pet",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=pet_dict,  # the validated data object
-            workflow=process_pet  # Workflow function applied to the entity before persistence
+            workflow=process_pet  # workflow function applied before persistence
         )
         logger.info(f"Added pet with id: {pet_id}")
         return jsonify({"id": pet_id, "message": "Pet submission received"}), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error adding pet: {e}")
         return jsonify({"error": "Failed to add pet"}), 500
 
 # Endpoint: Find pets by status using external API
@@ -126,8 +150,8 @@ async def add_pet(data: PetData):
 @validate_request(PetStatusRequest)
 async def find_pet_by_status(data: PetStatusRequest):
     try:
-        # data.status is expected as a comma separated string.
-        status_list = [s.strip() for s in data.status.split(',')]
+        # data.status is provided as a comma separated string
+        status_list = [status.strip() for status in data.status.split(',')]
         params = {'status': ','.join(status_list)}
         async with httpx.AsyncClient() as client:
             response = await client.get("https://petstore.swagger.io/v2/pet/findByStatus", params=params)
@@ -136,7 +160,7 @@ async def find_pet_by_status(data: PetStatusRequest):
         logger.info("Retrieved pets from external API by status")
         return jsonify(pets), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error retrieving pets by status: {e}")
         return jsonify({"error": "Failed to retrieve pets by status"}), 500
 
 # Endpoint: Place an order for a pet
@@ -145,18 +169,18 @@ async def find_pet_by_status(data: PetStatusRequest):
 async def place_order(data: OrderData):
     try:
         order_dict = data.__dict__
-        # Persist the order after applying async workflow processing
+        # Persist the order after applying asynchronous workflow processing (process_order)
         order_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="order",
             entity_version=ENTITY_VERSION,
             entity=order_dict,
-            workflow=process_order  # Workflow function applied to the order entity
+            workflow=process_order  # workflow function applied before persistence
         )
         logger.info(f"Order placed with id: {order_id}")
         return jsonify({"id": order_id}), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error placing order: {e}")
         return jsonify({"error": "Failed to place order"}), 500
 
 # Endpoint: Create a new user
@@ -165,18 +189,18 @@ async def place_order(data: OrderData):
 async def create_user(data: UserData):
     try:
         user_dict = data.__dict__
-        # Persist the user after applying async workflow processing
+        # Persist the user after applying asynchronous workflow processing (process_user)
         user_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="user",
             entity_version=ENTITY_VERSION,
             entity=user_dict,
-            workflow=process_user  # Workflow function applied to the user entity
+            workflow=process_user  # workflow function applied before persistence
         )
         logger.info(f"User created with id: {user_id}")
         return jsonify({"id": user_id, "message": "User created"}), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error creating user: {e}")
         return jsonify({"error": "Failed to create user"}), 500
 
 # Additional endpoint: Retrieve job status
@@ -188,7 +212,7 @@ async def get_job_status(job_id):
             return jsonify({"error": "Job not found"}), 404
         return jsonify(job), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error retrieving job status for job id {job_id}: {e}")
         return jsonify({"error": "Failed to retrieve job status"}), 500
 
 if __name__ == '__main__':
