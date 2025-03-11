@@ -36,82 +36,35 @@ class FetchDataRequest:
 class ResultsQuery:
     data_id: str
 
-async def process_entity(job_id: str, payload: dict):
-    """
-    Processes the external API request. Retrieves data from the external API,
-    performs any business calculations and updates the job status with the result.
-    """
+async def process_job(entity: dict):
+    # Workflow function applied to the 'job' entity before persistence.
+    # The provided entity is the raw job data; modify its state directly.
     try:
+        # Retrieve the payload provided by the client.
+        payload = entity.get("payload", {})
+        # Call the external API to retrieve data.
         async with httpx.AsyncClient() as client:
-            # Call the external API to retrieve data.
             response = await client.get(EXTERNAL_API_URL)
             response.raise_for_status()
             external_data = response.json()
-        logger.info("External API data retrieved successfully for job_id: %s", job_id)
+        logger.info("External API data retrieved successfully in process_job")
 
-        # TODO: Process the external_data using payload['data_type'] and payload['filter'] as needed.
+        # Process the external data based on payload input.
         data_type = payload.get("data_type")
         processed_data = external_data  # Placeholder for actual processing logic
         if data_type:
-            # TODO: Implement data filtering based on data_type and payload['filter'] if provided.
-            processed_data = external_data  # Placeholder for filtered/processed data
+            # TODO: Add filtering/processing logic based on data_type and payload.get("filter")
+            processed_data = external_data  # Adjust as needed
 
-        # Retrieve the current job state and update with the processing result.
-        # If retrieval fails, fallback to a new structure.
-        try:
-            job = await entity_service.get_item(
-                token=cyoda_token,
-                entity_model="job",
-                entity_version=ENTITY_VERSION,
-                technical_id=job_id
-            )
-            if not job:
-                job = {}
-        except Exception as e:
-            logger.exception(e)
-            job = {}
-
-        job["status"] = "completed"
-        job["processedAt"] = datetime.utcnow().isoformat()
-        job["data"] = processed_data
-
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            entity=job,
-            technical_id=job_id,
-            meta={}
-        )
-        logger.info("Job %s processed successfully", job_id)
+        # Modify the entity state directly.
+        entity["status"] = "completed"
+        entity["processedAt"] = datetime.utcnow().isoformat()
+        entity["data"] = processed_data
     except Exception as e:
         logger.exception(e)
-        try:
-            job = await entity_service.get_item(
-                token=cyoda_token,
-                entity_model="job",
-                entity_version=ENTITY_VERSION,
-                technical_id=job_id
-            )
-            if not job:
-                job = {}
-        except Exception as inner_e:
-            logger.exception(inner_e)
-            job = {}
-        job["status"] = "failed"
-        job["error"] = str(e)
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            entity=job,
-            technical_id=job_id,
-            meta={}
-        )
-
-async def process_job(entity: dict):
-    # Workflow function applied to 'job' entity before persistence.
-    # Add a workflow processed timestamp field.
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+    # Add a generic workflow processing timestamp.
     entity["workflowProcessedAt"] = datetime.utcnow().isoformat()
     return entity
 
@@ -120,18 +73,22 @@ async def process_job(entity: dict):
 async def fetch_data(data: FetchDataRequest):
     try:
         payload = data.__dict__
-        if not payload or 'data_type' not in payload:
+        if not payload or "data_type" not in payload:
             return jsonify({"status": "error", "message": "Missing 'data_type' in request"}), 400
 
         # Create a unique job id and record initial job data.
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat()
+        # Include the client payload in the initial entity to be used in the workflow.
         initial_job_data = {
             "status": "processing",
             "requestedAt": requested_at,
-            "data": None
+            "data": None,
+            "payload": payload
         }
         # Save the job using the external service with workflow processing.
+        # The workflow function (process_job) will be invoked asynchronously
+        # to update the entity state before persistence.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
@@ -139,11 +96,7 @@ async def fetch_data(data: FetchDataRequest):
             entity=initial_job_data,
             workflow=process_job
         )
-        logger.info("Started processing job %s at %s", job_id, requested_at)
-
-        # Fire and forget the processing task.
-        asyncio.create_task(process_entity(job_id, payload))
-        
+        logger.info("Job %s started processing at %s", job_id, requested_at)
         return jsonify({
             "status": "success",
             "message": "Data has been fetched and processing has started.",
@@ -178,5 +131,5 @@ async def results():
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+if __name__ == "__main__":
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
