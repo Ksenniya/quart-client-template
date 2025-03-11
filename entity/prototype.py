@@ -4,8 +4,9 @@ import logging
 from datetime import datetime
 
 import httpx
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -18,6 +19,15 @@ jobs = {}
 
 # External API URL
 EXTERNAL_API_URL = "https://petstore.swagger.io/v2/swagger.json"
+
+@dataclass
+class FetchDataRequest:
+    data_type: str
+    filter: dict = None  # Optional filtering parameters
+
+@dataclass
+class ResultsQuery:
+    data_id: str
 
 async def process_entity(job_id: str, payload: dict):
     """
@@ -34,9 +44,8 @@ async def process_entity(job_id: str, payload: dict):
         logger.info("External API data retrieved successfully for job_id: %s", job_id)
 
         # TODO: Process the external_data using payload['data_type'] and payload['filter'] as needed.
-        # For now, we simply return the external data or filter it based on a placeholder condition.
         data_type = payload.get("data_type")
-        processed_data = external_data  # Replace with actual processing based on data_type
+        processed_data = external_data  # Placeholder for actual processing logic
         if data_type:
             # TODO: Implement data filtering based on data_type and payload['filter'] if provided.
             processed_data = external_data  # Placeholder for filtered/processed data
@@ -51,10 +60,12 @@ async def process_entity(job_id: str, payload: dict):
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
 
+# For POST requests, @app.route comes first, then @validate_request (workaround for current issue)
 @app.route("/fetch_data", methods=["POST"])
-async def fetch_data():
+@validate_request(FetchDataRequest)
+async def fetch_data(data: FetchDataRequest):
     try:
-        payload = await request.get_json()
+        payload = data.__dict__
         if not payload or 'data_type' not in payload:
             return jsonify({"status": "error", "message": "Missing 'data_type' in request"}), 400
 
@@ -80,6 +91,8 @@ async def fetch_data():
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# For GET requests, @validate_querystring must be placed first (workaround for current issue)
+@validate_querystring(ResultsQuery)
 @app.route("/results", methods=["GET"])
 async def results():
     try:
