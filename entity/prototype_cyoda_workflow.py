@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
 from common.config.config import ENTITY_VERSION
@@ -22,7 +22,11 @@ QuartSchema(app)  # enable QuartSchema
 # Startup initialization
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        logger.exception("Failed to initialize cyoda: %s", e)
+        raise
 
 # Dataclasses for request validation
 
@@ -44,7 +48,7 @@ class PetAction:
     # Optional fields for update action.
     name: Optional[str] = None
     status: Optional[str] = None
-    # TODO: Add additional fields (e.g., category, photoUrls, tags) if necessary.
+    # Additional fields can be added if needed.
 
 @dataclass
 class UserLogin:
@@ -55,24 +59,28 @@ class UserLogin:
 # This function is invoked asynchronously before persistence.
 async def process_pet(pet):
     try:
-        # Simulate asynchronous processing before persistence.
-        await asyncio.sleep(1)  # simulate processing delay
+        # Perform any asynchronous operations or validations needed.
+        # Simulate asynchronous processing delay.
+        await asyncio.sleep(1)
         # Modify the pet entity state as needed before persistence.
         pet["workflowProcessedAt"] = datetime.utcnow().isoformat()
-        # Add any additional processing logic here.
-        logger.info(f"Workflow processing completed for pet: {pet}")
+        # Example: Check if pet name is not empty, otherwise provide a default.
+        if not pet.get("name"):
+            pet["name"] = "Unnamed Pet"
+        # Log the successful workflow processing.
+        logger.info("Workflow processing completed for pet: %s", pet)
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in process_pet workflow: %s", e)
+        # Reraise the exception to prevent persisting an inconsistent state.
         raise
 
 # Endpoint to fetch pets from external API based on status.
-# For POST endpoints, order is: @app.route first, then @validate_request.
 @app.route('/pets/fetch', methods=['POST'])
 @validate_request(PetFetchRequest)
 async def fetch_pets(data: PetFetchRequest):
     try:
         statuses = data.status if data.status is not None else ["available"]
-        # Prepare query params: Petstore API accepts multiple status parameters.
+        # Prepare query parameters for the external API.
         params = [("status", status) for status in statuses]
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -84,7 +92,7 @@ async def fetch_pets(data: PetFetchRequest):
             pets = response.json()
         return jsonify({"pets": pets})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to fetch pets: %s", e)
         return jsonify({"error": "Failed to fetch pets"}), 500
 
 # Endpoint to add a new pet.
@@ -99,11 +107,11 @@ async def add_pet(data: PetInput):
             entity_model="pet",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=pet,
-            workflow=process_pet  # Workflow function applied to the pet before persistence.
+            workflow=process_pet  # Applies asynchronous processing to the pet before persistence.
         )
         return jsonify({"id": new_id})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to add pet: %s", e)
         return jsonify({"error": "Failed to add pet"}), 500
 
 # Endpoint to update or delete an existing pet.
@@ -111,7 +119,7 @@ async def add_pet(data: PetInput):
 @validate_request(PetAction)
 async def update_or_delete_pet(pet_id, data: PetAction):
     try:
-        # Retrieve pet from external service
+        # Retrieve pet from external service.
         pet = await entity_service.get_item(
             token=cyoda_token,
             entity_model="pet",
@@ -127,7 +135,7 @@ async def update_or_delete_pet(pet_id, data: PetAction):
                 pet["name"] = data.name
             if data.status is not None:
                 pet["status"] = data.status
-            # Apply the workflow function to process pet changes asynchronously before update persistence.
+            # Process pet changes using the workflow function before persistence.
             await process_pet(pet)
             await entity_service.update_item(
                 token=cyoda_token,
@@ -150,7 +158,7 @@ async def update_or_delete_pet(pet_id, data: PetAction):
         else:
             return jsonify({"error": "Invalid action provided. Use 'update' or 'delete'."}), 400
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to process pet update/delete: %s", e)
         return jsonify({"error": "Failed to process pet update/delete"}), 500
 
 # Endpoint to perform user login.
@@ -162,7 +170,7 @@ async def user_login(data: UserLogin):
             return jsonify({"error": "Username and password are required"}), 400
         params = {"username": data.username, "password": data.password}
         async with httpx.AsyncClient() as client:
-            # External API expects GET, so use GET here with query parameters.
+            # External API expects GET with query parameters for login.
             response = await client.get(
                 "https://petstore.swagger.io/v2/user/login",
                 params=params,
@@ -172,7 +180,7 @@ async def user_login(data: UserLogin):
             message = response.text
         return jsonify({"token": message})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("User login failed: %s", e)
         return jsonify({"error": "User login failed"}), 500
 
 if __name__ == '__main__':
