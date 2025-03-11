@@ -4,7 +4,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 import httpx
 
@@ -30,22 +30,26 @@ async def startup():
 
 # Workflow function for user_session entity
 async def process_user_session(entity_data):
-    # You can perform asynchronous tasks here.
-    # For example, add processing timestamp.
-    await asyncio.sleep(0)  # placeholder for async operations if needed
-    entity_data["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+    try:
+        # Perform any asynchronous pre-persistence tasks for user_session
+        # For instance, add a timestamp indicating processing time.
+        await asyncio.sleep(0)  # placeholder, simulating async processing if needed
+        entity_data["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+    except Exception as e:
+        logger.exception("Error in process_user_session workflow: %s", e)
     return entity_data
 
 # Workflow function for order entity
 async def process_order(entity_data):
     try:
-        # Simulate asynchronous processing delay
+        # Simulate a time-consuming asynchronous processing task
         await asyncio.sleep(2)
-        # Update the order status directly in the entity
+        # Update the order status directly in the entity data
         entity_data["status"] = "processed"
         entity_data["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+        # Additional asynchronous tasks can be performed here if necessary.
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in process_order workflow: %s", e)
     return entity_data
 
 # Dataclass models for request validation
@@ -79,29 +83,32 @@ async def user_login(data: UserLogin):
         if not username or not password:
             return jsonify({"error": "username and password required"}), 400
 
+        # Call external API for login using GET method
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://petstore.swagger.io/v2/user/login",
                 params={"username": username, "password": password}
             )
             response.raise_for_status()
-            token = response.text
-            session_data = {
-                "username": username,
-                "token": token,
-                "loggedInAt": datetime.datetime.utcnow().isoformat()
-            }
-            # Persist user_session with asynchronous workflow processing.
-            await entity_service.add_item(
-                token=cyoda_token,
-                entity_model="user_session",
-                entity_version=ENTITY_VERSION,
-                entity=session_data,
-                workflow=process_user_session
-            )
-            return jsonify({"token": token})
+            token = response.text  # external api returns token as a string
+
+        # Prepare session data to be persisted
+        session_data = {
+            "username": username,
+            "token": token,
+            "loggedInAt": datetime.datetime.utcnow().isoformat()
+        }
+        # Persist user_session entity and process workflow asynchronously before persistence.
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="user_session",
+            entity_version=ENTITY_VERSION,
+            entity=session_data,
+            workflow=process_user_session
+        )
+        return jsonify({"token": token})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in user_login endpoint: %s", e)
         return jsonify({"error": str(e)}), 500
 
 ###############################
@@ -114,16 +121,16 @@ async def fetch_pets_by_status(data: PetStatusRequest):
         statuses = data.status
         if not statuses or not isinstance(statuses, list):
             return jsonify({"error": "status field must be a list"}), 400
-        
+
+        # Build query parameters for GET /pet/findByStatus
         params = [("status", status) for status in statuses]
-        
         async with httpx.AsyncClient() as client:
             response = await client.get("https://petstore.swagger.io/v2/pet/findByStatus", params=params)
             response.raise_for_status()
             pets = response.json()
-            return jsonify({"pets": pets})
+        return jsonify({"pets": pets})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in fetch_pets_by_status endpoint: %s", e)
         return jsonify({"error": str(e)}), 500
 
 ###############################
@@ -137,15 +144,15 @@ async def fetch_pets_by_tags(data: PetTagsRequest):
         if not tags or not isinstance(tags, list):
             return jsonify({"error": "tags field must be a list"}), 400
 
+        # Build query parameters for GET /pet/findByTags (deprecated but used here)
         params = [("tags", tag) for tag in tags]
-
         async with httpx.AsyncClient() as client:
             response = await client.get("https://petstore.swagger.io/v2/pet/findByTags", params=params)
             response.raise_for_status()
             pets = response.json()
-            return jsonify({"pets": pets})
+        return jsonify({"pets": pets})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in fetch_pets_by_tags endpoint: %s", e)
         return jsonify({"error": str(e)}), 500
 
 ###############################
@@ -160,9 +167,9 @@ async def get_pet_by_id(petId):
                 return jsonify({"error": "Pet not found"}), 404
             response.raise_for_status()
             pet = response.json()
-            return jsonify(pet)
+        return jsonify(pet)
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in get_pet_by_id endpoint: %s", e)
         return jsonify({"error": str(e)}), 500
 
 ###############################
@@ -177,6 +184,7 @@ async def place_order(data: PlaceOrderRequest):
         if not pet_id:
             return jsonify({"error": "petId is required"}), 400
 
+        # Create an order object conforming to the external API model
         order = {
             "petId": pet_id,
             "quantity": quantity,
@@ -185,27 +193,29 @@ async def place_order(data: PlaceOrderRequest):
             "complete": False
         }
 
+        # Place order using external petstore API
         async with httpx.AsyncClient() as client:
             response = await client.post("https://petstore.swagger.io/v2/store/order", json=order)
             response.raise_for_status()
             order_response = response.json()
 
-            order_id = order_response.get("id")
-            if not order_id:
-                order_id = 1
-                order_response["id"] = order_id
+        order_id = order_response.get("id")
+        if not order_id:
+            # Fallback if external API did not return an id
+            order_id = 1
+            order_response["id"] = order_id
 
-            # Persist the order entity with asynchronous workflow processing.
-            order_id = await entity_service.add_item(
-                token=cyoda_token,
-                entity_model="order",
-                entity_version=ENTITY_VERSION,
-                entity=order_response,
-                workflow=process_order
-            )
-            return jsonify({"id": order_id})
+        # Persist the order entity with asynchronous workflow processing.
+        order_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="order",
+            entity_version=ENTITY_VERSION,
+            entity=order_response,
+            workflow=process_order
+        )
+        return jsonify({"id": order_id})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in place_order endpoint: %s", e)
         return jsonify({"error": str(e)}), 500
 
 ###############################
