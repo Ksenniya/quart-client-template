@@ -1,32 +1,40 @@
+#!/usr/bin/env python3
 import asyncio
-import logging
+import random
 
-from quart import Quart
-from quart_schema import QuartSchema
-from common.grpc_client.grpc_client import grpc_stream
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import cyoda_token
-#please update this line to your entity
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+ENTITY_VERSION = "1.0"  # always use this constant
 
-logging.basicConfig(level=logging.INFO)
+# Simulated entity service with methods for persisting primary and secondary entities
+class EntityService:
+    async def add_item(self, token, entity_model, entity_version, entity, workflow):
+        # Apply the workflow function asynchronously to the entity before persistence.
+        processed_entity = await workflow(entity)
+        # Persist the processed entity (primary entity)
+        print(f"Persisting {entity_model} with version {entity_version}: {processed_entity}")
+        # Return a simulated entity ID
+        return random.randint(1000, 9999)
 
-app = Quart(__name__)
-QuartSchema(app)
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+    async def add_secondary_item(self, token, entity_model, entity_version, entity):
+        # Persist a secondary/supplementary entity (different from the current entity_model)
+        print(f"Persisting secondary {entity_model} with version {entity_version}: {entity}")
+        return random.randint(1000, 9999)
 
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
-    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+# Main function simulating the endpoint logic (controller).
+async def main():
+    cyoda_token = "sample_token"
+    # Validated data object for primary entity
+    data = {"id": 123, "name": "Sample Item", "value": 42}
+    entity_service = EntityService()
+    
+    # Call add_item with the workflow function process_item; all async tasks are executed inside process_item.
+    entity_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="item",
+        entity_version=ENTITY_VERSION,
+        entity=data,
+        )
+    
+    print("Final persisted entity ID:", entity_id)
 
-
-@app.after_serving
-async def shutdown():
-    app.background_task.cancel()
-    await app.background_task
-
-#put_application_code_here
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+if __name__ == "__main__":
+    asyncio.run(main())
