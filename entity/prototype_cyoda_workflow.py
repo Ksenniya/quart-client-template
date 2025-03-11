@@ -51,26 +51,15 @@ class UserLogin:
     username: str
     password: str
 
-# In-memory job cache for asynchronous processing (mock)
-entity_jobs = {}
-
-async def process_entity(job, data):
-    try:
-        # TODO: Replace with actual processing logic if needed.
-        await asyncio.sleep(2)  # simulate some processing time
-        job["status"] = "completed"
-        logger.info(f"Processed entity: {data}")
-    except Exception as e:
-        job["status"] = "failed"
-        logger.exception(e)
-
 # Workflow function for pet entity; must be named with prefix process_ followed by entity name.
+# This function is invoked asynchronously before persistence.
 async def process_pet(pet):
     try:
         # Simulate asynchronous processing before persistence.
         await asyncio.sleep(1)  # simulate processing delay
         # Modify the pet entity state as needed before persistence.
         pet["workflowProcessedAt"] = datetime.utcnow().isoformat()
+        # Add any additional processing logic here.
         logger.info(f"Workflow processing completed for pet: {pet}")
     except Exception as e:
         logger.exception(e)
@@ -104,6 +93,7 @@ async def fetch_pets(data: PetFetchRequest):
 async def add_pet(data: PetInput):
     try:
         pet = data.__dict__
+        # The workflow function will process the pet asynchronously before persistence.
         new_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="pet",
@@ -111,10 +101,6 @@ async def add_pet(data: PetInput):
             entity=pet,
             workflow=process_pet  # Workflow function applied to the pet before persistence.
         )
-        # Fire and forget the processing task.
-        job_id = str(uuid4())
-        entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
-        asyncio.create_task(process_entity(entity_jobs[job_id], pet))
         return jsonify({"id": new_id})
     except Exception as e:
         logger.exception(e)
@@ -141,7 +127,8 @@ async def update_or_delete_pet(pet_id, data: PetAction):
                 pet["name"] = data.name
             if data.status is not None:
                 pet["status"] = data.status
-            # TODO: Merge additional fields as necessary.
+            # Apply the workflow function to process pet changes asynchronously before update persistence.
+            await process_pet(pet)
             await entity_service.update_item(
                 token=cyoda_token,
                 entity_model="pet",
@@ -150,10 +137,6 @@ async def update_or_delete_pet(pet_id, data: PetAction):
                 technical_id=pet_id,  # technical_id is required
                 meta={}
             )
-            # Fire and forget the update processing task.
-            job_id = str(uuid4())
-            entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
-            asyncio.create_task(process_entity(entity_jobs[job_id], pet))
             return jsonify(pet)
         elif data.action == "delete":
             await entity_service.delete_item(
