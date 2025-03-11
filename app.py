@@ -18,7 +18,6 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
-# Dataclass for POST /external-data request parameters
 @dataclass
 class ExternalDataParams:
     param: str = ""  # Optional parameter; available for future enhancements.
@@ -33,45 +32,97 @@ async def shutdown():
     app.background_task.cancel()
     await app.background_task
 
-# POST endpoint: Initiates processing via the workflow function.
-# The controller now only assembles minimal entity data and delegates logic to the workflow.
-@app.route('/external-data', methods=['POST'])
+# POST endpoint: Add a new pet store entity
+@app.route('/pet-store', methods=['POST'])
 @validate_request(ExternalDataParams)
-async def fetch_external_data(data: ExternalDataParams):
+async def add_pet_store(data: ExternalDataParams):
     try:
-        logger.info("Received POST /external-data request with parameters: %s", data)
-        # Prepare initial job data with minimal attributes.
-        job_data = {
+        logger.info("Received POST /pet-store request with parameters: %s", data)
+        pet_store_data = {
             "requestedAt": datetime.now().isoformat(),
-            "param": data.param,  # Parameter can be used within the workflow for conditional processing.
+            "param": data.param,
             "status": "processing"  # Initial status.
         }
-        # Add the job to entity_service with the workflow function.
-        # The workflow function will be invoked asynchronously before persisting the entity.
         technical_id = await entity_service.add_item(
             token=cyoda_token,
-            entity_model="external_data",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=job_data,  # initial entity data
-            )
-        logger.info("Created job %s with initial status 'processing'.", technical_id)
-        # Return the technical id; the processed result can be retrieved via a separate endpoint.
-        return jsonify({"id": technical_id, "message": "Processing started."})
+            entity_model="pet_store",
+            entity_version=ENTITY_VERSION,
+            entity=pet_store_data,
+        )
+        logger.info("Created pet store %s with initial status 'processing'.", technical_id)
+        return jsonify({"id": technical_id, "message": "Pet store creation started."})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-# GET endpoint: Retrieves all results stored via the entity_service.
-@app.route('/results', methods=['GET'])
-async def get_results():
+# GET endpoint: Retrieve a specific pet store entity by ID
+@app.route('/pet-store/<id>', methods=['GET'])
+async def get_pet_store(id):
     try:
-        logger.info("Received GET /results request")
-        results = await entity_service.get_items(
+        logger.info("Received GET /pet-store/%s request", id)
+        pet_store = await entity_service.get_item(
             token=cyoda_token,
-            entity_model="external_data",
-            entity_version=ENTITY_VERSION
+            entity_model="pet_store",
+            entity_version=ENTITY_VERSION,
+            technical_id=id,
         )
-        return jsonify({"results": results})
+        return jsonify({"pet_store": pet_store})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+
+# GET endpoint: Retrieve all pet store entities
+@app.route('/pet-stores', methods=['GET'])
+async def get_pet_stores():
+    try:
+        logger.info("Received GET /pet-stores request")
+        pet_stores = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="pet_store",
+            entity_version=ENTITY_VERSION,
+        )
+        return jsonify({"pet_stores": pet_stores})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+
+# PUT endpoint: Update a specific pet store entity by ID
+@app.route('/pet-store/<id>', methods=['PUT'])
+@validate_request(ExternalDataParams)
+async def update_pet_store(id, data: ExternalDataParams):
+    try:
+        logger.info("Received PUT /pet-store/%s request with parameters: %s", id, data)
+        pet_store_data = {
+            "requestedAt": datetime.now().isoformat(),
+            "param": data.param,
+            "status": "updated",
+        }
+        await entity_service.update_item(
+            token=cyoda_token,
+            entity_model="pet_store",
+            entity_version=ENTITY_VERSION,
+            entity=pet_store_data,
+            technical_id=id,
+            meta={},
+        )
+        return jsonify({"message": "Pet store updated successfully."})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Internal server error"}), 500
+
+# DELETE endpoint: Delete a specific pet store entity by ID
+@app.route('/pet-store/<id>', methods=['DELETE'])
+async def delete_pet_store(id):
+    try:
+        logger.info("Received DELETE /pet-store/%s request", id)
+        await entity_service.delete_item(
+            token=cyoda_token,
+            entity_model="pet_store",
+            entity_version=ENTITY_VERSION,
+            technical_id=id,
+            meta={},
+        )
+        return jsonify({"message": "Pet store deleted successfully."})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
