@@ -21,15 +21,15 @@ QuartSchema(app)  # Initialize QuartSchema
 # Dataclass for POST /external-data request parameters
 @dataclass
 class ExternalDataParams:
-    param: str = ""  # Optional parameter; not used directly but available if needed.
+    param: str = ""  # Optional parameter; available for future enhancements.
 
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
 
 # Asynchronous workflow function for the external_data entity.
-# This function will be applied to the entity asynchronously before persistence.
-# It fetches external data, processes it and updates the entity state.
+# This function is applied to the entity asynchronously before persistence.
+# It fetches supplementary external data, performs processing, and updates the entity's state.
 async def process_external_data(entity: dict):
     try:
         # Fetch external data from the remote API.
@@ -37,22 +37,27 @@ async def process_external_data(entity: dict):
             response = await client.get("https://jsonplaceholder.typicode.com/posts/1")
             response.raise_for_status()
             fetched_data = response.json()
-        # Merge fetched data into the entity.
-        entity.update(fetched_data)
-        # Perform business-specific calculation (dummy: length of title)
-        calculation_result = len(fetched_data.get("title", ""))
-        entity["calculationResult"] = calculation_result
-        # Mark the entity as successfully processed.
-        entity["status"] = "completed"
-        logger.info("Workflow processing completed successfully.")
+        # Merge the fetched data into the entity without overwriting critical properties.
+        # Preserve current status if already set to failed.
+        if entity.get("status") != "failed":
+            entity.update(fetched_data)
+            # Perform a sample business-specific calculation (dummy: length of title).
+            title = fetched_data.get("title", "")
+            entity["calculationResult"] = len(title)
+            # Update entity status to indicate successful processing.
+            entity["status"] = "completed"
+            logger.info("Workflow processing completed successfully for entity requested at %s.", entity.get("requestedAt"))
+        else:
+            logger.warning("Entity marked as failed. Skipping further processing.")
     except Exception as e:
+        # In case of any exception, mark the entity as failed.
         entity["status"] = "failed"
         logger.exception(e)
-    # Return the updated entity which will be persisted.
+    # Return the modified entity. The new state will be persisted.
     return entity
 
 # POST endpoint: Initiates processing via the workflow function.
-# All asynchronous tasks are moved into the workflow function.
+# The controller now only assembles minimal entity data and delegates logic to the workflow.
 @app.route('/external-data', methods=['POST'])
 @validate_request(ExternalDataParams)
 async def fetch_external_data(data: ExternalDataParams):
@@ -61,18 +66,19 @@ async def fetch_external_data(data: ExternalDataParams):
         # Prepare initial job data with minimal attributes.
         job_data = {
             "requestedAt": datetime.now().isoformat(),
-            "param": data.param,  # You can utilize this parameter in the workflow if needed.
-            "status": "processing"  # Initial status before workflow processing.
+            "param": data.param,  # Parameter can be used within the workflow for conditional processing.
+            "status": "processing"  # Initial status.
         }
-        # Add the job to the entity service with the workflow function.
+        # Add the job to entity_service with the workflow function.
+        # The workflow function will be invoked asynchronously before persisting the entity.
         technical_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="external_data",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=job_data,  # initial entity data
-            workflow=process_external_data  # Workflow function applied asynchronously before persistence.
+            workflow=process_external_data  # Workflow function applied asynchronously.
         )
-        logger.info("Created job %s with status 'processing'.", technical_id)
+        logger.info("Created job %s with initial status 'processing'.", technical_id)
         # Return the technical id; the processed result can be retrieved via a separate endpoint.
         return jsonify({"id": technical_id, "message": "Processing started."})
     except Exception as e:
