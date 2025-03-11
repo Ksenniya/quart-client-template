@@ -22,30 +22,6 @@
         "iteration": 0,
         "flow_step": "Gathering requirements",
         "max_iteration": 200,
-        "additional_questions": [
-          {
-            "question": "Feel free to ask any questions or discuss the design in the chat \ud83d\udcac\ud83d\udcac",
-            "approve": true
-          }
-        ],
-        "stack": "app_building_stack",
-        "publish": true
-      },
-      {
-        "question": null,
-        "prompt": {
-          "text": "Thank you!",
-          "api": {
-            "model": "editing_agent",
-            "temperature": 0.7
-          }
-        },
-        "answer": null,
-        "approve": false,
-        "function": null,
-        "iteration": 0,
-        "flow_step": "Gathering requirements",
-        "max_iteration": 0,
         "stack": "app_building_stack",
         "publish": true
       }
