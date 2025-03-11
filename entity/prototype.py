@@ -1,9 +1,11 @@
 import asyncio
 import logging
 import datetime
+from dataclasses import dataclass
+from typing import Optional
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 app = Quart(__name__)
@@ -16,10 +18,16 @@ logger.setLevel(logging.INFO)
 results_cache = {}
 entity_jobs = {}
 
+# Data class for POST request validation
+@dataclass
+class DataSourceParameters:
+    optional_parameter1: Optional[str] = None
+    optional_parameter2: Optional[str] = None
+
 async def process_entity(job, external_data):
     try:
         # TODO: Replace this with actual business logic calculations if needed.
-        # For the prototype, we'll simply combine the title and body as a processed result.
+        # For the prototype, we simply combine the title and body as a processed result.
         processed_result = f"Processed: {external_data.get('title', '')} & {external_data.get('body', '')}"
         job_id = job["job_id"]
         results_cache[job_id] = {
@@ -36,8 +44,10 @@ async def process_entity(job, external_data):
         logger.exception(e)
         job["status"] = "failed"
 
+# For POST endpoints, the route decorator is declared first followed by the validation decorator.
 @app.route('/data_sources', methods=['POST'])
-async def data_sources():
+@validate_request(DataSourceParameters)  # Workaround: For POST requests, validation is applied after route declaration.
+async def data_sources(data: DataSourceParameters):
     try:
         requested_at = datetime.datetime.utcnow().isoformat()
         # Using a simple incremental id as job id for the prototype.
@@ -61,6 +71,7 @@ async def data_sources():
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# GET endpoint does not require request body validation.
 @app.route('/results', methods=['GET'])
 async def results():
     try:
