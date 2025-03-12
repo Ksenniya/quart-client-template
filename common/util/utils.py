@@ -8,7 +8,7 @@ from typing import Optional, Any
 import uuid
 import json
 
-import aiohttp
+import httpx
 import jsonschema
 from jsonschema import validate
 
@@ -425,29 +425,32 @@ async def send_get_request(token: str, api_url: str, path: str) -> Optional[Any]
         raise
 
 
-async def send_request(headers, url, method, data, json):
-    async with aiohttp.ClientSession() as session:
+async def send_request(headers, url, method, data=None, json=None):
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        method = method.upper()
         if method == 'GET':
-            async with session.get(url, headers=headers) as response:
-                if response and (response.status == 200 or response.status == 404):
-                    response_data = {"status": response.status,
-                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
+            response = await client.get(url, headers=headers)
+            # Only process GET responses with status 200 or 404 as in your original code
+            if response.status_code in (200, 404):
+                content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
+            else:
+                content = None
         elif method == 'POST':
-            async with session.post(url, headers=headers, data=data, json=json) as response:
-                if response:
-                    response_data = {"status": response.status,
-                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
+            response = await client.post(url, headers=headers, data=data, json=json)
+            content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
         elif method == 'PUT':
-            async with session.put(url, headers=headers, data=data, json=json) as response:
-                if response:
-                    response_data = {"status": response.status,
-                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
+            response = await client.put(url, headers=headers, data=data, json=json)
+            content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
         elif method == 'DELETE':
-            async with session.delete(url, headers=headers) as response:
-                if response:
-                    response_data = {"status": response.status,
-                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
-    return response_data
+            response = await client.delete(url, headers=headers)
+            content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
+        else:
+            raise ValueError("Unsupported HTTP method")
+
+        return {
+            "status": response.status_code,
+            "json": content
+        }
 
 
 async def send_post_request(token: str, api_url: str, path: str, data=None, json=None) -> Optional[Any]:
