@@ -426,7 +426,7 @@ async def send_get_request(token: str, api_url: str, path: str) -> Optional[Any]
 
 
 async def send_request(headers, url, method, data=None, json=None):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         method = method.upper()
         if method == 'GET':
             response = await client.get(url, headers=headers)
