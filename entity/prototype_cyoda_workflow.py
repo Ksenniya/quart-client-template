@@ -98,7 +98,6 @@ def auth_required(func):
     validates the token (via external service), and passes the extracted user_name
     (untransformed) to the decorated endpoint as a keyword argument.
     """
-
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         if ENABLE_AUTH:
@@ -114,7 +113,6 @@ def auth_required(func):
                 raise UnauthorizedAccessException("Invalid token")
             kwargs["user_name"] = user_name
         return await func(*args, **kwargs)
-
     return wrapper
 
 # ---------------------------------------------------------------------
@@ -122,7 +120,7 @@ def auth_required(func):
 # ---------------------------------------------------------------------
 @dataclass
 class DeployCyodaEnvRequest:
-    # No user_name field; extracted from token.
+    # No additional fields needed; user context is extracted from token.
     pass
 
 @dataclass
@@ -172,9 +170,7 @@ async def trigger_teamcity(build_type: str, properties: List[Dict[str, str]]) ->
     payload = {
         "buildType": {"id": build_type},
         "properties": {"property": properties},
-        "customization": {"parameters": {
-            "key": "parameters"
-        }}
+        "customization": {"parameters": {"key": "parameters"}}
     }
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
@@ -229,21 +225,23 @@ async def verify_user_namespace(build_id: str, user_name: str) -> bool:
     Checks that the TeamCity build response property 'user_env_name'
     matches the transformed namespace derived from user_name.
     """
+    # In a real implementation, fetch the build details and verify the property.
     return True
 
 # ---------------------------------------------------------------------
 # Workflow Functions
 # ---------------------------------------------------------------------
 # The process_job function is the workflow function applied to the job entity.
-# It is executed asynchronously before persisting the entity.
+# It executes asynchronously before the entity is persisted.
 async def process_job(entity: Dict[str, Any]) -> Dict[str, Any]:
     try:
-        logger.info("Workflow processing job entity: %s", entity)
-        # Simulate asynchronous processing tasks.
+        logger.info("Workflow processing for job entity started: %s", entity)
+        # Simulate asynchronous processing; this can include various tasks.
         await asyncio.sleep(1)
-        # Update the job entity state directly.
+        # Directly update the entity state. Do NOT call entity_service methods here.
         entity["status"] = "completed"
         entity["processedAt"] = datetime.utcnow().isoformat()
+        logger.info("Workflow processing for job completed: %s", entity)
         return entity
     except Exception as e:
         logger.exception("Error during workflow processing: %s", e)
@@ -259,7 +257,7 @@ async def process_job(entity: Dict[str, Any]) -> Dict[str, Any]:
 async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
     """
     Deploy a Cyoda environment.
-    The user_name is extracted from the Authorization token and transformed.
+    The user_name is extracted from the token and transformed.
     """
     transformed = transform_user(user_name)
     properties = [
@@ -274,8 +272,8 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
     build_id_raw = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
     build_id_raw = str(build_id_raw)
     requested_at = datetime.utcnow().isoformat()
-    # Create a job entity using the external service.
-    # The workflow function process_job will handle the asynchronous processing before persistence.
+    # Build the job record. The workflow function process_job will be invoked
+    # asynchronously before the record is persisted.
     job_record = {"build_id": build_id_raw, "status": "processing", "requestedAt": requested_at}
     job_id = await entity_service.add_item(
         token=cyoda_token,
@@ -292,7 +290,7 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
 async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
     """
     Deploy a User Application.
-    The user_name is extracted from the Authorization token and transformed.
+    The user_name is extracted from the token and transformed.
     """
     transformed = transform_user(user_name)
     properties = [
@@ -307,8 +305,7 @@ async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
     build_id_raw = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
     build_id_raw = str(build_id_raw)
     requested_at = datetime.utcnow().isoformat()
-    # Create a job entity using the external service.
-    # The workflow function process_job will handle any asynchronous tasks before persistence.
+    # Build the job record with workflow processing.
     job_record = {"build_id": build_id_raw, "status": "processing", "requestedAt": requested_at}
     job_id = await entity_service.add_item(
         token=cyoda_token,
