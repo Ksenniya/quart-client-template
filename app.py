@@ -121,13 +121,13 @@ class DeployUserAppRequest:
 
 @dataclass
 class BuildStatusRequest:
-    job_id: str  # Updated to job_id
+    build_id: str  # Updated to job_id
 
 @dataclass
 class CancelDeploymentRequest:
-    job_id: str  # Updated to job_id
+    build_id: str  # Updated to job_id
     comment: str
-    readdIntoQueue: bool
+    readIntoQueue: bool
 
 # ---------------------------------------------------------------------
 # Helper Functions for Transformation
@@ -270,7 +270,7 @@ async def get_cyoda_env_status(data: BuildStatusRequest, *, user_name: str):
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
-        technical_id=data.job_id  # Updated to job_id
+        technical_id=data.build_id  # Updated to job_id
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -292,7 +292,7 @@ async def get_user_app_status(data: BuildStatusRequest, *, user_name: str):
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
-        technical_id=data.job_id  # Updated to job_id
+        technical_id=data.build_id  # Updated to job_id
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -314,7 +314,7 @@ async def get_cyoda_env_statistics(data: BuildStatusRequest, *, user_name: str):
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
-        technical_id=data.job_id  # Updated to job_id
+        technical_id=data.build_id  # Updated to job_id
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -338,7 +338,7 @@ async def get_user_app_statistics(data: BuildStatusRequest, *, user_name: str):
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
-        technical_id=data.job_id  # Updated to job_id
+        technical_id=data.build_id  # Updated to job_id
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -358,7 +358,7 @@ async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
-        technical_id=data.job_id  # Updated to job_id
+        technical_id=data.build_id  # Updated to job_id
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -367,7 +367,7 @@ async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name
     url = f"{TEAMCITY_BASE_URL}/builds/id:{job['build_id']}"  # Use build_id from job
     payload = {
         "comment": data.comment,
-        "readdIntoQueue": data.readdIntoQueue
+        "readdIntoQueue": data.readIntoQueue
     }
     async with httpx.AsyncClient() as client:
         try:
