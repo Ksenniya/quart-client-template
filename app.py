@@ -26,15 +26,19 @@ logger.setLevel(logging.INFO)
 ENABLE_AUTH = True
 API_URL = "https://example.com/api"
 
+
 class UnauthorizedAccessException(Exception):
     pass
+
 
 class ChatNotFoundException(Exception):
     pass
 
+
 # Dummy implementation for token validation via external service.
 async def send_get_request(token: str, url: str, version: str) -> Dict[str, Any]:
     return {"status": 200}
+
 
 def _get_user_from_token(auth_header: str):
     if not auth_header:
@@ -51,44 +55,52 @@ def _get_user_from_token(auth_header: str):
         logger.exception("Failed to decode JWT: %s", e)
         return None
 
+
 # ---------------------------------------------------------------------
 # App Initialization and CORS/Error Handlers
 # ---------------------------------------------------------------------
 app = Quart(__name__)
 QuartSchema(app)
 
+
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
     app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+
 
 @app.after_serving
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
 
+
 @app.before_serving
 async def add_cors_headers():
     @app.after_request
     async def apply_cors(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"  
+        response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
 
+
 @app.errorhandler(UnauthorizedAccessException)
 async def handle_unauthorized_exception(error):
     return jsonify({"error": str(error)}), 401
+
 
 @app.errorhandler(ChatNotFoundException)
 async def handle_chat_not_found_exception(error):
     return jsonify({"error": str(error)}), 404
 
+
 @app.errorhandler(Exception)
 async def handle_any_exception(error):
     logger.exception(error)
     return jsonify({"error": str(error)}), 500
+
 
 def auth_required(func):
     @functools.wraps(func)
@@ -105,7 +117,9 @@ def auth_required(func):
                 raise UnauthorizedAccessException("Invalid token")
             kwargs["user_name"] = user_name
         return await func(*args, **kwargs)
+
     return wrapper
+
 
 # ---------------------------------------------------------------------
 # Data Models for Request Validation
@@ -114,14 +128,17 @@ def auth_required(func):
 class DeployCyodaEnvRequest:
     pass
 
+
 @dataclass
 class DeployUserAppRequest:
     repository_url: str
     is_public: str
 
+
 @dataclass
 class BuildStatusRequest:
     build_id: str  # Updated to job_id
+
 
 @dataclass
 class CancelDeploymentRequest:
@@ -129,17 +146,27 @@ class CancelDeploymentRequest:
     comment: str
     readIntoQueue: bool
 
+
 # ---------------------------------------------------------------------
 # Helper Functions for Transformation
 # ---------------------------------------------------------------------
 def transform_user(user_name: str) -> Dict[str, str]:
+    """
+    Transforms the user_name into a valid Cassandra keyspace name
+    and a valid Kubernetes namespace.
+    - Cassandra keyspace: lowercase alphanumeric and underscore, starting with a letter.
+    - K8s namespace: lowercase alphanumeric and dash, starting with a letter.
+    """
+    # For keyspace: remove any char not alphanumeric or underscore.
     keyspace = re.sub(r"[^a-z0-9_]", "", user_name.lower())
     if not keyspace or not keyspace[0].isalpha():
         keyspace = "a" + keyspace
+    # For namespace: allow lowercase alphanumeric and dash.
     namespace = re.sub(r"[^a-z0-9-]", "-", user_name.lower())
     if not namespace or not namespace[0].isalpha():
         namespace = "a" + namespace
     return {"keyspace": keyspace, "namespace": namespace}
+
 
 # ---------------------------------------------------------------------
 # Helper Functions for Communication with TeamCity
@@ -166,6 +193,7 @@ async def trigger_teamcity(build_type: str, properties: List[Dict[str, str]]) ->
             logger.exception("Error triggering TeamCity build: %s", e)
             return {}
 
+
 async def fetch_teamcity_resource(url: str, error_msg: str) -> Dict[str, Any]:
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
@@ -181,6 +209,7 @@ async def fetch_teamcity_resource(url: str, error_msg: str) -> Dict[str, Any]:
             logger.exception("%s: %s", error_msg, e)
             return {}
 
+
 def filter_status_response(response_data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "state": response_data.get("state"),
@@ -189,8 +218,10 @@ def filter_status_response(response_data: Dict[str, Any]) -> Dict[str, Any]:
         "statusText": response_data.get("statusText")
     }
 
+
 async def verify_user_namespace(job_id: str, user_name: str) -> bool:
     return True
+
 
 # ---------------------------------------------------------------------
 # Endpoints
@@ -209,20 +240,54 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
     if not teamcity_response:
         return jsonify({"error": "Failed to trigger deployment"}), 500
 
-    job_record = {
-        "build_id": teamcity_response.get("id"),
-        "status": "processing",
-        "requestedAt": datetime.utcnow().isoformat()
-    }
+    build_id_raw = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
+    build_id_raw = str(build_id_raw)
+    requested_at = datetime.utcnow().isoformat()
+    # Build the job record. The workflow function process_job will be invoked
+    # asynchronously before the record is persisted.
+    job_record = {"build_id": build_id_raw, "status": "processing", "requestedAt": requested_at}
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
         entity=job_record,
     )
-    return jsonify({"job_id": job_id})  # Return job_id instead of build_id
+    return jsonify({"build_id": job_id})
 
-@app.route("/deploy/cyoda-env/status", methods=["GET"])  # Changed to GET
+
+@app.route("/deploy/user_app", methods=["POST"])
+@validate_request(DeployUserAppRequest)
+@auth_required
+async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
+    """
+    Deploy a User Application.
+    The user_name is extracted from the token and transformed.
+    """
+    transformed = transform_user(user_name)
+    properties = [
+        {"name": "repository_url", "value": data.repository_url},
+        {"name": "user_defined_namespace", "value": transformed["namespace"]},
+        {"name": "user_env_name", "value": user_name}
+    ]
+    teamcity_response = await trigger_teamcity("KubernetesPipeline_CyodaSaasUserEnv", properties)
+    if not teamcity_response:
+        return jsonify({"error": "Failed to trigger deployment"}), 500
+
+    build_id_raw = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
+    build_id_raw = str(build_id_raw)
+    requested_at = datetime.utcnow().isoformat()
+    # Build the job record with workflow processing.
+    job_record = {"build_id": build_id_raw, "status": "processing", "requestedAt": requested_at}
+    job_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="job",
+        entity_version=ENTITY_VERSION,
+        entity=job_record,
+    )
+    return jsonify({"build_id": job_id})
+
+
+@app.route("/deploy/cyoda-env/status", methods=["POST"])
 @validate_request(BuildStatusRequest)
 @auth_required
 async def get_cyoda_env_status(data: BuildStatusRequest, *, user_name: str):
@@ -234,7 +299,7 @@ async def get_cyoda_env_status(data: BuildStatusRequest, *, user_name: str):
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
-    
+
     TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue/id:{job['build_id']}"  # Use build_id from job
     response_data = await fetch_teamcity_resource(url, "Error retrieving Cyoda environment status")
@@ -243,7 +308,8 @@ async def get_cyoda_env_status(data: BuildStatusRequest, *, user_name: str):
     filtered = filter_status_response(response_data)
     return jsonify(filtered)
 
-@app.route("/deploy/user_app/status", methods=["GET"])  # Changed to GET
+
+@app.route("/deploy/user_app/status", methods=["POST"])
 @validate_request(BuildStatusRequest)
 @auth_required
 async def get_user_app_status(data: BuildStatusRequest, *, user_name: str):
@@ -258,13 +324,14 @@ async def get_user_app_status(data: BuildStatusRequest, *, user_name: str):
 
     TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue/id:{job['build_id']}"  # Use build_id from job
-    response_data = await fetch_teamcity_resource(url, "Error retrieving user app status")
+    response_data = await fetch_teamcity_resource(url, "Error retrieving Cyoda environment status")
     if not response_data:
         return jsonify({"error": "Failed to retrieve status"}), 500
     filtered = filter_status_response(response_data)
     return jsonify(filtered)
 
-@app.route("/deploy/cyoda-env/statistics", methods=["GET"])  # Changed to GET
+
+@app.route("/deploy/cyoda-env/statistics", methods=["POST"])
 @validate_request(BuildStatusRequest)
 @auth_required
 async def get_cyoda_env_statistics(data: BuildStatusRequest, *, user_name: str):
@@ -276,7 +343,7 @@ async def get_cyoda_env_statistics(data: BuildStatusRequest, *, user_name: str):
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
-    
+
     TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{job['build_id']}/statistics/"  # Use build_id from job
     response_data = await fetch_teamcity_resource(url, "Error retrieving Cyoda environment statistics")
@@ -284,10 +351,15 @@ async def get_cyoda_env_statistics(data: BuildStatusRequest, *, user_name: str):
         return jsonify({"error": "Failed to retrieve statistics"}), 500
     return jsonify(response_data)
 
-@app.route("/deploy/user_app/statistics", methods=["GET"])  # Changed to GET
+
+@app.route("/deploy/user_app/statistics", methods=["POST"])
 @validate_request(BuildStatusRequest)
 @auth_required
 async def get_user_app_statistics(data: BuildStatusRequest, *, user_name: str):
+    """
+    Retrieve deployment statistics for a user application.
+    Returns statistics if the deployed 'user_env_name' property matches the token's transformed namespace.
+    """
     job = await entity_service.get_item(
         token=cyoda_token,
         entity_model="job",
@@ -299,10 +371,11 @@ async def get_user_app_statistics(data: BuildStatusRequest, *, user_name: str):
 
     TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{job['build_id']}/statistics/"  # Use build_id from job
-    response_data = await fetch_teamcity_resource(url, "Error retrieving user app statistics")
+    response_data = await fetch_teamcity_resource(url, "Error retrieving Cyoda environment statistics")
     if not response_data:
         return jsonify({"error": "Failed to retrieve statistics"}), 500
     return jsonify(response_data)
+
 
 @app.route("/deploy/cancel/user_app", methods=["POST"])
 @validate_request(CancelDeploymentRequest)
@@ -316,7 +389,7 @@ async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name
     )
     if not job:
         return jsonify({"error": "Job not found"}), 404
-    
+
     TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{job['build_id']}"  # Use build_id from job
     payload = {
@@ -331,6 +404,7 @@ async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name
         except Exception as e:
             logger.exception("Error canceling deployment: %s", e)
             return jsonify({"error": "Failed to cancel deployment"}), 500
+
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000)
