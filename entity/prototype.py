@@ -10,7 +10,29 @@ from typing import Any, Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema  # Data validation disabled per instructions
+from quart_schema import QuartSchema, validate_request  # validate_response not used
+
+# ---------------------------------------------------------------------
+# Data Models for Request Validation
+# ---------------------------------------------------------------------
+@dataclass
+class DeployCyodaEnvRequest:
+    pass
+
+@dataclass
+class DeployUserAppRequest:
+    repository_url: str
+    is_public: str
+
+@dataclass
+class BuildStatusRequest:
+    build_id: str
+
+@dataclass
+class CancelDeploymentRequest:
+    build_id: str
+    comment: str
+    readdIntoQueue: bool
 
 # ---------------------------------------------------------------------
 # Configuration & Logging
@@ -41,7 +63,6 @@ async def send_get_request(token: str, url: str, version: str) -> Dict[str, Any]
     Dummy implementation for token validation via an external service.
     TODO: Replace with a real implementation when available.
     """
-    # Using real API call with httpx if available (here we use a placeholder)
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)  # Simplified for the prototype
@@ -78,11 +99,9 @@ def transform_user(user_name: str) -> Dict[str, str]:
     """
     Transforms the user_name into valid identifiers for Cassandra keyspace and Kubernetes namespace.
     """
-    # For keyspace: allow only lowercase letter, numbers, underscore; must start with a letter.
     keyspace = re.sub(r"[^a-z0-9_]", "", user_name.lower())
     if not keyspace or not keyspace[0].isalpha():
         keyspace = "a" + keyspace
-    # For namespace: allow lowercase alphanumeric and dash; must start with a letter.
     namespace = re.sub(r"[^a-z0-9-]", "-", user_name.lower())
     if not namespace or not namespace[0].isalpha():
         namespace = "a" + namespace
@@ -183,8 +202,7 @@ async def verify_user_namespace(build_id: str, user_name: str) -> bool:
 # App Initialization
 # ---------------------------------------------------------------------
 app = Quart(__name__)
-# Use QuartSchema for dynamic data, but no validation decorators per instructions.
-QuartSchema(app)
+QuartSchema(app)  # Enable QuartSchema; workaround: for POST requests, @validate_request goes after @app.route
 
 @app.before_serving
 async def add_cors_headers():
@@ -234,9 +252,14 @@ def auth_required(func):
 # ---------------------------------------------------------------------
 # API Endpoints
 # ---------------------------------------------------------------------
+
+# For POST requests, the correct decorator ordering is:
+# @app.route(...) then @validate_request(Model) then any other decorators (workaround for quart-schema issues)
+
 @app.route("/deploy/cyoda-env", methods=["POST"])
+@validate_request(DeployCyodaEnvRequest)
 @auth_required
-async def deploy_cyoda_env(*, user_name: str):
+async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
     """
     Deploy a Cyoda environment.
     """
@@ -250,7 +273,6 @@ async def deploy_cyoda_env(*, user_name: str):
     if not teamcity_response:
         return jsonify({"error": "Failed to trigger deployment"}), 500
 
-    # Extract build id from TeamCity response.
     build_id = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
     build_id = str(build_id)
     requested_at = datetime.utcnow().isoformat()
@@ -260,19 +282,16 @@ async def deploy_cyoda_env(*, user_name: str):
     return jsonify({"build_id": build_id})
 
 @app.route("/deploy/user_app", methods=["POST"])
+@validate_request(DeployUserAppRequest)
 @auth_required
-async def deploy_user_app(*, user_name: str):
+async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
     """
     Deploy a user application.
     Expects a JSON payload with 'repository_url' and 'is_public'.
     """
-    data = await request.get_json()
-    if not data or "repository_url" not in data or "is_public" not in data:
-        return jsonify({"error": "Invalid request payload"}), 400
-
     transformed = transform_user(user_name)
     properties = [
-        {"name": "repository_url", "value": data["repository_url"]},
+        {"name": "repository_url", "value": data.repository_url},
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
         {"name": "user_env_name", "value": transformed["namespace"]}
     ]
@@ -284,21 +303,18 @@ async def deploy_user_app(*, user_name: str):
     build_id = str(build_id)
     requested_at = datetime.utcnow().isoformat()
     entity_jobs[build_id] = {"status": "processing", "requestedAt": requested_at}
-    asyncio.create_task(process_entity(build_id, data))
+    asyncio.create_task(process_entity(build_id, data.__dict__))
     return jsonify({"build_id": build_id})
 
 @app.route("/deploy/cyoda-env/status", methods=["POST"])
+@validate_request(BuildStatusRequest)
 @auth_required
-async def get_cyoda_env_status(*, user_name: str):
+async def get_cyoda_env_status(data: BuildStatusRequest, *, user_name: str):
     """
     Get the status of a Cyoda environment deployment.
     Expects a JSON payload with 'build_id'.
     """
-    data = await request.get_json()
-    if not data or "build_id" not in data:
-        return jsonify({"error": "Invalid request payload"}), 400
-
-    build_id = data["build_id"]
+    build_id = data.build_id
     if not await verify_user_namespace(build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
@@ -311,17 +327,14 @@ async def get_cyoda_env_status(*, user_name: str):
     return jsonify(filtered)
 
 @app.route("/deploy/user_app/status", methods=["POST"])
+@validate_request(BuildStatusRequest)
 @auth_required
-async def get_user_app_status(*, user_name: str):
+async def get_user_app_status(data: BuildStatusRequest, *, user_name: str):
     """
     Get the status of a user application deployment.
     Expects a JSON payload with 'build_id'.
     """
-    data = await request.get_json()
-    if not data or "build_id" not in data:
-        return jsonify({"error": "Invalid request payload"}), 400
-
-    build_id = data["build_id"]
+    build_id = data.build_id
     if not await verify_user_namespace(build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
@@ -334,17 +347,14 @@ async def get_user_app_status(*, user_name: str):
     return jsonify(filtered)
 
 @app.route("/deploy/cyoda-env/statistics", methods=["POST"])
+@validate_request(BuildStatusRequest)
 @auth_required
-async def get_cyoda_env_statistics(*, user_name: str):
+async def get_cyoda_env_statistics(data: BuildStatusRequest, *, user_name: str):
     """
     Get deployment statistics for a Cyoda environment.
     Expects a JSON payload with 'build_id'.
     """
-    data = await request.get_json()
-    if not data or "build_id" not in data:
-        return jsonify({"error": "Invalid request payload"}), 400
-
-    build_id = data["build_id"]
+    build_id = data.build_id
     if not await verify_user_namespace(build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
@@ -356,17 +366,14 @@ async def get_cyoda_env_statistics(*, user_name: str):
     return jsonify(response_data)
 
 @app.route("/deploy/user_app/statistics", methods=["POST"])
+@validate_request(BuildStatusRequest)
 @auth_required
-async def get_user_app_statistics(*, user_name: str):
+async def get_user_app_statistics(data: BuildStatusRequest, *, user_name: str):
     """
     Get deployment statistics for a user application.
     Expects a JSON payload with 'build_id'.
     """
-    data = await request.get_json()
-    if not data or "build_id" not in data:
-        return jsonify({"error": "Invalid request payload"}), 400
-
-    build_id = data["build_id"]
+    build_id = data.build_id
     if not await verify_user_namespace(build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
@@ -378,24 +385,21 @@ async def get_user_app_statistics(*, user_name: str):
     return jsonify(response_data)
 
 @app.route("/deploy/cancel/user_app", methods=["POST"])
+@validate_request(CancelDeploymentRequest)
 @auth_required
-async def cancel_user_app_deployment(*, user_name: str):
+async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name: str):
     """
     Cancel a user application deployment.
     Expects a JSON payload with 'build_id', 'comment', and 'readdIntoQueue'.
     """
-    data = await request.get_json()
-    if not data or "build_id" not in data or "comment" not in data or "readdIntoQueue" not in data:
-        return jsonify({"error": "Invalid request payload"}), 400
-
-    build_id = data["build_id"]
+    build_id = data.build_id
     if not await verify_user_namespace(build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
     url = f"{TEAMCITY_BASE_URL}/builds/id:{build_id}"
     payload = {
-        "comment": data["comment"],
-        "readdIntoQueue": data["readdIntoQueue"]
+        "comment": data.comment,
+        "readdIntoQueue": data.readdIntoQueue
     }
     async with httpx.AsyncClient() as client:
         try:
