@@ -212,40 +212,6 @@ async def fetch_teamcity_resource(url: str, error_msg: str) -> Dict[str, Any]:
             logger.exception("%s: %s", error_msg, e)
             return {}
 
-async def process_entity(job_id: str, data: Dict[str, Any]) -> None:
-    """
-    Simulates processing a deployment job and updates the job status in the external service.
-    """
-    try:
-        logger.info("Processing job %s with data: %s", job_id, data)
-        await asyncio.sleep(1)
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "completed"},
-            technical_id=job_id,
-            meta={}
-        )
-        logger.info("Job %s completed processing.", job_id)
-    except Exception as e:
-        logger.exception("Error during job processing: %s", e)
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "failed"},
-            technical_id=job_id,
-            meta={}
-        )
-
-# Workflow function for job entity
-async def process_job(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Example workflow processing: add a processed timestamp.
-    entity["processedAt"] = datetime.utcnow().isoformat()
-    # Additional processing can be done here.
-    return entity
-
 def filter_status_response(response_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Filters the TeamCity status response to include only:
@@ -264,6 +230,25 @@ async def verify_user_namespace(build_id: str, user_name: str) -> bool:
     matches the transformed namespace derived from user_name.
     """
     return True
+
+# ---------------------------------------------------------------------
+# Workflow Functions
+# ---------------------------------------------------------------------
+# The process_job function is the workflow function applied to the job entity.
+# It is executed asynchronously before persisting the entity.
+async def process_job(entity: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        logger.info("Workflow processing job entity: %s", entity)
+        # Simulate asynchronous processing tasks.
+        await asyncio.sleep(1)
+        # Update the job entity state directly.
+        entity["status"] = "completed"
+        entity["processedAt"] = datetime.utcnow().isoformat()
+        return entity
+    except Exception as e:
+        logger.exception("Error during workflow processing: %s", e)
+        entity["status"] = "failed"
+        return entity
 
 # ---------------------------------------------------------------------
 # Endpoints
@@ -289,16 +274,16 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
     build_id_raw = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
     build_id_raw = str(build_id_raw)
     requested_at = datetime.utcnow().isoformat()
-    # Create a job entity using the external service
+    # Create a job entity using the external service.
+    # The workflow function process_job will handle the asynchronous processing before persistence.
     job_record = {"build_id": build_id_raw, "status": "processing", "requestedAt": requested_at}
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
         entity=job_record,
-        workflow=process_job  # Apply workflow processing for job entity
+        workflow=process_job  # Workflow processing applied here.
     )
-    asyncio.create_task(process_entity(job_id, {}))
     return jsonify({"build_id": job_id})
 
 @app.route("/deploy/user_app", methods=["POST"])
@@ -322,16 +307,16 @@ async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
     build_id_raw = teamcity_response.get("id") or teamcity_response.get("build_id") or "unknown"
     build_id_raw = str(build_id_raw)
     requested_at = datetime.utcnow().isoformat()
-    # Create a job entity using the external service
+    # Create a job entity using the external service.
+    # The workflow function process_job will handle any asynchronous tasks before persistence.
     job_record = {"build_id": build_id_raw, "status": "processing", "requestedAt": requested_at}
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="job",
         entity_version=ENTITY_VERSION,
         entity=job_record,
-        workflow=process_job  # Apply workflow processing for job entity
+        workflow=process_job  # Workflow processing applied here.
     )
-    asyncio.create_task(process_entity(job_id, {}))
     return jsonify({"build_id": job_id})
 
 @app.route("/deploy/cyoda-env/status", methods=["POST"])
