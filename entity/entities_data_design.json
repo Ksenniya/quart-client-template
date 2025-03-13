@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "job", "entity_data_example": {"build_id": "string", "status": "string", "requestedAt": "string"}}]}
