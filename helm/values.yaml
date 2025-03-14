@@ -1,65 +1,74 @@
 name: cyoda-client
 
-cyodaClient:
+registry:
+  host: "REGISTRY_HOST_VAR"
+  username: "REGISTRY_USERNAME_VAR"
+  password: "REGISTRY_PASSWORD_VAR"
+imagePullSecret:
   enabled: true
-  imagePullSecrets: []
-  container:
-    env:
-      vars: {}
-      extraVars: []
-      configMaps: []
-      secrets: []
-  podAnnotations: {}
-  host:
-    name: ""
 
-  health:
-    liveness:
-      path: /actuator/health/liveness
-      initialDelaySeconds: 120
-      timeoutSeconds: 5
-      periodSeconds: 30
-      failureThreshold: 10
-    readiness:
-      path: /actuator/health/readiness
-      initialDelaySeconds: 120
-      timeoutSeconds: 5
-      periodSeconds: 30
-      failureThreshold: 10
-  service:
-    name: cyoda-client-service
-    type: NodePort
-    serverPort:
-      port: 5000
-      target: 5000
-      name: http
+useNamespaceForIngress: false
 
-  ingress:
-    enabled: true
-    className: "nginx"
-    annotations: {}
-    path: quart(/|$)(.*)
-    pathType: Prefix
-    tls: []
+enabled: true
+imagePullSecrets: []
+container:
+  env:
+    vars: {}
+    extraVars: []
+    configMaps: []
+    secrets: []
+podAnnotations: {}
+host:
+  name: "client.kube.cyoda.org"
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
+health:
+  liveness:
+    path: /actuator/health/liveness
+    initialDelaySeconds: 120
+    timeoutSeconds: 5
+    periodSeconds: 30
+    failureThreshold: 10
+  readiness:
+    path: /actuator/health/readiness
+    initialDelaySeconds: 120
+    timeoutSeconds: 5
+    periodSeconds: 30
+    failureThreshold: 10
+service:
+  name: cyoda-client-service
+  type: NodePort
+  serverPort:
+    port: 5000
+    target: 5000
+    name: http
 
-  extraVolumeMounts: {}
-  extraVolumes: {}
-  securityContext: {}
-  tolerations: { }
-  priorityClassName: { }
-  serviceAccountName: { }
-  hostAliases: { }
-  affinity: { }
-  strategy: {}
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  path: /
+  pathType: Prefix
+  tls: []
 
-  image:
-    imageName: cyoda-client-service
-    tag: 6f26b992-001c-11f0-add8-40c2ba0ac9eb.latest
-  replicaCount: 1
-  actuatorEnabled: false
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+extraVolumeMounts: {}
+extraVolumes: {}
+securityContext: {}
+tolerations: { }
+priorityClassName: { }
+serviceAccountName: { }
+hostAliases: { }
+affinity: { }
+strategy: {}
+
+image:
+  pullPolicy: Always
+  imageName: client-app
+  tag: 6f26b992-001c-11f0-add8-40c2ba0ac9eb.latest
+replicaCount: 1
+actuatorEnabled: false
