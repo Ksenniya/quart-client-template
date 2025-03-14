@@ -1,0 +1,20 @@
+{{- if .Values.cyodaClient.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cyodaClient.service.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.cyodaClient.service.name }}
+spec:
+  type: {{ .Values.cyodaClient.service.type }}
+  ports:
+    - port: {{ .Values.cyodaClient.service.serverPort.port }}
+      targetPort: {{ .Values.cyodaClient.service.serverPort.target }}
+      protocol: TCP
+      {{- if .Values.cyodaClient.service.nodePort }}
+      nodePort:  {{ .Values.cyodaClient.service.nodePort }}
+      {{- end }}
+      name: {{ .Values.cyodaClient.service.serverPort.name }}
+  selector:
+    app.kubernetes.io/name: {{ .Values.name }}
+{{- end }}

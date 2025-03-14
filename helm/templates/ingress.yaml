@@ -1,0 +1,27 @@
+{{- if .Values.cyodaClient.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.name }}
+  {{- with .Values.cyodaClient.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.cyodaClient.ingress.className }}
+  rules:
+    - host: {{ .Values.cyodaClient.host.name }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ .Values.cyodaClient.service.name }}
+                port:
+                  name: {{ .Values.cyodaClient.service.serverPort.name }}
+            {{- if .Values.global.useNamespaceForIngress | default false }}
+            path: /{{ .Release.Namespace }}/{{ .Values.cyodaClient.ingress.path }}
+            {{- else }}
+            path: /{{ .Values.cyodaClient.ingress.path }}
+            {{- end}}
+            pathType: {{ .Values.cyodaClient.ingress.pathType }}
+{{- end}}

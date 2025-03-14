@@ -1,0 +1,124 @@
+{{- if .Values.cyodaClient.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  {{ .Values.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+  annotations:
+    "helm.sh/hook": "post-install"
+    "helm.sh/hook-weight": "30"
+spec:
+  {{- if not .Values.cyodaClient.autoscaling.enabled }}
+  replicas: {{ .Values.cyodaClient.replicaCount | default 1 }}
+  {{- end }}
+  {{- with .Values.cyodaClient.strategy }}
+  strategy:
+    {{- toYaml . | nindent 8 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.name }}
+  template:
+    metadata:
+      {{- with .Values.cyodaClient.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ .Values.name }}
+    spec:
+      {{- if .Values.cyodaClient.hostAliases }}
+      hostAliases:
+        {{ toYaml .Values.cyodaClient.hostAliases | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cyodaClient.nodeSelector }}
+      nodeSelector: {{- .Values.cyodaClient.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cyodaClient.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cyodaClient.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.cyodaClient.priorityClassName }}
+      priorityClassName: {{ .Values.cyodaClient.priorityClassName }}
+      {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: { }
+        {{- with .Values.cyodaClient.extraVolumes }}
+        {{- tpl . $ | nindent 8 }}
+        {{- end }}
+      automountServiceAccountToken: false
+      {{- if .Values.cyodaClient.serviceAccountName }}
+      serviceAccountName: {{ .Values.cyodaClient.serviceAccountName }}
+      {{- end }}
+      {{- with .Values.cyodaClient.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.name }}
+          image: "{{ .Values.global.registry.host }}/{{ .Values.cyodaClient.image.imageName }}:{{ .Values.cyodaClient.image.tag }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          resources: {{- toYaml .Values.cyodaClient.resources | nindent 12 }}
+          {{- with .Values.cyodaClient.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tmp
+              # Tmp folder used by spring to write data. We need to mount this because of "readOnlyRootFilesystem" (see above)
+              mountPath: /tmp/
+            {{- with .Values.cyodaClient.extraVolumeMounts }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: {{ .Values.cyodaClient.service.serverPort.name }}
+              containerPort: {{ .Values.cyodaClient.service.serverPort.target }}
+              protocol: TCP
+          resources: {{- toYaml .Values.cyodaClient.resources | nindent 12 }}
+          {{- if .Values.cyodaClient.actuatorEnabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.cyodaClient.service.serverPort.target }}
+            initialDelaySeconds: {{ .Values.cyodaClient.health.liveness.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.cyodaClient.health.liveness.timeoutSeconds }}
+            periodSeconds: {{ .Values.cyodaClient.health.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.cyodaClient.health.liveness.failureThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.cyodaClient.service.serverPort.target }}
+            initialDelaySeconds: {{ .Values.cyodaClient.health.readiness.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.cyodaClient.health.readiness.timeoutSeconds }}
+            periodSeconds: {{ .Values.cyodaClient.health.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.cyodaClient.health.readiness.failureThreshold }}
+          {{- end }}
+          env:
+            {{- range $k, $v := .Values.cyodaClient.container.env.vars }}
+            - name: {{ $k }}
+              value: "{{ $v }}"
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: cyoda-client-secrets
+            {{- range .Values.cyodaClient.container.env.configMaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range .Values.cyodaClient.container.env.secrets }}
+            - secretRef:
+                name: {{ . }}
+             {{- end }}
+    {{- with .Values.global.hostAliases }}
+      hostAliases:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      {{- if .Values.global.imagePullSecret.enabled | default false }}
+      imagePullSecrets:
+        - name: regcred
+      {{- end }}
+{{- end }}
