@@ -18,5 +18,5 @@ spec:
                 name: {{ .Values.service.name }}
                 port:
                   name: {{ .Values.service.serverPort.name }}
-            path: /{{ .Values.ingress.path }}
+            path: /
 {{- end}}
