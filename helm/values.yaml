@@ -13,7 +13,8 @@ enabled: true
 imagePullSecrets: []
 container:
   env:
-    vars: {}
+    vars:
+      TZ: /usr/share/zoneinfo/Europe/Berlin
     extraVars: []
     configMaps: []
     secrets: []
@@ -71,4 +72,10 @@ image:
   imageName: client-app
   tag: 6f26b992-001c-11f0-add8-40c2ba0ac9eb.latest
 replicaCount: 1
-actuatorEnabled: false
+resources:
+  requests:
+    memory: 1Gi
+    cpu: 100m
+  limits:
+    memory: 2gi
+    cpu: 1000m
