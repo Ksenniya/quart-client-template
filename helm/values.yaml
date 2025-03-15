@@ -77,5 +77,5 @@ resources:
     memory: 1Gi
     cpu: 100m
   limits:
-    memory: 2gi
+    memory: 2Gi
     cpu: 1000m
