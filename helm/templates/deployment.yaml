@@ -5,9 +5,6 @@ metadata:
   name:  {{ .Values.name }}
   labels:
     app.kubernetes.io/name: {{ .Values.name }}
-  annotations:
-    "helm.sh/hook": "post-install"
-    "helm.sh/hook-weight": "30"
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount | default 1 }}
