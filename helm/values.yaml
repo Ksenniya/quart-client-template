@@ -15,8 +15,8 @@ container:
   env:
     vars:
       ACCESS_TOKEN: "test"
-      CYODA_API_KEY: "test"
-      CYODA_API_SECRET: "test"
+      CYODA_API_KEY: "dGVzdA=="
+      CYODA_API_SECRET: "dGVzdA=="
       TZ: /usr/share/zoneinfo/Europe/Berlin
       CYODA_API_URL: https://dev1.cyoda.net
       CYODA_AI_URL: https://dev1.cyoda.net/ai
