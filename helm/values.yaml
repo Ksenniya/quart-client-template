@@ -14,7 +14,22 @@ imagePullSecrets: []
 container:
   env:
     vars:
+      ACCESS_TOKEN: "test"
+      CYODA_API_KEY: "test"
+      CYODA_API_SECRET: "test"
       TZ: /usr/share/zoneinfo/Europe/Berlin
+      CYODA_API_URL: https://dev1.cyoda.net
+      CYODA_AI_URL: https://dev1.cyoda.net/ai
+      GRPC_ADDRESS: grpc-dev1.cyoda.net
+      CYODA_AI_API: cyoda
+      WORKFLOW_AI_API: workflow
+      CONNECTION_AI_API: connection
+      RANDOM_AI_API: random
+      TRINO_AI_API: trino
+      ENTITY_VERSION: 10004
+      GRPC_PROCESSOR_TAG: 6f26b992-001c-11f0-add8-40c2ba0ac9eb
+      CHAT_ID: 6f26b992-001c-11f0-add8-40c2ba0ac9eb
+
     extraVars: []
     configMaps: []
     secrets: []
