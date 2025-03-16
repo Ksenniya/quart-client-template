@@ -6,7 +6,7 @@ get_env = lambda key: os.getenv(key) or (_ for _ in ()).throw(Exception(f"{key} 
 
 CYODA_HOST = get_env("CYODA_HOST")
 CYODA_AI_URL = f"https://{CYODA_HOST}/ai"
-CYODA_API_URL = f"https://{CYODA_HOST}"
+CYODA_API_URL = f"https://{CYODA_HOST}/api"
 GRPC_ADDRESS = f"grpc-{CYODA_HOST}"
 
 decoded_bytes_cyoda_api_key = base64.b64decode(get_env("CYODA_API_KEY"))
