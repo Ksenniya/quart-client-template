@@ -31,4 +31,4 @@ PROJECT_DIR = os.getenv("PROJECT_DIR", "/tmp")
 REPOSITORY_URL = os.getenv("REPOSITORY_URL", "https://github.com/Cyoda-platform/quart-client-template")
 REPOSITORY_NAME = REPOSITORY_URL.split('/')[-1].replace('.git', '')
 ACCESS_TOKEN = get_env("ACCESS_TOKEN")
-TEAMCITY_HOST = get_env("TEAMCITY_HOST")
+TEAMCITY_HOST = f"https://{get_env("TEAMCITY_HOST")}"
