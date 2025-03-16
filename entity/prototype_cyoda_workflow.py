@@ -12,7 +12,7 @@ import httpx
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
-from common.config.config import ACCESS_TOKEN, ENTITY_VERSION
+from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
 
@@ -165,7 +165,7 @@ async def trigger_teamcity(build_type: str, properties: List[Dict[str, str]]) ->
     """
     Triggers a build on TeamCity and returns the parsed JSON response.
     """
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue"
     payload = {
         "buildType": {"id": build_type},
@@ -327,7 +327,7 @@ async def get_cyoda_env_status(data: BuildStatusRequest, *, user_name: str):
     if not await verify_user_namespace(data.build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue/id:{data.build_id}"
     response_data = await fetch_teamcity_resource(url, "Error retrieving Cyoda environment status")
     if not response_data:
@@ -346,7 +346,7 @@ async def get_user_app_status(data: BuildStatusRequest, *, user_name: str):
     if not await verify_user_namespace(data.build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue/id:{data.build_id}"
     response_data = await fetch_teamcity_resource(url, "Error retrieving user app status")
     if not response_data:
@@ -365,7 +365,7 @@ async def get_cyoda_env_statistics(data: BuildStatusRequest, *, user_name: str):
     if not await verify_user_namespace(data.build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{data.build_id}/statistics/"
     response_data = await fetch_teamcity_resource(url, "Error retrieving Cyoda environment statistics")
     if not response_data:
@@ -383,7 +383,7 @@ async def get_user_app_statistics(data: BuildStatusRequest, *, user_name: str):
     if not await verify_user_namespace(data.build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{data.build_id}/statistics/"
     response_data = await fetch_teamcity_resource(url, "Error retrieving user app statistics")
     if not response_data:
@@ -401,7 +401,7 @@ async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name
     if not await verify_user_namespace(data.build_id, user_name):
         return jsonify({"error": "User namespace mismatch or unauthorized"}), 403
 
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{data.build_id}"
     payload = {
         "comment": data.comment,

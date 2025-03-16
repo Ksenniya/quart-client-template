@@ -12,7 +12,7 @@ import httpx
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
-from common.config.config import ACCESS_TOKEN, ENTITY_VERSION
+from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
 
@@ -172,7 +172,7 @@ def transform_user(user_name: str) -> Dict[str, str]:
 # Helper Functions for Communication with TeamCity
 # ---------------------------------------------------------------------
 async def trigger_teamcity(build_type: str, properties: List[Dict[str, str]]) -> Dict[str, Any]:
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue"
     payload = {
         "buildType": {"id": build_type},
@@ -262,7 +262,7 @@ async def fetch_teamcity_data(url: str, error_message: str, error_return: str):
 
 async def fetch_status(job: dict):
     """Fetch and filter the status from TeamCity."""
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/buildQueue/id:{job['build_id']}"
     response_data, err_resp, err_code = await fetch_teamcity_data(url, "Error retrieving Cyoda environment status", "Failed to retrieve status")
     if err_resp:
@@ -271,7 +271,7 @@ async def fetch_status(job: dict):
 
 async def fetch_statistics(job: dict):
     """Fetch statistics data from TeamCity."""
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{job['build_id']}/statistics/"
     response_data, err_resp, err_code = await fetch_teamcity_data(url, "Error retrieving Cyoda environment statistics", "Failed to retrieve statistics")
     if err_resp:
@@ -377,7 +377,7 @@ async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
-    TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+    TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
     url = f"{TEAMCITY_BASE_URL}/builds/id:{job['build_id']}"  # Use build_id from job
     payload = {
         "comment": data.comment,

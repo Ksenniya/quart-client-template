@@ -12,7 +12,7 @@ import httpx
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
-from common.config.config import ACCESS_TOKEN
+from common.config.config import ACCESS_TOKEN, TEAMCITY_HOST
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ def auth_required(func):
 # In-Memory Persistence for Job Tracking and TeamCity Config
 # ---------------------------------------------------------------------
 entity_jobs: Dict[str, Dict[str, Any]] = {}
-TEAMCITY_BASE_URL = "https://teamcity.cyoda.org/app/rest"
+TEAMCITY_BASE_URL = f"{TEAMCITY_HOST}/app/rest"
 
 
 # ---------------------------------------------------------------------

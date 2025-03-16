@@ -98,6 +98,10 @@ spec:
             - name: {{ $k }}
               value: "{{ $v }}"
             {{- end }}
+            {{- range $k, $v := .Values.container.env.additionalVars }}
+            - name: {{ $k }}
+              value: "{{ $v }}"
+            {{- end }}
           envFrom:
             - secretRef:
                 name: cyoda-client-secrets

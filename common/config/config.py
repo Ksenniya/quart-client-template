@@ -4,8 +4,10 @@ import base64
 # Lambda to get an environment variable or raise an Exception if not found
 get_env = lambda key: os.getenv(key) or (_ for _ in ()).throw(Exception(f"{key} not found"))
 
-CYODA_AI_URL = get_env("CYODA_AI_URL")
-CYODA_API_URL = get_env("CYODA_API_URL") + "/api"
+CYODA_HOST = get_env("CYODA_HOST")
+CYODA_AI_URL = f"https://{CYODA_HOST}/ai"
+CYODA_API_URL = f"https://{CYODA_HOST}"
+GRPC_ADDRESS = f"grpc-{CYODA_HOST}"
 
 decoded_bytes_cyoda_api_key = base64.b64decode(get_env("CYODA_API_KEY"))
 API_KEY = decoded_bytes_cyoda_api_key.decode("utf-8")
@@ -15,7 +17,6 @@ API_SECRET = decoded_bytes_cyoda_api_secret.decode("utf-8")
 CHAT_ID = os.getenv("CHAT_ID")
 
 ENTITY_VERSION = os.getenv("ENTITY_VERSION", "1000")
-GRPC_ADDRESS = get_env("GRPC_ADDRESS")
 GRPC_PROCESSOR_TAG = os.getenv("GRPC_PROCESSOR_TAG", CHAT_ID)
 
 CYODA_AI_API = 'cyoda'
@@ -29,3 +30,4 @@ PROJECT_DIR = os.getenv("PROJECT_DIR", "/tmp")
 REPOSITORY_URL = os.getenv("REPOSITORY_URL", "https://github.com/Cyoda-platform/quart-client-template")
 REPOSITORY_NAME = REPOSITORY_URL.split('/')[-1].replace('.git', '')
 ACCESS_TOKEN = get_env("ACCESS_TOKEN")
+TEAMCITY_HOST = get_env("TEAMCITY_HOST")
