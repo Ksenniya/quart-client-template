@@ -6,9 +6,9 @@ load_dotenv()  # Loads the .env file automatically
 get_env = lambda key: os.getenv(key) or (_ for _ in ()).throw(Exception(f"{key} not found"))
 
 CYODA_HOST = get_env("CYODA_HOST")
-CYODA_AI_URL = f"https://{CYODA_HOST}/ai"
-CYODA_API_URL = f"https://{CYODA_HOST}/api"
-GRPC_ADDRESS = f"grpc-{CYODA_HOST}"
+CYODA_AI_URL = os.getenv("CYODA_AI_URL", f"https://{CYODA_HOST}/ai")
+CYODA_API_URL = os.getenv("CYODA_API_URL", f"https://{CYODA_HOST}/api")
+GRPC_ADDRESS = os.getenv("GRPC_ADDRESS", f"grpc-{CYODA_HOST}")
 
 decoded_bytes_cyoda_api_key = base64.b64decode(get_env("CYODA_API_KEY"))
 API_KEY = decoded_bytes_cyoda_api_key.decode("utf-8")
