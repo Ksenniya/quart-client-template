@@ -158,7 +158,7 @@ def transform_user(user_name: str) -> Dict[str, str]:
     - K8s namespace: lowercase alphanumeric and dash, starting with a letter.
     """
     # For keyspace: remove any char not alphanumeric or underscore.
-    keyspace = re.sub(r"[^a-z0-9_]", "", user_name.lower())
+    keyspace = re.sub(r"[^a-z0-9_]", "_", user_name.lower())
     if not keyspace or not keyspace[0].isalpha():
         keyspace = "a" + keyspace
     # For namespace: allow lowercase alphanumeric and dash.
