@@ -177,7 +177,6 @@ async def trigger_teamcity(build_type: str, properties: List[Dict[str, str]]) ->
     payload = {
         "buildType": {"id": build_type},
         "properties": {"property": properties},
-        "customization": {"parameters": {"key": "parameters"}}
     }
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
