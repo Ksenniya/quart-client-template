@@ -1,6 +1,7 @@
 import os
 import base64
-
+from dotenv import load_dotenv
+load_dotenv()  # Loads the .env file automatically
 # Lambda to get an environment variable or raise an Exception if not found
 get_env = lambda key: os.getenv(key) or (_ for _ in ()).throw(Exception(f"{key} not found"))
 
