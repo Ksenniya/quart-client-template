@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST, CYODA_CLIENT_APP_PIPELINE, \
     CYODA_ENV_PIPELINE, CYODA_API_URL
@@ -319,8 +319,8 @@ async def deploy_user_app(data: DeployUserAppRequest):
         return err_resp, err_code
     return jsonify({"build_id": job_id})
 
-@validate_request(BuildStatusRequest)
 @app.route("/deploy/cyoda-env/status", methods=["GET"])
+@validate_querystring(BuildStatusRequest)
 @auth_required
 async def get_cyoda_env_status():
     build_id = request.args.get("build_id")
@@ -332,8 +332,8 @@ async def get_cyoda_env_status():
         return err_resp, err_code
     return response
 
-@validate_request(BuildStatusRequest)
 @app.route("/deploy/user_app/status", methods=["GET"])
+@validate_querystring(BuildStatusRequest)
 @auth_required
 async def get_user_app_status():
     build_id = request.args.get("build_id")
@@ -345,8 +345,8 @@ async def get_user_app_status():
         return err_resp, err_code
     return response
 
-@validate_request(BuildStatusRequest)
 @app.route("/deploy/cyoda-env/statistics", methods=["GET"])
+@validate_querystring(BuildStatusRequest)
 @auth_required
 async def get_cyoda_env_statistics():
     build_id = request.args.get("build_id")
@@ -358,8 +358,8 @@ async def get_cyoda_env_statistics():
         return err_resp, err_code
     return response
 
-@validate_request(BuildStatusRequest)
 @app.route("/deploy/user_app/statistics", methods=["GET"])
+@validate_querystring(BuildStatusRequest)
 @auth_required
 async def get_user_app_statistics():
     build_id = request.args.get("build_id")
