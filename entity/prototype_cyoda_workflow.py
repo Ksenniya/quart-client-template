@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
-import uuid
 import datetime
 import httpx
 from dataclasses import dataclass
 
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
@@ -37,15 +36,10 @@ async def startup():
 class ProcessData:
     inputData: str  # Using only primitive types
 
+# Workflow function for entity_model "process"
+# This function is applied asynchronously before persistence.
+# It takes the entity data as the only argument and can modify it.
 async def process_process(entity_data: dict) -> dict:
-    # Workflow function for entity_model "process"
-    # This function is applied asynchronously before persistence.
-    # You can modify the entity_data as needed.
-    entity_data["workflowProcessed"] = True
-    return entity_data
-
-async def process_entity(job_id: str, input_data: str):
-    """Process the input data and update the job status via entity_service."""
     try:
         async with httpx.AsyncClient() as client:
             # External API call to get current UTC time
@@ -53,41 +47,34 @@ async def process_entity(job_id: str, input_data: str):
             response.raise_for_status()
             external_data = response.json()
         current_datetime = external_data.get("datetime")
+        input_data = entity_data.get("inputData")
         result = f"Processed '{input_data}' at {current_datetime}"
-        update_data = {"result": result, "status": "completed"}
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="process",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=update_data,
-            technical_id=job_id,
-            meta={}
-        )
-        logger.info(f"Job {job_id} completed successfully.")
+        # Update the entity state directly
+        entity_data["result"] = result
+        entity_data["status"] = "completed"
+        entity_data["workflowProcessed"] = True
     except Exception as e:
         logger.exception(e)
-        update_data = {"result": None, "status": "error"}
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="process",
-            entity_version=ENTITY_VERSION,
-            entity=update_data,
-            technical_id=job_id,
-            meta={}
-        )
+        entity_data["result"] = None
+        entity_data["status"] = "error"
+        entity_data["workflowProcessed"] = False
+    return entity_data
 
 @app.route('/hello', methods=['GET'])
 async def hello():
-    """Return a simple 'Hello, World!' message."""
+    # Return a simple 'Hello, World!' message.
     return jsonify({"message": "Hello, World!"})
 
-# For POST requests, due to an issue in quart-schema, the route decorator must precede the validate_request decorator.
+# For POST requests, due to an issue in quart-schema,
+# the route decorator must precede the validate_request decorator.
 @app.route('/process', methods=['POST'])
 @validate_request(ProcessData)
 async def process(data: ProcessData):
     """
-    Accept input data, fire a background task to process it, and return a job reference.
-    External data retrieval and calculations are executed in the background.
+    Accept input data, create a processing job with minimal logic,
+    and offload all asynchronous tasks to the workflow function.
+    The workflow function (process_process) will be invoked
+    asynchronously before persisting the entity.
     """
     try:
         input_data = data.inputData
@@ -100,22 +87,21 @@ async def process(data: ProcessData):
             "requestedAt": requested_at,
             "inputData": input_data
         }
-        # Create an external processing job via entity_service with a workflow function.
+        # Create a processing job via entity_service with a workflow function.
+        # The workflow function will perform any asynchronous tasks required
+        # and update the entity state accordingly before persistence.
         job_id = await entity_service.add_item(
             token=cyoda_token,
-            entity_model="process",  # entity_model as defined for processing jobs
+            entity_model="process",  # entity_model defined for processing jobs
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=job_data,  # the validated data object
             workflow=process_process  # Workflow function applied to the entity asynchronously before persistence.
         )
 
-        # Fire and forget the processing task
-        asyncio.create_task(process_entity(job_id, input_data))
-
-        # Return only the job_id along with initial status and requested time
+        # Return the job_id and initial request details.
         return jsonify({
             "job_id": job_id,
-            "status": "processing",
+            "status": job_data.get("status"),
             "requestedAt": requested_at
         })
     except Exception as e:
