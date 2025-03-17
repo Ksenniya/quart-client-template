@@ -20,9 +20,7 @@ QuartSchema(app)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -37,28 +35,32 @@ class ProcessData:
     inputData: str  # Using only primitive types
 
 # Workflow function for entity_model "process"
-# This function is applied asynchronously before persistence.
+# This function will be invoked asynchronously before persisting the entity.
 # It takes the entity data as the only argument and can modify it.
-async def process_process(entity_data: dict) -> dict:
+async def process_process(entity: dict) -> dict:
     try:
+        # Call an external API to get current UTC time.
         async with httpx.AsyncClient() as client:
-            # External API call to get current UTC time
             response = await client.get("http://worldtimeapi.org/api/timezone/Etc/UTC")
             response.raise_for_status()
             external_data = response.json()
         current_datetime = external_data.get("datetime")
-        input_data = entity_data.get("inputData")
+        # Extract the input data from the entity.
+        input_data = entity.get("inputData", "")
+        # Build the processing result.
         result = f"Processed '{input_data}' at {current_datetime}"
-        # Update the entity state directly
-        entity_data["result"] = result
-        entity_data["status"] = "completed"
-        entity_data["workflowProcessed"] = True
+        # Update entity state directly.
+        entity["result"] = result
+        entity["status"] = "completed"
+        entity["workflowProcessed"] = True
     except Exception as e:
         logger.exception(e)
-        entity_data["result"] = None
-        entity_data["status"] = "error"
-        entity_data["workflowProcessed"] = False
-    return entity_data
+        # Update entity state for error case.
+        entity["result"] = None
+        entity["status"] = "error"
+        entity["workflowProcessed"] = False
+    # Always return the modified entity.
+    return entity
 
 @app.route('/hello', methods=['GET'])
 async def hello():
@@ -71,10 +73,10 @@ async def hello():
 @validate_request(ProcessData)
 async def process(data: ProcessData):
     """
-    Accept input data, create a processing job with minimal logic,
+    Accept input data, create a processing job with minimal endpoint logic,
     and offload all asynchronous tasks to the workflow function.
-    The workflow function (process_process) will be invoked
-    asynchronously before persisting the entity.
+    The workflow function (process_process) will be invoked asynchronously
+    before persisting the entity.
     """
     try:
         input_data = data.inputData
@@ -82,23 +84,23 @@ async def process(data: ProcessData):
             return jsonify({"error": "inputData is required"}), 400
 
         requested_at = datetime.datetime.utcnow().isoformat()
+        # Prepare the initial job data.
         job_data = {
             "status": "processing",
             "requestedAt": requested_at,
             "inputData": input_data
         }
         # Create a processing job via entity_service with a workflow function.
-        # The workflow function will perform any asynchronous tasks required
-        # and update the entity state accordingly before persistence.
+        # The workflow function performs all asynchronous tasks and updates the entity state.
         job_id = await entity_service.add_item(
             token=cyoda_token,
-            entity_model="process",  # entity_model defined for processing jobs
+            entity_model="process",  # defined for processing jobs
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=job_data,  # the validated data object
-            workflow=process_process  # Workflow function applied to the entity asynchronously before persistence.
+            workflow=process_process  # workflow function applied before persistence
         )
 
-        # Return the job_id and initial request details.
+        # Return only the job_id along with initial details.
         return jsonify({
             "job_id": job_id,
             "status": job_data.get("status"),
