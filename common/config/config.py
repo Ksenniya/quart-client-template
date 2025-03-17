@@ -32,3 +32,5 @@ REPOSITORY_URL = os.getenv("REPOSITORY_URL", "https://github.com/Cyoda-platform/
 REPOSITORY_NAME = REPOSITORY_URL.split('/')[-1].replace('.git', '')
 ACCESS_TOKEN = get_env("ACCESS_TOKEN")
 TEAMCITY_HOST = f"https://{get_env("TEAMCITY_HOST")}"
+CYODA_ENV_PIPELINE = get_env("CYODA_ENV_PIPELINE")
+CYODA_CLIENT_APP_PIPELINE = get_env("CYODA_CLIENT_APP_PIPELINE")

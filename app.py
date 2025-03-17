@@ -12,7 +12,8 @@ import httpx
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
-from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST
+from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST, CYODA_CLIENT_APP_PIPELINE, \
+    CYODA_ENV_PIPELINE
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
 
@@ -290,7 +291,7 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
         {"name": "user_env_name", "value": user_name}
     ]
-    job_id, err_resp, err_code = await trigger_deployment("KubernetesPipeline_CyodaSaas", properties)
+    job_id, err_resp, err_code = await trigger_deployment(CYODA_ENV_PIPELINE, properties)
     if err_resp:
         return err_resp, err_code
     return jsonify({"build_id": job_id})
@@ -301,11 +302,11 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
 async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
     transformed = transform_user(user_name)
     properties = [
-        {"name": "repository_url", "value": data.repository_url},
+        {"name": "repo_url", "value": data.repository_url},
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
         {"name": "user_env_name", "value": user_name}
     ]
-    job_id, err_resp, err_code = await trigger_deployment("KubernetesPipeline_CyodaSaasUserEnv", properties)
+    job_id, err_resp, err_code = await trigger_deployment(CYODA_CLIENT_APP_PIPELINE, properties)
     if err_resp:
         return err_resp, err_code
     return jsonify({"build_id": job_id})
