@@ -149,7 +149,7 @@ async def process_calc_req_event(token, data: dict, queue: asyncio.Queue):
     try:
         # Process the first or subsequent versions of the entity
         if processor_name in process_dispatch:
-            logger.info(f"Processing notification entity: {data}")
+            logger.debug(f"Processing notification entity: {data}")
             await process_event(token, data, processor_name)
 
     except Exception as e:
@@ -185,7 +185,7 @@ async def consume_stream(token):
         call = stub.startStreaming(event_generator(queue))
 
         async for response in call:
-            logger.info(f"Received response: {response}")
+            logger.debug(f"Received response: {response}")
 
             if response.type == GREET_EVENT_TYPE:
                 handle_greet_event()
@@ -209,7 +209,7 @@ async def grpc_stream(token):
     try:
         while True:
             await consume_stream(token)
-            logger.info("Working...")
+            logger.debug("Working...")
     except asyncio.CancelledError:
-        logger.info("consume_stream was cancelled")
+        logger.debug("consume_stream was cancelled")
         raise
