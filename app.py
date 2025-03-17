@@ -13,9 +13,10 @@ from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST, CYODA_CLIENT_APP_PIPELINE, \
-    CYODA_ENV_PIPELINE
+    CYODA_ENV_PIPELINE, CYODA_API_URL
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
+from entity.prototype import API_URL
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,8 +26,6 @@ logger.setLevel(logging.INFO)
 # Configurations and Exception Classes
 # ---------------------------------------------------------------------
 ENABLE_AUTH = True
-API_URL = "https://example.com/api"
-
 
 class UnauthorizedAccessException(Exception):
     pass
@@ -104,19 +103,24 @@ async def handle_any_exception(error):
 
 
 def auth_required(func):
-    @functools.wraps(func)
+    @functools.wraps(func)  # This ensures the original function's name and metadata are preserved
     async def wrapper(*args, **kwargs):
+
         if ENABLE_AUTH:
-            auth_header = request.headers.get("Authorization")
+            # Check for Authorization header
+            auth_header = request.headers.get('Authorization')
             if not auth_header:
                 return jsonify({"error": "Missing Authorization header"}), 401
-            user_name = _get_user_from_token(auth_header)
-            if not user_name:
-                raise UnauthorizedAccessException("Invalid or missing token")
-            resp = await send_get_request(user_name, API_URL, "v1")
-            if not resp or (resp.get("status") == 401):
+
+            token = auth_header.split(" ")[1]
+
+            # Call external service to validate the token
+            response = await send_get_request(token, CYODA_API_URL, "v1")
+            # todo
+            if not response or (response.get("status") and response.get("status") == 401):
                 raise UnauthorizedAccessException("Invalid token")
-            kwargs["user_name"] = user_name
+
+        # If the token is valid, proceed to the requested route
         return await func(*args, **kwargs)
 
     return wrapper
@@ -127,13 +131,16 @@ def auth_required(func):
 # ---------------------------------------------------------------------
 @dataclass
 class DeployCyodaEnvRequest:
-    pass
+    user_name: str
+    chat_id: str
 
 
 @dataclass
 class DeployUserAppRequest:
     repository_url: str
     is_public: str
+    user_name: str
+    chat_id: str
 
 
 @dataclass
@@ -146,7 +153,6 @@ class CancelDeploymentRequest:
     build_id: str  # Updated to job_id
     comment: str
     readIntoQueue: bool
-
 
 # ---------------------------------------------------------------------
 # Helper Functions for Transformation
@@ -284,12 +290,13 @@ async def fetch_statistics(job: dict):
 @app.route("/deploy/cyoda-env", methods=["POST"])
 @validate_request(DeployCyodaEnvRequest)
 @auth_required
-async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
-    transformed = transform_user(user_name)
+async def deploy_cyoda_env(data: DeployCyodaEnvRequest):
+    transformed = transform_user(data.user_name)
     properties = [
         {"name": "user_defined_keyspace", "value": transformed["keyspace"]},
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
-        {"name": "user_env_name", "value": user_name}
+        {"name": "user_env_name", "value": data.user_name},
+        {"name": "chat_id", "value": data.chat_id}
     ]
     job_id, err_resp, err_code = await trigger_deployment(CYODA_ENV_PIPELINE, properties)
     if err_resp:
@@ -299,12 +306,13 @@ async def deploy_cyoda_env(data: DeployCyodaEnvRequest, *, user_name: str):
 @app.route("/deploy/user_app", methods=["POST"])
 @validate_request(DeployUserAppRequest)
 @auth_required
-async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
-    transformed = transform_user(user_name)
+async def deploy_user_app(data: DeployUserAppRequest):
+    transformed = transform_user(data.user_name)
     properties = [
         {"name": "repo_url", "value": data.repository_url},
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
-        {"name": "user_env_name", "value": user_name}
+        {"name": "user_env_name", "value": data.user_name},
+        {"name": "chat_id", "value": data.chat_id}
     ]
     job_id, err_resp, err_code = await trigger_deployment(CYODA_CLIENT_APP_PIPELINE, properties)
     if err_resp:
@@ -314,7 +322,7 @@ async def deploy_user_app(data: DeployUserAppRequest, *, user_name: str):
 @validate_request(BuildStatusRequest)
 @app.route("/deploy/cyoda-env/status", methods=["GET"])
 @auth_required
-async def get_cyoda_env_status(*, user_name):
+async def get_cyoda_env_status():
     build_id = request.args.get("build_id")
     job = await get_job_by_build_id(build_id)
     if not job:
@@ -327,7 +335,7 @@ async def get_cyoda_env_status(*, user_name):
 @validate_request(BuildStatusRequest)
 @app.route("/deploy/user_app/status", methods=["GET"])
 @auth_required
-async def get_user_app_status(*, user_name):
+async def get_user_app_status():
     build_id = request.args.get("build_id")
     job = await get_job_by_build_id(build_id)
     if not job:
@@ -340,7 +348,7 @@ async def get_user_app_status(*, user_name):
 @validate_request(BuildStatusRequest)
 @app.route("/deploy/cyoda-env/statistics", methods=["GET"])
 @auth_required
-async def get_cyoda_env_statistics(*, user_name):
+async def get_cyoda_env_statistics():
     build_id = request.args.get("build_id")
     job = await get_job_by_build_id(build_id)
     if not job:
@@ -353,7 +361,7 @@ async def get_cyoda_env_statistics(*, user_name):
 @validate_request(BuildStatusRequest)
 @app.route("/deploy/user_app/statistics", methods=["GET"])
 @auth_required
-async def get_user_app_statistics(*, user_name):
+async def get_user_app_statistics():
     build_id = request.args.get("build_id")
     job = await get_job_by_build_id(build_id)
     if not job:
@@ -367,7 +375,7 @@ async def get_user_app_statistics(*, user_name):
 @app.route("/deploy/cancel/user_app", methods=["POST"])
 @validate_request(CancelDeploymentRequest)
 @auth_required
-async def cancel_user_app_deployment(data: CancelDeploymentRequest, *, user_name: str):
+async def cancel_user_app_deployment(data: CancelDeploymentRequest):
     job = await entity_service.get_item(
         token=cyoda_token,
         entity_model="job",
