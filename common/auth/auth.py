@@ -16,7 +16,7 @@ async def authenticate():
     headers = {"Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest"}
     auth_data = {"username": config.API_KEY, "password": config.API_SECRET}
 
-    logger.info("Attempting to authenticate with Cyoda API.")
+    logger.info(f"Attempting to authenticate with Cyoda API., login url: {login_url}")
 
     async with httpx.AsyncClient(timeout=10) as client:
         try:
@@ -39,7 +39,7 @@ def authenticate_util():
     headers = {"Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest"}
     auth_data = {"username": config.API_KEY, "password": config.API_SECRET}
 
-    logger.info("Attempting to authenticate with Cyoda API.")
+    logger.info(f"Attempting to authenticate with Cyoda API., login url: {login_url}")
 
     try:
         response = requests.post(login_url, headers=headers, data=json.dumps(auth_data), timeout=10)
