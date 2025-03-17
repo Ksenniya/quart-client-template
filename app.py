@@ -307,7 +307,7 @@ async def deploy_user_app(data: DeployUserAppRequest):
         {"name": "repo_url", "value": data.repository_url},
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
         {"name": "user_env_name", "value": data.user_name},
-        {"name": "branch", "value": data.chat_id},
+        {"name": "branch", "value": data.branch},
         {"name": "chat_id", "value": data.chat_id}
     ]
     job_id, err_resp, err_code = await trigger_deployment(CYODA_CLIENT_APP_PIPELINE, properties)
