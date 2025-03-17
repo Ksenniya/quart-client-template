@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "process", "entity_data_example": {"inputData": "Your data here", "status": "processing", "requestedAt": "2023-10-14T12:00:00Z", "result": "Processed 'Your data here' at 2023-10-14T12:00:00Z"}}]}
