@@ -16,7 +16,7 @@ from common.config.config import ACCESS_TOKEN, ENTITY_VERSION, TEAMCITY_HOST, CY
     CYODA_ENV_PIPELINE, CYODA_API_URL
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
-from entity.prototype import API_URL
+from common.util.utils import send_get_request
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,12 +33,6 @@ class UnauthorizedAccessException(Exception):
 
 class ChatNotFoundException(Exception):
     pass
-
-
-# Dummy implementation for token validation via external service.
-async def send_get_request(token: str, url: str, version: str) -> Dict[str, Any]:
-    return {"status": 200}
-
 
 def _get_user_from_token(auth_header: str):
     if not auth_header:
@@ -141,6 +135,7 @@ class DeployUserAppRequest:
     is_public: str
     user_name: str
     chat_id: str
+    branch: str
 
 
 @dataclass
@@ -312,6 +307,7 @@ async def deploy_user_app(data: DeployUserAppRequest):
         {"name": "repo_url", "value": data.repository_url},
         {"name": "user_defined_namespace", "value": transformed["namespace"]},
         {"name": "user_env_name", "value": data.user_name},
+        {"name": "branch", "value": data.chat_id},
         {"name": "chat_id", "value": data.chat_id}
     ]
     job_id, err_resp, err_code = await trigger_deployment(CYODA_CLIENT_APP_PIPELINE, properties)
@@ -319,8 +315,8 @@ async def deploy_user_app(data: DeployUserAppRequest):
         return err_resp, err_code
     return jsonify({"build_id": job_id})
 
-@app.route("/deploy/cyoda-env/status", methods=["GET"])
 @validate_querystring(BuildStatusRequest)
+@app.route("/deploy/cyoda-env/status", methods=["GET"])
 @auth_required
 async def get_cyoda_env_status():
     build_id = request.args.get("build_id")
@@ -332,8 +328,8 @@ async def get_cyoda_env_status():
         return err_resp, err_code
     return response
 
-@app.route("/deploy/user_app/status", methods=["GET"])
 @validate_querystring(BuildStatusRequest)
+@app.route("/deploy/user_app/status", methods=["GET"])
 @auth_required
 async def get_user_app_status():
     build_id = request.args.get("build_id")
@@ -345,8 +341,8 @@ async def get_user_app_status():
         return err_resp, err_code
     return response
 
-@app.route("/deploy/cyoda-env/statistics", methods=["GET"])
 @validate_querystring(BuildStatusRequest)
+@app.route("/deploy/cyoda-env/statistics", methods=["GET"])
 @auth_required
 async def get_cyoda_env_statistics():
     build_id = request.args.get("build_id")
@@ -358,8 +354,8 @@ async def get_cyoda_env_statistics():
         return err_resp, err_code
     return response
 
-@app.route("/deploy/user_app/statistics", methods=["GET"])
 @validate_querystring(BuildStatusRequest)
+@app.route("/deploy/user_app/statistics", methods=["GET"])
 @auth_required
 async def get_user_app_statistics():
     build_id = request.args.get("build_id")
