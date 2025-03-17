@@ -21,7 +21,6 @@ container:
       RANDOM_AI_API: random
       TRINO_AI_API: trino
       ENTITY_VERSION: 10004
-      CHAT_ID: 6f26b992-001c-11f0-add8-40c2ba0ac9eb
 
 podAnnotations: {}
 health:
