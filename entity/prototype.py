@@ -14,12 +14,15 @@ logger.setLevel(logging.INFO)
 dataclass
 class Greeting:
     name: str
+    surname: str
 
 @app.route('/hello', methods=['GET'])
 @validate_querystring(Greeting)  # Workaround: validation first for GET requests
 async def hello():
     name = request.args.get('name', 'World')
-    return jsonify({"message": f"Hello, {name}!"})
+    surname = request.args.get('surname', '')
+    full_greeting = f"Hello, {name} {surname}!".strip()
+    return jsonify({"message": full_greeting})
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
