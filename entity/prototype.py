@@ -1,10 +1,9 @@
-Here is a working prototype implementation of the `prototype.py` file based on the provided requirements. The implementation uses `httpx.AsyncClient` for HTTP requests, `Quart` for the web framework, and includes placeholders where necessary. 
-
 ```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -18,6 +17,21 @@ entity_job = {}
 
 # External API URL
 TEAMCITY_API_URL = "https://teamcity.test/app/rest"
+
+@dataclass
+class DeployCyodaEnvRequest:
+    user_name: str
+
+@dataclass
+class DeployUserAppRequest:
+    repository_url: str
+    is_public: bool
+    user_name: str
+
+@dataclass
+class CancelUserAppRequest:
+    comment: str
+    readdIntoQueue: bool
 
 async def trigger_teamcity_build(build_type_id, properties):
     """Trigger a build on TeamCity."""
@@ -33,9 +47,9 @@ async def trigger_teamcity_build(build_type_id, properties):
         return response.json()  # Return the response JSON
 
 @app.route('/deploy/cyoda-env', methods=['POST'])
-async def deploy_cyoda_env():
-    data = await request.get_json()
-    user_name = data.get("user_name")
+@validate_request(DeployCyodaEnvRequest)  # Validation last for POST
+async def deploy_cyoda_env(data: DeployCyodaEnvRequest):
+    user_name = data.user_name
     
     # Prepare properties for TeamCity
     properties = [
@@ -53,10 +67,10 @@ async def deploy_cyoda_env():
     return jsonify({"build_id": build_id, "status": "queued"})
 
 @app.route('/deploy/user_app', methods=['POST'])
-async def deploy_user_app():
-    data = await request.get_json()
-    repository_url = data.get("repository_url")
-    user_name = data.get("user_name")
+@validate_request(DeployUserAppRequest)  # Validation last for POST
+async def deploy_user_app(data: DeployUserAppRequest):
+    repository_url = data.repository_url
+    user_name = data.user_name
 
     # Prepare properties for TeamCity
     properties = [
@@ -92,7 +106,8 @@ async def get_user_app_status(build_id):
     return jsonify({"error": "Build ID not found"}), 404
 
 @app.route('/deploy/cancel/user_app/<string:build_id>', methods=['POST'])
-async def cancel_user_app(build_id):
+@validate_request(CancelUserAppRequest)  # Validation last for POST
+async def cancel_user_app(data: CancelUserAppRequest, build_id: str):
     # TODO: Implement the logic to cancel the build in TeamCity
     # Mock response for demonstration
     job = entity_job.pop(build_id, None)
@@ -101,10 +116,3 @@ async def cancel_user_app(build_id):
     return jsonify({"error": "Build ID not found"}), 404
 
 if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
-### Key Points
-- The code defines several API endpoints based on your specifications.
-- It uses `httpx.AsyncClient` for asynchronous HTTP requests to the TeamCity API.
-- Job information is stored in a local dictionary (`entity_job`) to
