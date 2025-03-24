@@ -1,4 +1,3 @@
-```python
 from dataclasses import dataclass
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
@@ -21,6 +20,7 @@ results_cache = []
 @dataclass
 class HelloQuery:
     name: str = None  # Optional name parameter for hello endpoint
+    surname: str = None  # Optional surname parameter for hello endpoint
 
 @dataclass
 class ProcessData:
@@ -29,7 +29,11 @@ class ProcessData:
 @app.route('/hello', methods=['GET'])
 @validate_querystring(HelloQuery)  # Issue workaround: validation first for GET requests
 async def hello():
-    name = request.args.get('name', 'World')
+    query = HelloQuery(**request.args)
+    name = query.name if query.name else 'World'
+    surname = query.surname if query.surname else ''
+    if surname:
+        return jsonify({"message": f"Hello, {name} {surname}!"})
     return jsonify({"message": f"Hello, {name}!"})
 
 @app.route('/results', methods=['GET'])
@@ -77,4 +81,3 @@ async def process_entity(job_id, field1, field2):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
