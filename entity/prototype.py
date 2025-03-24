@@ -1,6 +1,7 @@
 ```python
+from dataclasses import dataclass
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 import asyncio
 import logging
@@ -17,7 +18,16 @@ logger.setLevel(logging.INFO)
 entity_jobs = {}
 results_cache = []
 
+@dataclass
+class HelloQuery:
+    name: str = None  # Optional name parameter for hello endpoint
+
+@dataclass
+class ProcessData:
+    input_data: dict  # Expecting a dictionary for input data
+
 @app.route('/hello', methods=['GET'])
+@validate_querystring(HelloQuery)  # Issue workaround: validation first for GET requests
 async def hello():
     name = request.args.get('name', 'World')
     return jsonify({"message": f"Hello, {name}!"})
@@ -27,12 +37,10 @@ async def get_results():
     return jsonify({"results": results_cache})
 
 @app.route('/process', methods=['POST'])
-async def process_data():
-    data = await request.get_json()
-    
-    # TODO: Validate the input data structure as needed
-    field1 = data.get('input_data', {}).get('field1')
-    field2 = data.get('input_data', {}).get('field2')
+@validate_request(ProcessData)  # Validation last for POST requests
+async def process_data(data: ProcessData):
+    field1 = data.input_data.get('field1')
+    field2 = data.input_data.get('field2')
 
     # Fire and forget the processing task
     job_id = len(entity_jobs) + 1
@@ -46,7 +54,6 @@ async def process_data():
 async def process_entity(job_id, field1, field2):
     try:
         # TODO: Implement your logic here. For now, we will use a placeholder.
-        # Simulate external API call
         async with httpx.AsyncClient() as client:
             # Using a placeholder URL; replace with a real API endpoint if applicable
             response = await client.get('https://api.example.com/data')  # Placeholder API
@@ -71,10 +78,3 @@ async def process_entity(job_id, field1, field2):
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-- The code implements the specified API endpoints `/hello`, `/results`, and `/process`.
-- It utilizes an in-memory cache to store processed results, simulating a persistence layer.
-- The `/process` endpoint includes a mock external API call using `httpx.AsyncClient`.
-- Logging is implemented to capture exceptions during processing.
-- Placeholder comments are included to indicate areas where additional implementation details are needed.
