@@ -1,8 +1,9 @@
 ```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 app = Quart(__name__)
@@ -22,16 +23,26 @@ async def external_api_call(data):
         response = await client.post('https://jsonplaceholder.typicode.com/posts', json=data)
         return response.json()
 
+# Data classes for validation
+@dataclass
+class HelloRequest:
+    name: str  # Primitive type for name
+
+@dataclass
+class DataRequest:
+    inputData: dict  # Primitive type for input data
+
 # Route for hello endpoint
 @app.route('/hello', methods=['GET'])
+@validate_querystring(HelloRequest)  # Workaround: Validation first for GET requests
 async def hello():
     name = request.args.get('name', 'World')
     return jsonify({"message": f"Hello, {name}!"})
 
 # Route for data endpoint
 @app.route('/data', methods=['POST'])
-async def data():
-    input_data = await request.get_json()
+@validate_request(DataRequest)  # Validation second for POST requests
+async def data(data: DataRequest):
     job_id = str(len(entity_job) + 1)  # Simple ID generation
     requested_at = request.json.get('requestedAt', None)  # Optional timestamp
 
@@ -39,7 +50,7 @@ async def data():
     logger.info(f"Job {job_id} started.")
 
     # Fire and forget the processing task
-    await asyncio.create_task(process_entity(job_id, input_data))
+    await asyncio.create_task(process_entity(job_id, data.inputData))
     return jsonify({"status": "success", "job_id": job_id}), 202
 
 # Function to process the entity asynchronously
@@ -61,9 +72,3 @@ async def results():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-1. The `external_api_call` function is set up to mock an API call to a placeholder API (`https://jsonplaceholder.typicode.com/posts`). You should replace this placeholder URL with the actual external API you intend to use.
-2. The logging is configured to capture both info and exception logs.
-3. The in-memory dictionary `entity_job` serves as a mock for persistence; this should be replaced with a proper persistence layer in a full implementation.
-4. The prototype uses async functionality to simulate non-blocking behavior, which is essential for handling multiple requests effectively.
