@@ -1,4 +1,3 @@
-```python
 from dataclasses import dataclass
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
@@ -15,15 +14,20 @@ logger.setLevel(logging.INFO)
 # Local cache to simulate persistence
 entity_job = {}
 
-@dataclass
+dataclass
 class HelloResponse:
     status: str
     data: dict
 
+@dataclass
+class HelloRequest:
+    name: str  # Added name parameter
+
 @app.route('/hello', methods=['GET'])
-@validate_querystring(HelloResponse)  # Workaround for validation logic
+@validate_querystring(HelloRequest)  # Workaround for validation logic
 async def hello():
-    response = HelloResponse(status="success", data={"message": "Hello, World!"})
+    name = request.args.get('name')  # Retrieve name from query parameters
+    response = HelloResponse(status="success", data={"message": f"Hello, {name}!"})
     return jsonify(response.__dict__)
 
 @dataclass
@@ -58,4 +62,3 @@ async def process_entity(job_id, data):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
