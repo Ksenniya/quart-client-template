@@ -1,0 +1,5 @@
+{
+    "createdAt": "date",
+    "email": "string",
+    "username": "string"
+}
