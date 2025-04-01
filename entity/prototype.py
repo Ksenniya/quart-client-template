@@ -1,4 +1,3 @@
-```python
 from quart import Quart, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
@@ -14,7 +13,7 @@ QuartSchema(app)
 # Local cache to simulate persistence
 entity_job = {}
 
-@dataclass
+dataclass
 class Todo:
     task: str
 
@@ -53,4 +52,3 @@ async def get_lei(id: str):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
