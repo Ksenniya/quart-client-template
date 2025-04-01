@@ -1,0 +1,24 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "requestedAt": "2023-10-01T12:00:00Z",
+                "status": "processing",
+                "task": "Buy groceries"
+            },
+            "entity_name": "todo"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello, Alice!"
+            },
+            "entity_name": "greet"
+        }
+    ]
+}
