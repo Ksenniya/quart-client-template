@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "string",
+                "password": "string",
+                "username": "string"
+            },
+            "entity_name": "user_registration"
+        },
+        {
+            "entity_data_example": {
+                "password": "string",
+                "username": "string"
+            },
+            "entity_name": "user_login"
+        },
+        {
+            "entity_data_example": {
+                "createdAt": "date",
+                "email": "string",
+                "username": "string"
+            },
+            "entity_name": "retrieve_user_data"
+        },
+        {
+            "entity_data_example": {
+                "query": "string"
+            },
+            "entity_name": "external_data_retrieval"
+        }
+    ]
+}
