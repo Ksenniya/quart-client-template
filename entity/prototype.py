@@ -1,50 +1,51 @@
 ```python
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart import Quart, request
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 import httpx
 import asyncio
 import logging
 
-app = Quart(__name__)
-QuartSchema(app)
-
-# Setup logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# In-memory cache for jobs
+app = Quart(__name__)
+QuartSchema(app)
+
+# In-memory cache for entities
 entity_job = {}
 
-async def process_entity(job_id, data):
-    # TODO: Add real processing logic here
-    # Simulate processing time
-    await asyncio.sleep(2)
-    logger.info(f"Processed job {job_id} with data: {data}")
+@dataclass
+class Todo:
+    task: str
 
-@app.route('/submit', methods=['POST'])
-async def submit_job():
-    data = await request.get_json()
-    job_id = len(entity_job) + 1  # Simple job ID generation
+# Issue workaround: Always put validation first for GET requests and last for POST requests
+@app.route("/test", methods=["POST"])
+@validate_request(Todo)  # This should be last in POST
+async def create_todo(data: Todo):
     requested_at = asyncio.get_event_loop().time()
-
-    # Store the job in the cache
-    entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
-    
+    entity_job[data.task] = {"status": "processing", "requestedAt": requested_at}
     # Fire and forget the processing task
-    await asyncio.create_task(process_entity(job_id, data))
+    await asyncio.create_task(process_entity(entity_job[data.task], data.__dict__))
+    return {"message": "Todo created", "task": data.task}, 201
 
-    return jsonify({"job_id": job_id, "status": "processing"}), 202
+@app.route("/test", methods=["GET"])
+@validate_querystring(Todo)  # This should be first in GET
+async def get_todo():
+    name = request.args.get('task')  # Use standard approach to access parameters values for GET requests
+    if name in entity_job:
+        return entity_job[name], 200
+    return {"message": "Todo not found"}, 404
 
-@app.route('/result/<int:job_id>', methods=['GET'])
-async def get_result(job_id):
-    job = entity_job.get(job_id)
-    if job:
-        return jsonify(job), 200
-    else:
-        return jsonify({"error": "Job not found"}), 404
+@app.route("/companies/<string:id>/lei", methods=["GET"])
+async def get_companies_lei(id: str):
+    # TODO: Implement the logic to retrieve LEI from a real API
+    return {"company_id": id, "lei": "mocked_lei_value"}, 200
+
+async def process_entity(entity, data):
+    # TODO: Implement the processing logic, potentially calling an external API
+    pass
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-This prototype provides a basic structure for your Quart application with endpoints for submitting jobs and retrieving results. It includes basic logging and uses an in-memory dictionary as a temporary cache for job status. Adjust the processing logic as needed based on future requirements.
