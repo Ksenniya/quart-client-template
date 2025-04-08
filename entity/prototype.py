@@ -1,58 +1,58 @@
 ```python
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 import httpx
-import asyncio
 import logging
-import time
+import asyncio
 
 app = Quart(__name__)
-QuartSchema(app)  # Initialize QuartSchema
+QuartSchema(app)
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Local cache for mock persistence
-entity_jobs = {}
+# Placeholder for local cache
+entity_job = {}
 
-async def fetch_external_data(data):
-    # Placeholder for external API call
-    async with httpx.AsyncClient() as client:
-        # TODO: Replace with actual API call
-        response = await client.get("https://api.example.com/data")  # Example external API
-        return response.json()
+@dataclass
+class Todo:
+    task: str
 
-async def process_entity(entity_job, data):
-    # Mock processing task
-    time.sleep(5)  # Simulate processing time
-    entity_job["status"] = "completed"
-    logger.info(f"Processed entity with data: {data}")
-
-@app.route('/api/data', methods=['POST'])
-async def post_data():
-    data = await request.json
-    requested_at = time.time()
-    job_id = str(requested_at)  # Use timestamp as unique job ID
-    
-    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
+# POST request
+@app.route("/test", methods=["POST"])
+@validate_request(Todo)  # Validation should be last in POST
+async def create_todo(data: Todo):
+    requested_at = asyncio.get_event_loop().time()
+    job_id = f"job-{requested_at}"
+    entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
     
     # Fire and forget the processing task
-    await asyncio.create_task(process_entity(entity_jobs[job_id], data))
+    await asyncio.create_task(process_entity(entity_job, data.__dict__))
     
-    # Fetch external data asynchronously
-    external_data = await fetch_external_data(data)
-    
-    return jsonify({"job_id": job_id, "external_data": external_data}), 202
+    return jsonify({"job_id": job_id}), 201
 
-@app.route('/api/data/<job_id>', methods=['GET'])
-async def get_data(job_id):
-    job = entity_jobs.get(job_id)
-    if not job:
-        return jsonify({"error": "Job not found"}), 404
-    
-    return jsonify(job)
+# Mock processing function
+async def process_entity(entity_job, data):
+    # TODO: Implement actual processing logic
+    logger.info(f"Processing entity: {data}")
+    await asyncio.sleep(2)  # Simulate processing time
+    entity_job[data["job_id"]]["status"] = "completed"
+
+# GET request with request parameters
+@app.route("/test", methods=["GET"])
+@validate_querystring(Todo)  # Validation must be first in GET
+async def get_todo():
+    name = request.args.get('name')  # Access parameters standard way
+    # TODO: Implement retrieval logic based on `name`
+    return jsonify({"message": f"Todo for {name} retrieved."})
+
+# GET request without request parameters
+@app.route("/companies/<string:id>/lei", methods=["GET"])
+async def get_lei(id: str):
+    # TODO: Implement actual logic to retrieve LEI
+    return jsonify({"lei": f"LEI for company {id}."})
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-This prototype sets up a Quart application with two API endpoints: a POST endpoint to submit data and initiate processing, and a GET endpoint to retrieve the status of the processing job. The external API call is mock-implemented, and the processing is simulated with a delay. Logging is properly configured for monitoring.
