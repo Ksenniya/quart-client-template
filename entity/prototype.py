@@ -1,8 +1,7 @@
-Here's a prototype implementation of the `prototype.py` file based on the requirements you've provided. This implementation uses Quart and httpx for asynchronous HTTP requests, along with a simple in-memory cache for persistence. It includes placeholders and TODO comments for areas that require further clarification or implementation.
-
 ```python
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 import httpx
 import asyncio
 import logging
@@ -19,22 +18,37 @@ logger.setLevel(logging.INFO)
 users = {}
 calculations = {}
 
+@dataclass
+class UserRegistration:
+    username: str
+    email: str
+    password: str
+
+@dataclass
+class UserLogin:
+    email: str
+    password: str
+
+@dataclass
+class CalculationRequest:
+    inputData: str
+
 @app.route('/api/users/register', methods=['POST'])
-async def register_user():
-    data = await request.get_json()
+@validate_request(UserRegistration)  # Validation last for POST requests
+async def register_user(data: UserRegistration):
     user_id = str(len(users) + 1)  # Simple user ID generation
     users[user_id] = {
-        "username": data["username"],
-        "email": data["email"],
-        "password": data["password"]  # TODO: Hash passwords in production
+        "username": data.username,
+        "email": data.email,
+        "password": data.password  # TODO: Hash passwords in production
     }
     return jsonify({"message": "User registered successfully", "userId": user_id}), 201
 
 @app.route('/api/users/login', methods=['POST'])
-async def login_user():
-    data = await request.get_json()
+@validate_request(UserLogin)  # Validation last for POST requests
+async def login_user(data: UserLogin):
     for user_id, user in users.items():
-        if user["email"] == data["email"] and user["password"] == data["password"]:
+        if user["email"] == data.email and user["password"] == data.password:
             return jsonify({"message": "Login successful", "token": "fake_token"}), 200  # TODO: Implement JWT
     return jsonify({"message": "Invalid credentials"}), 401
 
@@ -48,14 +62,14 @@ async def get_user_profile():
     return jsonify({"message": "User not found"}), 404
 
 @app.route('/api/data/calculate', methods=['POST'])
-async def calculate_data():
-    data = await request.get_json()
+@validate_request(CalculationRequest)  # Validation last for POST requests
+async def calculate_data(data: CalculationRequest):
     job_id = str(len(calculations) + 1)
     requested_at = datetime.utcnow()
     calculations[job_id] = {"status": "processing", "requestedAt": requested_at}
     
     # Fire-and-forget processing task
-    await asyncio.create_task(process_entity(job_id, data["inputData"]))
+    await asyncio.create_task(process_entity(job_id, data.inputData))
     return jsonify({"message": "Calculation initiated", "jobId": job_id}), 202
 
 async def process_entity(job_id, input_data):
@@ -77,9 +91,3 @@ async def get_results():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-- The registration and login processes use in-memory storage for users, which is not persistent.
-- The calculation route initiates an async task to process data, mocking an external API call with a placeholder.
-- Error handling is included, and logs are generated for exceptions.
-- Placeholders (TODO comments) indicate areas that require further development for production readiness.
