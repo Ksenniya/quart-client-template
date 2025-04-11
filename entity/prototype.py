@@ -1,11 +1,10 @@
-Here's a prototype implementation of your news collection app using Quart and httpx. This code is designed to simulate the required functionality and user experience while using mocks and placeholders where necessary. 
-
 ```python
 import asyncio
 import httpx
 import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -23,12 +22,27 @@ bookmarks = {}
 NEWS_API_URL = "https://newsapi.org/v2/everything"
 API_KEY = "YOUR_NEWSAPI_KEY"  # TODO: Replace with your NewsAPI key
 
+@dataclass
+class FetchNewsRequest:
+    sources: list
+    categories: list
+    keywords: list
+
+@dataclass
+class BookmarkRequest:
+    userId: str
+    articleId: int
+
+@dataclass
+class GetBookmarksRequest:
+    userId: str
+
 @app.route('/api/news/fetch', methods=['POST'])
-async def fetch_news():
-    data = await request.get_json()
-    sources = data.get('sources', [])
-    categories = data.get('categories', [])
-    keywords = data.get('keywords', [])
+@validate_request(FetchNewsRequest)  # Validation last for POST
+async def fetch_news(data: FetchNewsRequest):
+    sources = data.sources
+    categories = data.categories
+    keywords = data.keywords
 
     logger.info(f"Fetching news from sources: {sources}, categories: {categories}, keywords: {keywords}")
 
@@ -68,10 +82,10 @@ async def get_news():
     return jsonify({"status": "success", "data": news_cache}), 200
 
 @app.route('/api/news/bookmark', methods=['POST'])
-async def bookmark_article():
-    data = await request.get_json()
-    user_id = data.get('userId')
-    article_id = data.get('articleId')
+@validate_request(BookmarkRequest)  # Validation last for POST
+async def bookmark_article(data: BookmarkRequest):
+    user_id = data.userId
+    article_id = data.articleId
 
     if article_id not in news_cache:
         return jsonify({"status": "error", "message": "Article not found"}), 404
@@ -85,6 +99,7 @@ async def bookmark_article():
     return jsonify({"status": "success", "message": "Article bookmarked successfully"}), 200
 
 @app.route('/api/news/bookmarks', methods=['GET'])
+@validate_querystring(GetBookmarksRequest)  # Validation first for GET - workaround for QuartSchema issue
 async def get_bookmarks():
     user_id = request.args.get('userId')
     user_bookmarks = bookmarks.get(user_id, [])
@@ -95,12 +110,3 @@ async def get_bookmarks():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-1. **Real API**: The prototype uses the NewsAPI for fetching news articles. You need to replace `YOUR_NEWSAPI_KEY` with an actual API key from NewsAPI.
-2. **In-Memory Cache**: The `news_cache` and `bookmarks` dictionaries serve as a simple in-memory store to simulate data persistence.
-3. **Logging**: Proper logging is implemented to capture any exceptions and log important events.
-4. **TODO Comments**: Placeholders indicate areas where additional logic may need to be implemented or clarified.
-5. **No Persistence Layer**: As requested, no external persistence or database systems are used in this prototype. 
-
-Feel free to modify or expand the prototype as necessary for your specific needs!
