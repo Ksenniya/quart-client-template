@@ -23,9 +23,14 @@ class InputData:
     inputData: list
 
 async def process_calculate_job(entity_data):
-    # Placeholder for processing logic
-    # Example: Modify the entity state or add related entities
-    return entity_data  # Return modified entity data
+    # Example: Modify the entity state
+    # Assuming entity_data is a list of two numbers
+    if len(entity_data) != 2:
+        raise ValueError("Invalid input data. Expected two numbers.")
+    
+    # Perform some calculation (for example, sum)
+    entity_data.append(sum(entity_data))  # Append the result to the entity data
+    # Here you could also get and add supplementary entities if needed
 
 @app.route('/hello', methods=['GET'])
 async def hello_world():
@@ -36,16 +41,12 @@ async def hello_world():
 async def calculate(data: InputData):
     input_data = data.inputData
     
-    if len(input_data) != 2:
-        return jsonify({"error": "Invalid input data. Expected two numbers."}), 400
-    
-    # Call to external service to add the item
     try:
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="calculate_job",
             entity_version=ENTITY_VERSION,
-            entity=data.inputData,
+            entity=input_data,
             workflow=process_calculate_job  # Adding the workflow function
         )
         return jsonify({"jobId": job_id, "status": "processing"}), 202
