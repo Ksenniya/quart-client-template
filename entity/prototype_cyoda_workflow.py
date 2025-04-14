@@ -23,14 +23,25 @@ class InputData:
     inputData: list
 
 async def process_calculate_job(entity_data):
-    # Example: Modify the entity state
-    # Assuming entity_data is a list of two numbers
-    if len(entity_data) != 2:
-        raise ValueError("Invalid input data. Expected two numbers.")
-    
+    # Validate the input data
+    if not isinstance(entity_data, list) or len(entity_data) != 2:
+        raise ValueError("Invalid input data. Expected a list of two numbers.")
+
     # Perform some calculation (for example, sum)
-    entity_data.append(sum(entity_data))  # Append the result to the entity data
+    result = sum(entity_data)
+    entity_data.append(result)  # Append the result to the entity data
+
     # Here you could also get and add supplementary entities if needed
+    # Example: await entity_service.add_item(...) for another entity model
+
+async def process_lei(entity_data):
+    # Placeholder for any processing logic specific to LEI
+    # This function can modify the entity_data as needed
+    if not isinstance(entity_data, dict):
+        raise ValueError("Invalid LEI data. Expected a dictionary.")
+    
+    # Example operation: Add a new attribute
+    entity_data['processed'] = True  # Mark as processed
 
 @app.route('/hello', methods=['GET'])
 async def hello_world():
@@ -64,6 +75,8 @@ async def get_lei(id: str):
             entity_version=ENTITY_VERSION,
             technical_id=id
         )
+        # Process the LEI data
+        await process_lei(lei_data)  # Apply the workflow function
         return jsonify(lei_data), 200
     except Exception as e:
         logger.exception(e)
