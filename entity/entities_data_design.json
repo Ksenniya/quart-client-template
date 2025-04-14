@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello_world"
+        },
+        {
+            "entity_data_example": {
+                "inputData": [
+                    1,
+                    2
+                ],
+                "result": 3
+            },
+            "entity_name": "calculate"
+        },
+        {
+            "entity_data_example": {
+                "entity_name": "string",
+                "id": "string",
+                "lei": "string",
+                "status": "string"
+            },
+            "entity_name": "lei"
+        }
+    ]
+}
