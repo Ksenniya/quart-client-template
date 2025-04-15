@@ -1,32 +1,51 @@
-import asyncio
-import logging
 
-from quart import Quart
-from quart_schema import QuartSchema
-from common.grpc_client.grpc_client import grpc_stream
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import cyoda_token
-#please update this line to your entity
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+class Application:
+    def __init__(self):
+        self.data = []
+        self.require_additional_questions = False
 
-logging.basicConfig(level=logging.INFO)
+    def add_data(self, item):
+        if item not in self.data:  # Prevent duplicates
+            self.data.append(item)
+        else:
+            print(f"Item '{item}' already exists in the data.")
 
-app = Quart(__name__)
-QuartSchema(app)
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+    def remove_data(self, item):
+        try:
+            self.data.remove(item)
+        except ValueError:
+            print(f"Item '{item}' not found in the data.")
 
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
-    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+    def display_data(self):
+        if self.data:
+            print("Current Data:")
+            for item in self.data:
+                print(f"- {item}")
+        else:
+            print("No data available.")
+
+    def clear_data(self):
+        self.data.clear()
+        print("All data has been cleared.")
+
+    def set_require_additional_questions(self, value):
+        if isinstance(value, bool):
+            self.require_additional_questions = value
+            print(f"Require additional questions set to {self.require_additional_questions}.")
+        else:
+            print("Invalid value. Please provide a boolean.")
+
+    def finish_discussion(self):
+        print("Discussion finished. Exiting application.")
+        self.clear_data()  # Clear data on exit
 
 
-@app.after_serving
-async def shutdown():
-    app.background_task.cancel()
-    await app.background_task
-
-#put_application_code_here
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+if __name__ == "__main__":
+    app = Application()
+    app.set_require_additional_questions(False)  # Set to False as per requirement
+    app.add_data("Sample Item 1")
+    app.add_data("Sample Item 2")
+    app.display_data()
+    app.remove_data("Sample Item 1")
+    app.display_data()
+    app.finish_discussion()
