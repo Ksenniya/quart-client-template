@@ -1,10 +1,9 @@
-Here's a prototype implementation based on the requirements you've specified. The code uses Quart for the web framework and httpx for asynchronous HTTP requests. It includes placeholders and TODO comments where necessary.
-
 ```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -19,6 +18,15 @@ entity_job = {}
 
 # Simulated external API (placeholder for a real API)
 EXTERNAL_API_URL = "https://api.example.com/process"  # TODO: Replace with a real API URL
+
+@dataclass
+class InputData:
+    inputData: str
+    additionalParam: str
+
+@dataclass
+class ResultData:
+    results: list
 
 async def process_entity(entity_id, input_data):
     try:
@@ -42,31 +50,22 @@ async def process_entity(entity_id, input_data):
         entity_job[entity_id]["status"] = "error"
 
 @app.route('/api/data', methods=['POST'])
-async def submit_data():
-    data = await request.get_json()
-
+@validate_request(InputData)  # Validation is performed last for POST requests
+async def submit_data(data: InputData):
     entity_id = str(len(entity_job) + 1)  # Simple ID generation
     requested_at = request.date
     entity_job[entity_id] = {"status": "processing", "requestedAt": requested_at}
 
     # Fire and forget the processing task
-    await asyncio.create_task(process_entity(entity_id, data))
+    await asyncio.create_task(process_entity(entity_id, data.inputData))
 
     return jsonify({"result": "processing", "message": "Data is being processed", "id": entity_id}), 200
 
 @app.route('/api/results', methods=['GET'])
+@validate_querystring(ResultData)  # Validation is performed first for GET requests
 async def get_results():
     return jsonify({"results": entity_job}), 200
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Key Points:
-- **Logging**: Proper logging is included for success and error conditions.
-- **In-Memory Cache**: The `entity_job` dictionary acts as a temporary data store.
-- **Asynchronous Processing**: The `process_entity` function simulates a processing task that would involve an external API call.
-- **Placeholder API**: A placeholder URL for an external API is included and marked with a TODO comment.
-- **No Database**: The implementation avoids any external persistence or database solutions, as requested.
-
-This prototype should help you verify the user experience and identify any gaps in the requirements before moving on to a more robust implementation.
