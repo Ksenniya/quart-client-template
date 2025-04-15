@@ -1,4 +1,3 @@
-```python
 class Application:
     def __init__(self):
         self.data = []
@@ -49,4 +48,3 @@ if __name__ == "__main__":
     app.remove_data("Sample Item 1")
     app.display_data()
     app.finish_discussion()
-```
