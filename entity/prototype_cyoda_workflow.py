@@ -31,33 +31,28 @@ async def startup():
 
 async def process_entity(data):
     try:
-        # Simulate a processing task
+        # Simulate processing logic (e.g., modifying entity state)
         await asyncio.sleep(2)  # Simulate processing time
-
-        # Here you can modify the entity data as needed
         data["status"] = "completed"
 
-        # Mark entity as processed in external service
-        await entity_service.update_item(
+        # Here you can add supplementary data if needed
+        supplementary_data = {
+            "relatedInfo": "Some additional information",
+            "entityId": data["id"]
+        }
+
+        # Simulate adding supplementary data to an external service
+        await entity_service.add_item(
             token=cyoda_token,
-            entity_model="entity_job",
+            entity_model="entity_related",
             entity_version=ENTITY_VERSION,
-            entity=data,
-            technical_id=data.get("id"),
-            meta={}
+            entity=supplementary_data,
+            workflow=None  # No workflow needed for supplementary data
         )
 
     except Exception as e:
         logger.exception(e)
         data["status"] = "error"
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            entity=data,
-            technical_id=data.get("id"),
-            meta={}
-        )
 
 @app.route('/api/data', methods=['POST'])
 @validate_request(InputData)  # Validation is performed last for POST requests
@@ -77,11 +72,8 @@ async def submit_data(data: InputData):
         entity_model="entity_job",
         entity_version=ENTITY_VERSION,
         entity=entity_data,
-        workflow=process_entity  # Add the workflow function here
+        workflow=process_entity  # Move processing logic to workflow function
     )
-
-    # Fire and forget the processing task
-    await asyncio.create_task(process_entity(entity_data))
 
     return jsonify({"result": "processing", "message": "Data is being processed", "id": entity_id}), 200
 
