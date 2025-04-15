@@ -63,7 +63,9 @@ async def submit_data(data: InputData):
     entity_data = {
         "id": entity_id,
         "status": "processing",
-        "requestedAt": requested_at
+        "requestedAt": requested_at,
+        "inputData": data.inputData,
+        "additionalParam": data.additionalParam
     }
 
     # Add item to external service with the workflow function
