@@ -3,6 +3,7 @@ from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
 import logging
+import asyncio
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
@@ -40,7 +41,7 @@ async def process_data(data: ProcessRequest):
             token=cyoda_token,
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,
-            entity={"input": data.input, "status": "processing"},
+            entity={"input": data.input, "status": "pending"},  # Initial status
             workflow=process_entity_job  # Pass the workflow function
         )
         
@@ -51,14 +52,23 @@ async def process_data(data: ProcessRequest):
 
 async def process_entity_job(entity_data):
     # Modify the entity data if needed
-    entity_data['status'] = 'processing'  # Example modification
+    try:
+        # Simulate processing logic
+        entity_data['status'] = 'processing'  # Update status to processing
+        
+        # Simulate processing delay
+        await asyncio.sleep(1)  # Simulate some processing time
 
-    # Simulate processing delay
-    await asyncio.sleep(1)  # Simulate processing delay
+        # Complete the task by updating the entity to completed
+        entity_data['status'] = 'completed'  # Final status before persistence
 
-    # Complete the task by updating the entity to completed
-    entity_data['status'] = 'completed'  # Update the status before persistence
-    # Here, you can add any secondary/supplementary/raw data entities if needed
+        # Here, you can add any secondary/supplementary/raw data entities if needed
+        # For example, add logs or related entities based on the input
+        # This is where you would typically handle any additional logic
+
+    except Exception as e:
+        logger.exception("Error in process_entity_job")
+        entity_data['status'] = 'failed'  # Update to failed status in case of error
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
