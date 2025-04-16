@@ -1,8 +1,7 @@
-Here's a prototype implementation for the `prototype.py` file based on the specifications you've provided:
-
 ```python
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 import httpx
 import logging
 import asyncio
@@ -18,14 +17,19 @@ logger.setLevel(logging.INFO)
 # Local cache to simulate persistence
 entity_job = {}
 
+@dataclass
+class GreetRequest:
+    name: str
+
 @app.route('/hello', methods=['GET'])
 async def hello():
     return jsonify({"message": "Hello World"}), 200
 
+# Workaround: Place validation last for POST requests
 @app.route('/greet', methods=['POST'])
-async def greet():
-    data = await request.get_json()
-    name = data.get("name", "").strip()
+@validate_request(GreetRequest)  # Validation for POST should be last
+async def greet(data: GreetRequest):
+    name = data.name.strip()
 
     if not name:
         return jsonify({"error": "Name is required."}), 400
@@ -34,8 +38,19 @@ async def greet():
     requested_at = datetime.now()
     job_id = len(entity_job) + 1  # Simple job ID generation
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
-    
+
     await asyncio.create_task(process_entity(job_id, name))
+
+    return jsonify({"message": f"Hello, {name}!"}), 200
+
+# Workaround: Place validation first for GET requests
+@app.route('/greet/query', methods=['GET'])
+@validate_querystring(GreetRequest)  # Validation for GET should be first
+async def greet_query():
+    name = request.args.get('name', '').strip()
+
+    if not name:
+        return jsonify({"error": "Name is required."}), 400
 
     return jsonify({"message": f"Hello, {name}!"}), 200
 
@@ -60,11 +75,3 @@ async def process_entity(job_id, name):
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Key Points:
-- The `/hello` endpoint returns a simple "Hello World" message.
-- The `/greet` endpoint accepts a name and responds with a personalized greeting.
-- Processing of the greeting is handled asynchronously, simulating a job that could involve external API calls or complex logic.
-- Local caching is used to store job statuses, with a simple dictionary acting as the cache.
-- Proper logging is included for monitoring and debugging.
-- Placeholder comments (`TODO`) indicate where additional functionality or error handling should be implemented once requirements are finalized.
