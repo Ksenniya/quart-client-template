@@ -23,9 +23,48 @@ class CatBreedRequest:
     breed: str
 
 async def process_cat_data(cat_data):
-    # Example workflow function to process cat data
-    cat_data['processed'] = True  # Modify the entity state as needed
-    return cat_data
+    # Fetch additional breed data and modify the entity state
+    try:
+        breed_data = await entity_service.get_items_by_condition(
+            token=cyoda_token,
+            entity_model="cat_breeds",
+            entity_version=ENTITY_VERSION,
+            condition={"name": cat_data['breed']}
+        )
+
+        if breed_data:
+            # Modify the cat_data with additional information
+            cat_data['description'] = breed_data[0].get("description", "No description available.")
+            cat_data['images'] = breed_data[0].get("image", {}).get("url", [])
+            cat_data['processed'] = True  # Mark as processed
+    except Exception as e:
+        logger.exception(e)
+
+async def fetch_and_cache_cat_data(breed):
+    try:
+        # Check if breed data already exists
+        breed_data = await entity_service.get_items_by_condition(
+            token=cyoda_token,
+            entity_model="cat_data_cache",
+            entity_version=ENTITY_VERSION,
+            condition={"breed": breed}
+        )
+        
+        if breed_data:
+            return breed_data[0]  # Return cached data if available
+
+        # Fetch fresh data
+        breed_data = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="cat_breeds",
+            entity_version=ENTITY_VERSION,
+            technical_id=breed
+        )
+
+        return breed_data
+    except Exception as e:
+        logger.exception(e)
+        return None
 
 @app.route('/api/cat-breeds', methods=['GET'])
 async def get_cat_breeds():
@@ -61,32 +100,11 @@ async def fetch_cat_data(data: CatBreedRequest):
         return jsonify({"error": "Breed is required"}), 400
 
     try:
-        # Check if breed data already exists
-        breed_data = await entity_service.get_items_by_condition(
-            token=cyoda_token,
-            entity_model="cat_data_cache",
-            entity_version=ENTITY_VERSION,
-            condition={"breed": breed}
-        )
-        
-        if breed_data:
-            return jsonify({"data": breed_data[0]})
-
-        # Fetch fresh data and store it
-        breed_data = await entity_service.get_item(
-            token=cyoda_token,
-            entity_model="cat_breeds",
-            entity_version=ENTITY_VERSION,
-            technical_id=breed
-        )
-
+        # Fetch and cache the data in the external service with a workflow function
         cat_data = {
-            "breed": breed_data['name'],
-            "description": breed_data.get("description", "No description available."),
-            "images": breed_data.get("image", {}).get("url", [])
+            "breed": breed,
         }
         
-        # Store the data in the external service with a workflow function
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="cat_data_cache",
@@ -95,7 +113,13 @@ async def fetch_cat_data(data: CatBreedRequest):
             workflow=process_cat_data  # Add the workflow function here
         )
 
-        return jsonify({"data": cat_data})
+        # Fetch and cache additional breed data
+        cached_data = await fetch_and_cache_cat_data(breed)
+        if cached_data:
+            return jsonify({"data": cached_data})
+
+        return jsonify({"error": "Failed to fetch cat data"}), 500
+
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to fetch cat data"}), 500
