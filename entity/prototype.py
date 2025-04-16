@@ -1,11 +1,10 @@
-Here is a prototype implementation of the application in a `prototype.py` file. This code incorporates the structure and requirements you've provided, including API calls to a real Cats API, local caching, and logging.
-
 ```python
 import logging
 import asyncio
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
 from httpx import AsyncClient
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -16,6 +15,12 @@ logger.setLevel(logging.INFO)
 
 # Local cache for storing results
 entity_job = {}
+
+# Data class for request validation
+@dataclass
+class CatRequest:
+    breed: str
+    limit: int
 
 # Function to process the data retrieval from the Cats API
 async def process_entity(entity_id, data):
@@ -31,21 +36,22 @@ async def process_entity(entity_id, data):
             entity_job[entity_id]["status"] = "error"
 
 @app.route('/cats/data', methods=['POST'])
-async def retrieve_cats_data():
-    data = await request.get_json()
+@validate_request(CatRequest)  # This line should be second in post method
+async def retrieve_cats_data(data: CatRequest):
     entity_id = str(len(entity_job) + 1)  # Simple ID generation
     requested_at = asyncio.get_event_loop().time()
     
     entity_job[entity_id] = {"status": "processing", "requestedAt": requested_at}
     
     # Fire and forget the processing task
-    await asyncio.create_task(process_entity(entity_id, data))
+    await asyncio.create_task(process_entity(entity_id, data.__dict__))
     
     return jsonify({"status": "processing", "entity_id": entity_id})
 
 @app.route('/cats/results', methods=['GET'])
+@validate_querystring(CatRequest)  # Workaround: Put validation first for GET requests
 async def get_cats_results():
-    entity_id = request.args.get('entity_id')
+    entity_id = request.args.get('entity_id')  # Access parameters for GET requests
     if entity_id in entity_job:
         return jsonify({"status": "success", "results": entity_job[entity_id]})
     else:
@@ -54,14 +60,3 @@ async def get_cats_results():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-- This code uses `httpx.AsyncClient` for making asynchronous HTTP requests to the Cats API.
-- The `entity_job` dictionary acts as a local cache to store the processing status and results.
-- The `process_entity` function retrieves cat data from the API based on user input.
-- Logging is implemented to capture any exceptions during the API call.
-- The `retrieve_cats_data` endpoint is responsible for initiating the data retrieval process and returning the status.
-- The `get_cats_results` endpoint retrieves the results based on the entity ID.
-- Remember to install the required packages with `pip install quart httpx quart-schema` to run this prototype.
-
-This prototype is designed to validate the user experience and identify any gaps in the requirements.
