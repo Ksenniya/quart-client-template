@@ -1,0 +1,28 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello_response"
+        },
+        {
+            "entity_data_example": {
+                "input": "some data to process"
+            },
+            "entity_name": "process_request"
+        },
+        {
+            "entity_data_example": {
+                "result": "processed data"
+            },
+            "entity_name": "process_response"
+        },
+        {
+            "entity_data_example": {
+                "error": "Invalid input"
+            },
+            "entity_name": "error_response"
+        }
+    ]
+}
