@@ -1,0 +1,28 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": "1",
+                "name": "Siamese"
+            },
+            "entity_name": "cat_breeds"
+        },
+        {
+            "entity_data_example": {
+                "image_url": "https://example.com/cat.jpg"
+            },
+            "entity_name": "random_cats"
+        },
+        {
+            "entity_data_example": {
+                "breed": "Siamese",
+                "description": "Siamese cats are known for their striking blue almond-shaped eyes...",
+                "images": [
+                    "https://example.com/cat1.jpg",
+                    "https://example.com/cat2.jpg"
+                ]
+            },
+            "entity_name": "cat_data_cache"
+        }
+    ]
+}
