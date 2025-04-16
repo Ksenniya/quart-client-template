@@ -3,6 +3,7 @@ from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
 import logging
+import asyncio
 from datetime import datetime
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -12,8 +13,8 @@ app = Quart(__name__)
 QuartSchema(app)
 
 # Initialize logger
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 @dataclass
 class GreetRequest:
@@ -24,15 +25,26 @@ async def startup():
     await init_cyoda(cyoda_token)
 
 async def process_greet_entity(entity_data):
-    # Example processing function that modifies entity data
+    # Modify entity data before persistence
     entity_data['processed'] = True
     
-    # Simulating an async task (could be a call to another service, etc.)
+    # Simulating an async task
     await asyncio.sleep(1)  # Represents an async operation
 
-    # You can also add supplementary data entities here if needed
-    # e.g., await entity_service.add_item(...) for different entity_model
-    
+    # Example of adding supplementary entities if necessary
+    # Ensure to use a different entity_model
+    supplementary_entity = {"info": "This is supplementary data"}
+    try:
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="supplementary_entity",
+            entity_version=ENTITY_VERSION,
+            entity=supplementary_entity,
+            workflow=None  # No workflow for supplementary entity
+        )
+    except Exception as e:
+        logger.warning("Failed to add supplementary entity: %s", e)
+
     return entity_data
 
 @app.route('/hello', methods=['GET'])
@@ -61,7 +73,7 @@ async def greet(data: GreetRequest):
         return jsonify({"message": f"Hello, {name}!", "job_id": job_id}), 200
 
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to process greet request: %s", e)
         return jsonify({"error": "Failed to process request."}), 500
 
 @app.route('/greet/query', methods=['GET'])
