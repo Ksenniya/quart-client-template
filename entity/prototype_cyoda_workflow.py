@@ -37,8 +37,13 @@ async def process_cat_data(cat_data):
             cat_data['description'] = breed_data[0].get("description", "No description available.")
             cat_data['images'] = breed_data[0].get("image", {}).get("url", [])
             cat_data['processed'] = True  # Mark as processed
+        else:
+            cat_data['description'] = "Breed not found."
+            cat_data['images'] = []
+            cat_data['processed'] = False  # Mark as not processed if breed not found
     except Exception as e:
         logger.exception(e)
+        cat_data['error'] = "Error processing cat data."
 
 async def fetch_and_cache_cat_data(breed):
     try:
@@ -53,7 +58,7 @@ async def fetch_and_cache_cat_data(breed):
         if breed_data:
             return breed_data[0]  # Return cached data if available
 
-        # Fetch fresh data
+        # Fetch fresh data if not cached
         breed_data = await entity_service.get_item(
             token=cyoda_token,
             entity_model="cat_breeds",
@@ -100,11 +105,12 @@ async def fetch_cat_data(data: CatBreedRequest):
         return jsonify({"error": "Breed is required"}), 400
 
     try:
-        # Fetch and cache the data in the external service with a workflow function
+        # Prepare the initial cat_data entity
         cat_data = {
             "breed": breed,
         }
         
+        # Store the data in the external service with a workflow function
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="cat_data_cache",
