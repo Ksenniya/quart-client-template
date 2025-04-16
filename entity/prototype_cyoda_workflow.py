@@ -2,7 +2,6 @@
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
-import asyncio
 import logging
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -45,8 +44,6 @@ async def process_data(data: ProcessRequest):
             workflow=process_entity_job  # Pass the workflow function
         )
         
-        # Fire and forget the processing task
-        await asyncio.create_task(process_entity(job_id, data.input))
         return jsonify({"result": f"Job {job_id} is being processed."}), 200
     except Exception as e:
         logger.exception(e)
@@ -55,24 +52,13 @@ async def process_data(data: ProcessRequest):
 async def process_entity_job(entity_data):
     # Modify the entity data if needed
     entity_data['status'] = 'processing'  # Example modification
-    await asyncio.sleep(1)  # Simulate processing delay
-    return entity_data
 
-async def process_entity(job_id, data):
     # Simulate processing delay
     await asyncio.sleep(1)  # Simulate processing delay
-    try:
-        # Update item status to completed
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            entity={"input": data, "status": "completed"},
-            technical_id=job_id,
-            meta={}
-        )
-    except Exception as e:
-        logger.exception(e)
+
+    # Complete the task by updating the entity to completed
+    entity_data['status'] = 'completed'  # Update the status before persistence
+    # Here, you can add any secondary/supplementary/raw data entities if needed
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
