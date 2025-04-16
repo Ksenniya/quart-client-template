@@ -6,7 +6,6 @@ from quart_schema import QuartSchema, validate_request, validate_querystring
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import entity_service, cyoda_token
-import asyncio
 from datetime import datetime
 
 # Set up logging
@@ -32,21 +31,34 @@ async def get_hello():
 
 async def process_greetings(entity_data):
     """Process the entity data before persistence."""
-    # Example of modifying the entity data
+    # Modify the entity state directly
     entity_data["processedAt"] = datetime.now().isoformat()
+    
+    # Log the processing
+    logger.info(f"Processing greeting for {entity_data['name']}.")
+
+    # Simulate an asynchronous task (e.g., fetching supplementary data)
+    # For example, here we could add a secondary entity or log information
+    # Note: entity_service.add_item cannot be called for the same entity model
+    # but we can prepare and log supplementary data if needed.
+
+    # If you need to retrieve supplementary data, you could do so here
+    # However, ensure it is for a different entity_model
+    # e.g., supplementary_data = await entity_service.get_some_data(...)
+    
     return entity_data
 
 @app.route('/greet', methods=['POST'])
-@validate_request(GreetRequest)  # Validation should be last for POST requests
+@validate_request(GreetRequest)
 async def post_greet(data: GreetRequest):
     """Accept a name and return a personalized greeting message."""
     name = data.name
-    
+
     # Log the incoming request
     logger.info(f"Received request to greet {name}.")
 
     personalized_message = f"Hello, {name}!"
-    
+
     # Prepare the data to be sent to the entity service
     entity_data = {
         "message": personalized_message,
@@ -70,14 +82,14 @@ async def post_greet(data: GreetRequest):
         return jsonify({"error": "Failed to generate greeting."}), 500
 
 @app.route('/greet', methods=['GET'])
-@validate_querystring(GreetRequest)  # Validation should be first for GET requests (workaround)
+@validate_querystring(GreetRequest)
 async def get_greet():
     """Retrieve a personalized greeting message based on query parameters."""
-    name = request.args.get('name')  # Access parameters values for GET requests
-    
+    name = request.args.get('name')
+
     if not name:
         return jsonify({"error": "Name parameter is required."}), 400
-    
+
     logger.info(f"Retrieving greeting for {name}.")
 
     # Retrieve the greeting from the entity service
@@ -88,12 +100,12 @@ async def get_greet():
             entity_version=ENTITY_VERSION,
             condition={"name": name}
         )
-        
+
         if items:
             message = items[0]["message"]
         else:
             message = "Hello, Guest!"
-        
+
         return jsonify({"message": message})
     except Exception as e:
         logger.exception(e)
