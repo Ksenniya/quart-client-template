@@ -37,15 +37,17 @@ async def process_greetings(entity_data):
     # Log the processing
     logger.info(f"Processing greeting for {entity_data['name']}.")
 
-    # Simulate an asynchronous task (e.g., fetching supplementary data)
-    # For example, here we could add a secondary entity or log information
-    # Note: entity_service.add_item cannot be called for the same entity model
-    # but we can prepare and log supplementary data if needed.
-
-    # If you need to retrieve supplementary data, you could do so here
-    # However, ensure it is for a different entity_model
-    # e.g., supplementary_data = await entity_service.get_some_data(...)
+    # Example of adding supplementary data (if needed), ensure it's a different entity_model
+    supplementary_data = {
+        "entity_model": "supplementary_data",
+        "info": f"Additional info for {entity_data['name']}",
+        "timestamp": datetime.now().isoformat()
+    }
     
+    # Log supplementary data (this is just an example, actual operations should be valid)
+    logger.info(f"Adding supplementary data: {supplementary_data}")
+
+    # Return the modified entity_data
     return entity_data
 
 @app.route('/greet', methods=['POST'])
@@ -78,7 +80,7 @@ async def post_greet(data: GreetRequest):
         logger.info(f"Greeting generated and stored for {name}: {personalized_message}, ID: {id}")
         return jsonify({"message": personalized_message, "id": id})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to generate greeting.")
         return jsonify({"error": "Failed to generate greeting."}), 500
 
 @app.route('/greet', methods=['GET'])
@@ -108,7 +110,7 @@ async def get_greet():
 
         return jsonify({"message": message})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to retrieve greeting.")
         return jsonify({"error": "Failed to retrieve greeting."}), 500
 
 # Entry point for running the app
