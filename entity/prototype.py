@@ -1,10 +1,9 @@
-Here's a prototype implementation of the `prototype.py` file based on your specifications. This code uses Quart, HTTPX for asynchronous HTTP requests, and includes basic logging. It assumes the use of a real API for fetching cat data and keeps a local cache for simplicity.
-
 ```python
 import logging
+from dataclasses import dataclass
 from quart import Quart, jsonify, request
 import httpx
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -19,6 +18,14 @@ cat_data_cache = {}
 # External API configuration
 CATS_API_URL = "https://api.thecatapi.com/v1"  # Replace with the actual Cats API endpoint
 API_KEY = "YOUR_API_KEY"  # TODO: Replace with your actual API key for authentication
+
+@dataclass
+class CatBreedRequest:
+    breed: str
+
+@dataclass
+class CatImageResponse:
+    image_url: str
 
 @app.route('/api/cat-breeds', methods=['GET'])
 async def get_cat_breeds():
@@ -45,9 +52,9 @@ async def get_random_cat():
         return jsonify({"error": "Failed to retrieve random cat image"}), 500
 
 @app.route('/api/fetch-cat-data', methods=['POST'])
-async def fetch_cat_data():
-    data = await request.get_json()
-    breed = data.get("breed")
+@validate_request(CatBreedRequest)  # Validation should be last for POST requests
+async def fetch_cat_data(data: CatBreedRequest):
+    breed = data.breed
     # TODO: Validate the breed against a known list or handle errors
     if not breed:
         return jsonify({"error": "Breed is required"}), 400
@@ -74,10 +81,3 @@ async def fetch_cat_data():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-- Replace `YOUR_API_KEY` with your actual API key from the Cats API.
-- The `CATS_API_URL` points to a placeholder endpoint. Ensure to replace it with the actual endpoint you intend to use.
-- The implementation uses local caching for simplicity, and there's no real persistence mechanism.
-- Error handling is included, and logging captures exceptions for debugging.
-- The prototype is designed to facilitate user experience testing and identify gaps before moving to a more robust implementation.
