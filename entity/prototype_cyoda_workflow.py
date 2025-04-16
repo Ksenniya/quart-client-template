@@ -3,7 +3,6 @@ from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
 import logging
-import asyncio
 from datetime import datetime
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -24,9 +23,16 @@ class GreetRequest:
 async def startup():
     await init_cyoda(cyoda_token)
 
-def process_greet_entity(entity_data):
+async def process_greet_entity(entity_data):
     # Example processing function that modifies entity data
     entity_data['processed'] = True
+    
+    # Simulating an async task (could be a call to another service, etc.)
+    await asyncio.sleep(1)  # Represents an async operation
+
+    # You can also add supplementary data entities here if needed
+    # e.g., await entity_service.add_item(...) for different entity_model
+    
     return entity_data
 
 @app.route('/hello', methods=['GET'])
@@ -42,7 +48,6 @@ async def greet(data: GreetRequest):
         return jsonify({"error": "Name is required."}), 400
 
     requested_at = datetime.now()
-    # Call the external service to add a new entity instead of using local cache
     entity_data = {"name": name, "requestedAt": requested_at.isoformat()}
     
     try:
