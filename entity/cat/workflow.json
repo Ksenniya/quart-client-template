@@ -1,18 +1,18 @@
 {
-    "description": "A workflow to wash a cat test entity using a finite-state machine model.",
-    "name": "Wash_Cat_Test_Workflow",
+    "description": "Workflow for handling greet entity transitions",
+    "name": "greet_entity_workflow",
     "transitions": [
         {
             "automated": true,
-            "description": "Begin the washing process for the cat test entity.",
-            "end_state": "Cat_Test_Washing_In_Progress",
-            "end_state_description": "The cat test washing process has started.",
-            "name": "start_washing_cat",
+            "description": "Initiate the greet process",
+            "end_state": "Greet_initiated",
+            "end_state_description": "The greet process has been initiated",
+            "name": "initiate_greet",
             "processes": {
                 "externalized_processors": [
                     {
-                        "description": "",
-                        "name": "process_start_washing_cat"
+                        "description": "Process to initiate the greet",
+                        "name": "process_initiate_greet"
                     }
                 ],
                 "schedule_transition_processors": []
@@ -22,57 +22,21 @@
         },
         {
             "automated": true,
-            "description": "Rinse the cat test entity after applying soap.",
-            "end_state": "Cat_Test_Rinsed",
-            "end_state_description": "The cat test entity has been rinsed.",
-            "name": "rinse_cat",
+            "description": "Notify the user with the greeting",
+            "end_state": "Greet_notified",
+            "end_state_description": "The user has been notified with the greeting",
+            "name": "notify_greet",
             "processes": {
                 "externalized_processors": [
                     {
-                        "description": "",
-                        "name": "process_rinse_cat"
+                        "description": "Process to notify the user with the greeting",
+                        "name": "process_notify_greet"
                     }
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Cat_Test_Washing_In_Progress",
-            "start_state_description": "The cat test washing process has started."
-        },
-        {
-            "automated": true,
-            "description": "Dry the cat test entity after rinsing.",
-            "end_state": "Cat_Test_Dried",
-            "end_state_description": "The cat test entity has been dried.",
-            "name": "dry_cat",
-            "processes": {
-                "externalized_processors": [
-                    {
-                        "description": "",
-                        "name": "process_dry_cat"
-                    }
-                ],
-                "schedule_transition_processors": []
-            },
-            "start_state": "Cat_Test_Rinsed",
-            "start_state_description": "The cat test entity has been rinsed."
-        },
-        {
-            "automated": true,
-            "description": "Complete the cat test washing process.",
-            "end_state": "Cat_Test_Washing_Completed",
-            "end_state_description": "The cat test washing process is complete.",
-            "name": "finish_washing_cat",
-            "processes": {
-                "externalized_processors": [
-                    {
-                        "description": "",
-                        "name": "process_finish_washing_cat"
-                    }
-                ],
-                "schedule_transition_processors": []
-            },
-            "start_state": "Cat_Test_Dried",
-            "start_state_description": "The cat test entity has been dried."
+            "start_state": "Greet_initiated",
+            "start_state_description": "The greet process has been initiated"
         }
     ]
 }
