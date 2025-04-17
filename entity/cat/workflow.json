@@ -4,14 +4,14 @@
     "transitions": [
         {
             "automated": true,
-            "description": "Begin the process of washing the cat.",
-            "end_state": "Cat_washed",
-            "end_state_description": "The cat has been washed",
-            "name": "start_wash",
+            "description": "Begin the washing process for the cat.",
+            "end_state": "Cat_Washing_In_Progress",
+            "end_state_description": "The cat washing process has started.",
+            "name": "start_washing_cat",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_start_wash"
+                        "name": "process_start_washing_cat"
                     }
                 ],
                 "schedule_transition_processors": []
@@ -21,8 +21,8 @@
         },
         {
             "automated": true,
-            "description": "Rinse the cat with water.",
-            "end_state": "Cat_rinsed",
+            "description": "Rinse the cat after applying soap.",
+            "end_state": "Cat_Rinsed",
             "end_state_description": "The cat has been rinsed.",
             "name": "rinse_cat",
             "processes": {
@@ -33,13 +33,13 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Cat_washed",
-            "start_state_description": "The cat has been washed"
+            "start_state": "Cat_Washing_In_Progress",
+            "start_state_description": "The cat washing process has started."
         },
         {
             "automated": true,
-            "description": "Dry the cat with a towel.",
-            "end_state": "Cat_dried",
+            "description": "Dry the cat after rinsing.",
+            "end_state": "Cat_Dried",
             "end_state_description": "The cat has been dried.",
             "name": "dry_cat",
             "processes": {
@@ -50,8 +50,25 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Cat_rinsed",
+            "start_state": "Cat_Rinsed",
             "start_state_description": "The cat has been rinsed."
+        },
+        {
+            "automated": true,
+            "description": "Complete the cat washing process.",
+            "end_state": "Cat_Washing_Completed",
+            "end_state_description": "The cat washing process is complete.",
+            "name": "finish_washing_cat",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_finish_washing_cat"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Cat_Dried",
+            "start_state_description": "The cat has been dried."
         }
     ]
 }
