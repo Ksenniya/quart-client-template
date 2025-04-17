@@ -1,4 +1,4 @@
-Here’s the complete `app.py` file with the requested modifications, including the removal of the `@app.route('/greet/query', methods=['GET'])` endpoint and the addition of an endpoint that uses the `entity_service` functions as specified:
+Here’s the complete `app.py` file, incorporating the user suggestions and modifications as specified:
 
 ```python
 from common.grpc_client.grpc_client import grpc_stream
@@ -62,26 +62,54 @@ async def greet(data: GreetRequest):
         logger.exception("Failed to process greet request: %s", e)
         return jsonify({"error": "Failed to process request."}), 500
 
-# Removed the greet_query endpoint
-
-@app.route('/greet/query', methods=['GET'])
-async def greet_query():
-    # Implement logic to retrieve information if needed
-    # For example, you might want to retrieve some entities using entity_service
+@app.route('/items', methods=['GET'])
+async def get_items():
     try:
-        items = await entity_service.get_items()  # You can change this to your specific need
+        items = await entity_service.get_items()
         return jsonify(items), 200
     except Exception as e:
-        logger.exception("Failed to retrieve greet items: %s", e)
+        logger.exception("Failed to retrieve items: %s", e)
         return jsonify({"error": "Failed to retrieve items."}), 500
+
+@app.route('/items/<item_id>', methods=['GET'])
+async def get_item(item_id):
+    try:
+        item = await entity_service.get_item(item_id)
+        return jsonify(item), 200
+    except Exception as e:
+        logger.exception("Failed to retrieve item %s: %s", item_id, e)
+        return jsonify({"error": "Failed to retrieve item."}), 500
+
+@app.route('/items', methods=['PUT'])
+async def update_item():
+    data = await request.get_json()
+    item_id = data.get("id")
+    entity_data = data.get("entity")
+
+    try:
+        await entity_service.update_item(item_id=item_id, entity=entity_data, token=cyoda_token)
+        return jsonify({"message": "Item updated successfully."}), 200
+    except Exception as e:
+        logger.exception("Failed to update item %s: %s", item_id, e)
+        return jsonify({"error": "Failed to update item."}), 500
+
+@app.route('/items/<item_id>', methods=['DELETE'])
+async def delete_item(item_id):
+    try:
+        await entity_service.delete_item(item_id=item_id, token=cyoda_token)
+        return jsonify({"message": "Item deleted successfully."}), 200
+    except Exception as e:
+        logger.exception("Failed to delete item %s: %s", item_id, e)
+        return jsonify({"error": "Failed to delete item."}), 500
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Key Changes:
-1. **Removed the `@app.route('/greet/query', methods=['GET'])` endpoint**: This endpoint has been removed based on the user's request.
-2. **Added Logic to the `/greet` Endpoint**: The `/greet` endpoint is implemented to add an item using `entity_service.add_item()` and return the job ID in the response.
-3. **Proper Error Handling**: Included error handling for the `greet` endpoint to log any exceptions and return a meaningful error response.
+### Key Features of This Version:
+1. **Basic Greeting Endpoint**: The `/greet` endpoint allows for the addition of a new entity and returns the job ID.
+2. **Item Retrieval**: The `/items` endpoint retrieves all items, while `/items/<item_id>` retrieves a specific item by ID.
+3. **Update and Delete Functionality**: The `/items` endpoint for PUT requests allows updating an item, and the `/items/<item_id>` endpoint for DELETE requests allows deleting an item.
+4. **Error Handling**: Each endpoint has error handling to log exceptions and return meaningful error messages.
 
-If you need further modifications or want to clarify any additional details, please let me know!
+This implementation reflects the user's requirements and suggestions. If you have further modifications or additional requests, please let me know!
