@@ -1,0 +1,30 @@
+{
+    "cat": {
+        "age": 3,
+        "breed": "Siamese",
+        "color": "Cream",
+        "id": "e80ee5b0-79f4-11b2-8199-cedf5ef75753",
+        "is_washed": false,
+        "last_wash_date": null,
+        "name": "Whiskers",
+        "owner": {
+            "contact": "123-456-7890",
+            "name": "John Doe"
+        },
+        "wash_workflow": {
+            "scheduled_time": null,
+            "status": "not_started",
+            "steps": [
+                "Gather washing supplies (cat shampoo, towel, brush)",
+                "Fill tub with lukewarm water",
+                "Wet the cat's fur gently with water",
+                "Apply cat shampoo and lather thoroughly",
+                "Rinse off shampoo completely",
+                "Wrap the cat in a towel and dry off",
+                "Brush the cat's fur"
+            ],
+            "workflow_id": "wash_cat_001"
+        },
+        "weight": 8.5
+    }
+}
