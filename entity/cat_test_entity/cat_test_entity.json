@@ -1,0 +1,14 @@
+{
+    "cat_test_entity": {
+        "age": 3,
+        "breed": "Tabby",
+        "color": "Brown",
+        "id": "1",
+        "name": "Whiskers",
+        "owner": {
+            "contact": "alice@example.com",
+            "name": "Alice"
+        },
+        "weight": 10
+    }
+}
