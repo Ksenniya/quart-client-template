@@ -11,6 +11,7 @@
             "processes": {
                 "externalized_processors": [
                     {
+                        "description": "",
                         "name": "process_start_washing_cat"
                     }
                 ],
@@ -28,6 +29,7 @@
             "processes": {
                 "externalized_processors": [
                     {
+                        "description": "",
                         "name": "process_rinse_cat"
                     }
                 ],
@@ -45,6 +47,7 @@
             "processes": {
                 "externalized_processors": [
                     {
+                        "description": "",
                         "name": "process_dry_cat"
                     }
                 ],
@@ -62,6 +65,7 @@
             "processes": {
                 "externalized_processors": [
                     {
+                        "description": "",
                         "name": "process_finish_washing_cat"
                     }
                 ],
