@@ -1,0 +1,33 @@
+{
+    "description": "Workflow for handling greet entity transitions",
+    "name": "greet_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initiate the greet process",
+            "end_state": "Greet_initiated",
+            "end_state_description": "The greet process has been initiated",
+            "name": "initiate_greet",
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Notify the user with the greeting",
+            "end_state": "Greet_notified",
+            "end_state_description": "The user has been notified with the greeting",
+            "name": "notify_greet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process to notify the user with the greeting",
+                        "name": "process_notify_greet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Greet_initiated",
+            "start_state_description": "The greet process has been initiated"
+        }
+    ]
+}
