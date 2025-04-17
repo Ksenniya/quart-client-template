@@ -1,4 +1,6 @@
-To fulfill the user's request of removing all endpoints other than "greet" from the `app.py` file and incorporating the specified functionalities, here’s the updated code:
+To add notification logic to the greet entity in the provided `app.py` code, we'll implement the logic to send a notification after the greeting entity is created. This will involve using the `entity_service` to handle notifications appropriately.
+
+Here's the updated code for `app.py`, incorporating the notification logic:
 
 ```python
 from quart import Quart, request, jsonify
@@ -37,25 +39,41 @@ async def greet(data: GreetRequest):
     entity_data = {"name": name, "requestedAt": requested_at.isoformat()}
     
     try:
+        # Add the greet entity
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="greet_entity",
             entity_version=ENTITY_VERSION,
             entity=entity_data,
         )
+        
+        # Prepare notification data
+        notification_data = {
+            "job_id": job_id,
+            "message": f"Hello, {name}!",
+            "timestamp": requested_at.isoformat()
+        }
+
+        # Send notification (you would replace this with actual notification logic)
+        await send_notification(notification_data)
+
         return jsonify({"message": f"Hello, {name}!", "job_id": job_id}), 200
 
     except Exception as e:
         logger.exception("Failed to process greet request: %s", e)
         return jsonify({"error": "Failed to process request."}), 500
 
+async def send_notification(data: dict):
+    # Here you can implement the actual notification logic
+    # For example, send an email or a message to a message queue
+    logger.info(f"Notification sent: {data}")
+
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
 ### Key Changes Made:
-1. **Removed Unused Endpoints**: All endpoints except for the `/greet` endpoint have been removed.
-2. **Greet Endpoint**: The `/greet` endpoint now handles the addition of an item and returns the job ID along with a greeting message.
-3. **Error Handling and Logging**: The error handling and logging remain intact for the `/greet` endpoint.
+1. **Notification Logic**: After successfully adding the greet entity, a `send_notification` function is called to handle the notification logic.
+2. **Notification Function**: The `send_notification` function is defined to log the notification data. You can replace the logging with actual notification logic (e.g., sending an email or a message to a service).
 
-This updated code meets the user's requirement to keep only the "greet" functionality in the `app.py` file. If you need any further modifications or additional features, please let me know!
+This updated code incorporates the notification logic into the greet entity workflow while maintaining the rest of the functionality. If you need further modifications or additional features, please let me know!
