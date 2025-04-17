@@ -1,12 +1,12 @@
 {
-    "description": "A workflow to wash a cat using a finite-state machine model.",
-    "name": "Wash_Cat_Workflow",
+    "description": "A workflow to wash a cat test entity using a finite-state machine model.",
+    "name": "Wash_Cat_Test_Workflow",
     "transitions": [
         {
             "automated": true,
-            "description": "Begin the washing process for the cat.",
-            "end_state": "Cat_Washing_In_Progress",
-            "end_state_description": "The cat washing process has started.",
+            "description": "Begin the washing process for the cat test entity.",
+            "end_state": "Cat_Test_Washing_In_Progress",
+            "end_state_description": "The cat test washing process has started.",
             "name": "start_washing_cat",
             "processes": {
                 "externalized_processors": [
@@ -22,9 +22,9 @@
         },
         {
             "automated": true,
-            "description": "Rinse the cat after applying soap.",
-            "end_state": "Cat_Rinsed",
-            "end_state_description": "The cat has been rinsed.",
+            "description": "Rinse the cat test entity after applying soap.",
+            "end_state": "Cat_Test_Rinsed",
+            "end_state_description": "The cat test entity has been rinsed.",
             "name": "rinse_cat",
             "processes": {
                 "externalized_processors": [
@@ -35,14 +35,14 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Cat_Washing_In_Progress",
-            "start_state_description": "The cat washing process has started."
+            "start_state": "Cat_Test_Washing_In_Progress",
+            "start_state_description": "The cat test washing process has started."
         },
         {
             "automated": true,
-            "description": "Dry the cat after rinsing.",
-            "end_state": "Cat_Dried",
-            "end_state_description": "The cat has been dried.",
+            "description": "Dry the cat test entity after rinsing.",
+            "end_state": "Cat_Test_Dried",
+            "end_state_description": "The cat test entity has been dried.",
             "name": "dry_cat",
             "processes": {
                 "externalized_processors": [
@@ -53,14 +53,14 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Cat_Rinsed",
-            "start_state_description": "The cat has been rinsed."
+            "start_state": "Cat_Test_Rinsed",
+            "start_state_description": "The cat test entity has been rinsed."
         },
         {
             "automated": true,
-            "description": "Complete the cat washing process.",
-            "end_state": "Cat_Washing_Completed",
-            "end_state_description": "The cat washing process is complete.",
+            "description": "Complete the cat test washing process.",
+            "end_state": "Cat_Test_Washing_Completed",
+            "end_state_description": "The cat test washing process is complete.",
             "name": "finish_washing_cat",
             "processes": {
                 "externalized_processors": [
@@ -71,8 +71,8 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Cat_Dried",
-            "start_state_description": "The cat has been dried."
+            "start_state": "Cat_Test_Dried",
+            "start_state_description": "The cat test entity has been dried."
         }
     ]
 }
