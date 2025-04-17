@@ -1,0 +1,57 @@
+{
+    "description": "A workflow to wash a cat using a finite-state machine model.",
+    "name": "Wash_Cat_Workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Begin the process of washing the cat.",
+            "end_state": "Cat_washed",
+            "end_state_description": "The cat has been washed",
+            "name": "start_wash",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_start_wash"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Rinse the cat with water.",
+            "end_state": "Cat_rinsed",
+            "end_state_description": "The cat has been rinsed.",
+            "name": "rinse_cat",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_rinse_cat"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Cat_washed",
+            "start_state_description": "The cat has been washed"
+        },
+        {
+            "automated": true,
+            "description": "Dry the cat with a towel.",
+            "end_state": "Cat_dried",
+            "end_state_description": "The cat has been dried.",
+            "name": "dry_cat",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_dry_cat"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Cat_rinsed",
+            "start_state_description": "The cat has been rinsed."
+        }
+    ]
+}
