@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
 import logging
+import asyncio
 from datetime import datetime
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -32,10 +33,11 @@ async def process_entity_name(entity):
     entity['processed'] = True  # Modify entity as needed before persistence
 
     # Fire and forget async task example
-    # Here you can call external services or perform any async operations
-    # For example, fetching secondary data
-    secondary_data = await fetch_secondary_data(entity['inputData'])
-    entity['secondaryData'] = secondary_data
+    try:
+        secondary_data = await fetch_secondary_data(entity['inputData'])
+        entity['secondaryData'] = secondary_data
+    except Exception as e:
+        logger.error(f"Failed to fetch secondary data: {e}")
 
 async def fetch_secondary_data(input_data):
     # Simulated async function to fetch secondary data
@@ -66,7 +68,6 @@ async def process(data: InputData):
             entity=entity_data,  # Pass the prepared entity data
             workflow=process_entity_name  # Pass the workflow function
         )
-        requested_at = datetime.now()
         return jsonify({"jobId": job_id, "status": "processing"}), 200
     except Exception as e:
         logger.exception(e)
