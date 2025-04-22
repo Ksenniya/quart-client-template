@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request, validate_querystring
 import logging
-import asyncio
 from datetime import datetime
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -30,8 +29,18 @@ class QueryData:
 
 async def process_entity_name(entity):
     # Example workflow function to process the entity
-    # Modify entity as needed before persistence
-    entity['processed'] = True  # Just an example modification
+    entity['processed'] = True  # Modify entity as needed before persistence
+
+    # Fire and forget async task example
+    # Here you can call external services or perform any async operations
+    # For example, fetching secondary data
+    secondary_data = await fetch_secondary_data(entity['inputData'])
+    entity['secondaryData'] = secondary_data
+
+async def fetch_secondary_data(input_data):
+    # Simulated async function to fetch secondary data
+    await asyncio.sleep(1)  # Simulate a network call
+    return f"Fetched secondary data for {input_data}"
 
 @app.route('/hello', methods=['GET'])
 async def hello():
@@ -45,13 +54,16 @@ async def process(data: InputData):
     if not input_data:
         return jsonify({"error": "Invalid input data"}), 400
 
+    # Prepare the entity data
+    entity_data = {"inputData": input_data}  # Wrap in appropriate entity format
+
     # Add item to external service
     try:
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity_name",  # Replace with actual entity name
             entity_version=ENTITY_VERSION,
-            entity={"inputData": input_data},  # Wrap in appropriate entity format
+            entity=entity_data,  # Pass the prepared entity data
             workflow=process_entity_name  # Pass the workflow function
         )
         requested_at = datetime.now()
