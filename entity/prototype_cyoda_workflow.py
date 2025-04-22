@@ -1,60 +1,63 @@
-The approach you're suggesting to move logic from the endpoint to dedicated workflow functions (e.g., `process_{entity_name}`) is indeed a solid strategy for improving the structure and maintainability of your code. By offloading complex or asynchronous logic to these workflow functions, you can achieve a cleaner separation of concerns, making the controllers simpler and more focused on handling HTTP requests and responses.
-
-Here's how you can implement this:
-
-1. **Identify Logic to Move**: Review the existing endpoint code to identify all the logic that can be encapsulated within the `process_{entity_name}` functions. This includes any async tasks, data validation, state modifications, and supplementary data processing.
-
-2. **Create Workflow Functions**: For each entity, create a corresponding `process_{entity_name}` function. This function should accept the entity data as an argument and handle all the identified logic.
-
-3. **Modify Entity State**: Within the workflow function, directly modify the entity state as needed. For example, if you need to update an attribute, you would do so like this:
-   ```python
-   entity['attribute'] = new_value
-   ```
-
-4. **Handle Asynchronous Tasks**: Since the workflow function supports asynchronous code, you can use `async`/`await` to manage any asynchronous operations you need to perform, such as fetching additional data or making external API calls.
-
-5. **Invoke Workflow Function from Endpoint**: In the controller, simply call the newly created workflow function before persisting the entity. This keeps the endpoint clean and delegates the processing logic to the workflow function.
-
-6. **Avoid Direct Entity Service Calls**: Remember that you cannot call `entity_service.add/update/delete` within the workflow function for the current entity. Instead, focus on modifying the entity state directly.
-
-### Example Implementation
-
-Here's a simplified example to illustrate this approach:
-
 ```python
-# Example of an endpoint in your controller
-async def create_entity(request):
-    entity_data = await request.json()
-    # Call the workflow function
-    await process_entity(entity_data)
-    # Persist the entity (pseudo-code)
-    await entity_service.add(entity_data)
-    return response.json(entity_data)
+import asyncio
+from aiohttp import web
+
+# Simulated entity storage (for demonstration purposes)
+entity_storage = []
+
+# Simulated entity service
+class EntityService:
+    async def add(self, entity):
+        # Simulate adding an entity
+        entity_storage.append(entity)
+
+# Instance of the entity service
+entity_service = EntityService()
+
+# Example of an asynchronous function to fetch supplementary data
+async def fetch_supplementary_data(entity_id):
+    await asyncio.sleep(1)  # Simulating network delay
+    return {"info": "additional data for entity {}".format(entity_id)}
 
 # Workflow function for processing the entity
 async def process_entity(entity):
     # Modify entity state
     entity['status'] = 'pending'
     
-    # Example of fetching supplementary data
+    # Fetch supplementary data for the entity
     supplementary_data = await fetch_supplementary_data(entity['id'])
     entity['supplementary_info'] = supplementary_data
     
     # Additional business logic can be placed here
-    # ...
+    # Ensure that entity data is valid before persisting
+    if not entity.get('name'):
+        raise ValueError("Entity must have a name")
 
-async def fetch_supplementary_data(entity_id):
-    # Simulating an async data fetch
-    await asyncio.sleep(1)  # Simulate some async operation
-    return {"info": "additional data"}
+# Endpoint to create an entity
+async def create_entity(request):
+    entity_data = await request.json()  # Get JSON data from request
+    
+    # Ensure entity has an ID for supplementary data fetching
+    if 'id' not in entity_data:
+        return web.json_response({"error": "Entity must have an ID"}, status=400)
+    
+    # Call the workflow function
+    try:
+        await process_entity(entity_data)
+    except ValueError as e:
+        return web.json_response({"error": str(e)}, status=400)
+    
+    # Persist the entity
+    await entity_service.add(entity_data)
+    return web.json_response(entity_data, status=201)
+
+# Function to handle server startup
+async def init_app():
+    app = web.Application()
+    app.router.add_post('/entities', create_entity)
+    return app
+
+# Entry point for the application
+if __name__ == '__main__':
+    web.run_app(init_app(), port=8080)
 ```
-
-### Benefits
-
-- **Separation of Concerns**: Business logic is separated from the controller, improving readability and maintainability.
-- **Reusability**: Workflow functions can be reused across different endpoints if needed.
-- **Easier Testing**: Isolated functions can be tested independently, making unit testing more straightforward.
-
-### Conclusion
-
-Moving logic into dedicated workflow functions is a recommended practice that aligns with principles of clean architecture. By following this structure, your application will be more robust, maintainable, and easier to understand. Make sure to review your existing codebase thoroughly to identify all async tasks and logic that can be moved to these workflow functions.
