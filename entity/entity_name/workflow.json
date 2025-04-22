@@ -1,0 +1,98 @@
+{
+    "description": "A workflow for processing an entity and fetching secondary data.",
+    "name": "Entity Processing Workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize processing of the entity",
+            "end_state": "entity_processing_started",
+            "end_state_description": "Entity processing has been initialized",
+            "name": "initialize_processing",
+            "processes": {
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Process the entity and fetch secondary data",
+            "end_state": "entity_processed",
+            "end_state_description": "Entity has been processed and secondary data fetched",
+            "name": "process_entity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "Process the entity and modify its state",
+                        "name": "process_entity_name",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    },
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "Fetch secondary data based on input data",
+                        "name": "fetch_secondary_data",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "entity_processing_started",
+            "start_state_description": "Entity processing has been initialized",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        }
+    ],
+    "workflow_criteria": {
+        "condition_criteria": [
+            {
+                "condition": {
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_MODEL_VAR",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ],
+                    "group_condition_operator": "AND"
+                },
+                "description": "Workflow criteria",
+                "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR"
+            }
+        ],
+        "externalized_criteria": []
+    }
+}
