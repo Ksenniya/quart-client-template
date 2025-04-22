@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "inputData": "string or object"
+            },
+            "entity_name": "input_data"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello_response"
+        },
+        {
+            "entity_data_example": {
+                "externalSourceData": "data from external source",
+                "result": "processed data"
+            },
+            "entity_name": "process_response"
+        },
+        {
+            "entity_data_example": {
+                "error": "Invalid input data"
+            },
+            "entity_name": "error_response"
+        }
+    ]
+}
