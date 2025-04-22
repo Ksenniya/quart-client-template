@@ -36,21 +36,15 @@ async def greet(data: GreetRequest):
     if not name:
         return jsonify({"error": "Name is required."}), 400
 
-    # Process the greeting in a separate task
-    requested_at = datetime.now()
-    job_id = f"greet-{requested_at.timestamp()}"
+    # Prepare the entity data
+    entity_data = {"name": name}
 
-    logger.info(f"Processing greeting for {name}...")
-
-    # Fire and forget the processing task
-    await asyncio.create_task(process_greeting(job_id, name))
-
-    # Add item to external service and return the job_id
+    # Add item to external service and return the id
     id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="greeting",
         entity_version=ENTITY_VERSION,
-        entity={"name": name},
+        entity=entity_data,
         workflow=process_greeting_workflow  # Adding the workflow function
     )
 
@@ -64,37 +58,31 @@ async def greet_by_query():
     if not name:
         return jsonify({"error": "Name is required."}), 400
 
-    requested_at = datetime.now()
-    job_id = f"greet-{requested_at.timestamp()}"
+    # Prepare the entity data
+    entity_data = {"name": name}
 
-    logger.info(f"Processing greeting for {name}...")
-
-    # Fire and forget the processing task
-    await asyncio.create_task(process_greeting(job_id, name))
-
-    # Add item to external service and return the job_id
+    # Add item to external service and return the id
     id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="greeting",
         entity_version=ENTITY_VERSION,
-        entity={"name": name},
+        entity=entity_data,
         workflow=process_greeting_workflow  # Adding the workflow function
     )
 
     return jsonify({"message": f"Hello, {name}!", "id": id})
 
-async def process_greeting(job_id, name):
-    try:
-        # Here we would retrieve the item from the external service if needed
-        logger.info(f"Greeting processed for {name} successfully.")
-
-    except Exception as e:
-        logger.exception(e)
-
 async def process_greeting_workflow(entity):
     # Example processing: you can modify the entity here
     entity['processed'] = True  # Adding a processed flag
-    return entity
+
+    # Simulated async task: Log the processing
+    logger.info(f"Greeting processed for {entity['name']} successfully.")
+
+    # You can also perform additional tasks here if needed
+    # For example, if you wanted to add supplementary data, you could do it like this:
+    # supplementary_data = {"info": "Additional info related to the greeting."}
+    # await entity_service.add_item(token=cyoda_token, entity_model="supplementary_model", entity=supplementary_data)
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
