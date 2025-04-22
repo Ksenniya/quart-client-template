@@ -1,32 +1,62 @@
+
 import asyncio
-import logging
+from aiohttp import web
 
-from quart import Quart
-from quart_schema import QuartSchema
-from common.grpc_client.grpc_client import grpc_stream
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import cyoda_token
-#please update this line to your entity
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+# Simulated entity storage (for demonstration purposes)
+entity_storage = []
 
-logging.basicConfig(level=logging.INFO)
+# Simulated entity service
+class EntityService:
+    async def add(self, entity):
+        # Simulate adding an entity
+        entity_storage.append(entity)
 
-app = Quart(__name__)
-QuartSchema(app)
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+# Instance of the entity service
+entity_service = EntityService()
 
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
-    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+# Example of an asynchronous function to fetch supplementary data
+async def fetch_supplementary_data(entity_id):
+    await asyncio.sleep(1)  # Simulating network delay
+    return {"info": "additional data for entity {}".format(entity_id)}
 
+# Workflow function for processing the entity
+async def process_entity(entity):
+    # Modify entity state
+    entity['status'] = 'pending'
+    
+    # Fetch supplementary data for the entity
+    supplementary_data = await fetch_supplementary_data(entity['id'])
+    entity['supplementary_info'] = supplementary_data
+    
+    # Additional business logic can be placed here
+    # Ensure that entity data is valid before persisting
+    if not entity.get('name'):
+        raise ValueError("Entity must have a name")
 
-@app.after_serving
-async def shutdown():
-    app.background_task.cancel()
-    await app.background_task
+# Endpoint to create an entity
+async def create_entity(request):
+    entity_data = await request.json()  # Get JSON data from request
+    
+    # Ensure entity has an ID for supplementary data fetching
+    if 'id' not in entity_data:
+        return web.json_response({"error": "Entity must have an ID"}, status=400)
+    
+    # Call the workflow function
+    try:
+        await process_entity(entity_data)
+    except ValueError as e:
+        return web.json_response({"error": str(e)}, status=400)
+    
+    # Persist the entity
+    await entity_service.add(entity_data)
+    return web.json_response(entity_data, status=201)
 
-#put_application_code_here
+# Function to handle server startup
+async def init_app():
+    app = web.Application()
+    app.router.add_post('/entities', create_entity)
+    return app
 
+# Entry point for the application
 if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+    web.run_app(init_app(), port=8080)
