@@ -1,0 +1,28 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "Alice"
+            },
+            "entity_name": "greet_request"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello_response"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello, Alice!"
+            },
+            "entity_name": "greet_response"
+        },
+        {
+            "entity_data_example": {
+                "error": "Name is required."
+            },
+            "entity_name": "error_response"
+        }
+    ]
+}
