@@ -1,32 +1,88 @@
-import asyncio
-import logging
-
-from quart import Quart
-from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import cyoda_token
-#please update this line to your entity
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
-logging.basicConfig(level=logging.INFO)
+from dataclasses import dataclass
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request, validate_querystring
+import logging
+import asyncio
+from datetime import datetime
+from common.config.config import ENTITY_VERSION
+from common.repository.cyoda.cyoda_init import init_cyoda
+from app_init.app_init import cyoda_token, entity_service
 
 app = Quart(__name__)
-QuartSchema(app)
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+QuartSchema(app)  # Initialize QuartSchema
+
+# Set up logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
     app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
 
-
 @app.after_serving
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
 
-#put_application_code_here
+@dataclass
+class InputData:
+    inputData: str
+
+@dataclass
+class QueryData:
+    name: str
+
+@app.route('/hello', methods=['GET'])
+async def hello():
+    return jsonify({"message": "Hello, World!"})
+
+@app.route('/process', methods=['POST'])
+@validate_request(InputData)  # Validation should be last in POST
+async def process(data: InputData):
+    input_data = data.inputData
+    
+    if not input_data:
+        return jsonify({"error": "Invalid input data"}), 400
+
+    # Prepare the entity data
+    entity_data = {"inputData": input_data}  # Wrap in appropriate entity format
+
+    # Add item to external service
+    try:
+        job_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="entity_name",  # Replace with actual entity name
+            entity_version=ENTITY_VERSION,
+            entity=entity_data,  # Pass the prepared entity data
+            )
+        return jsonify({"jobId": job_id, "status": "processing"}), 200
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to process data"}), 500
+
+@app.route("/test", methods=["GET"])
+@validate_querystring(QueryData)  # Validation should be first in GET
+async def get_todo():
+    name = request.args.get('name')  # Access parameters using standard approach
+    return jsonify({"name": name})
+
+@app.route("/companies/<string:id>/lei", methods=["GET"])
+async def get_lei(id: str):
+    # Data retrieval from external service
+    try:
+        lei_data = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="entity_name",  # Replace with actual entity name
+            entity_version=ENTITY_VERSION,
+            technical_id=id
+        )
+        return jsonify(lei_data), 200
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to retrieve LEI data"}), 500
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
