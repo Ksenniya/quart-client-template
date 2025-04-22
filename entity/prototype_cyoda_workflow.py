@@ -7,7 +7,6 @@ from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import entity_service, cyoda_token
 import asyncio
-from datetime import datetime
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -40,13 +39,17 @@ async def greet(data: GreetRequest):
     entity_data = {"name": name}
 
     # Add item to external service and return the id
-    id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="greeting",
-        entity_version=ENTITY_VERSION,
-        entity=entity_data,
-        workflow=process_greeting_workflow  # Adding the workflow function
-    )
+    try:
+        id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="greeting",
+            entity_version=ENTITY_VERSION,
+            entity=entity_data,
+            workflow=process_greeting_workflow  # Adding the workflow function
+        )
+    except Exception as e:
+        logger.error(f"Failed to add item: {e}")
+        return jsonify({"error": "Failed to process the request."}), 500
 
     return jsonify({"message": f"Hello, {name}!", "id": id})
 
@@ -62,13 +65,17 @@ async def greet_by_query():
     entity_data = {"name": name}
 
     # Add item to external service and return the id
-    id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="greeting",
-        entity_version=ENTITY_VERSION,
-        entity=entity_data,
-        workflow=process_greeting_workflow  # Adding the workflow function
-    )
+    try:
+        id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="greeting",
+            entity_version=ENTITY_VERSION,
+            entity=entity_data,
+            workflow=process_greeting_workflow  # Adding the workflow function
+        )
+    except Exception as e:
+        logger.error(f"Failed to add item: {e}")
+        return jsonify({"error": "Failed to process the request."}), 500
 
     return jsonify({"message": f"Hello, {name}!", "id": id})
 
@@ -76,13 +83,23 @@ async def process_greeting_workflow(entity):
     # Example processing: you can modify the entity here
     entity['processed'] = True  # Adding a processed flag
 
-    # Simulated async task: Log the processing
+    # Log the processing
     logger.info(f"Greeting processed for {entity['name']} successfully.")
 
-    # You can also perform additional tasks here if needed
-    # For example, if you wanted to add supplementary data, you could do it like this:
-    # supplementary_data = {"info": "Additional info related to the greeting."}
-    # await entity_service.add_item(token=cyoda_token, entity_model="supplementary_model", entity=supplementary_data)
+    # Additional operations can be added safely here
+    try:
+        # Example of adding supplementary data
+        supplementary_data = {"info": f"Additional info related to the greeting for {entity['name']}."}
+        # Ensure to call add_item with a different entity_model to avoid recursion
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="supplementary_model",
+            entity_version=ENTITY_VERSION,
+            entity=supplementary_data,
+            workflow=None  # No workflow needed for supplementary
+        )
+    except Exception as e:
+        logger.error(f"Failed to add supplementary data for {entity['name']}: {e}")
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
