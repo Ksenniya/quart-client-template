@@ -1,0 +1,39 @@
+Here's a raw data example for the `cat_entity`:
+
+```json
+{
+  "id": "1",
+  "name": "Whiskers",
+  "breed": "Siamese",
+  "age": 3,
+  "color": "Cream",
+  "weight": 10.5,
+  "owner": {
+    "id": "101",
+    "name": "John Doe",
+    "contact": {
+      "email": "johndoe@example.com",
+      "phone": "123-456-7890"
+    }
+  },
+  "medical_records": [
+    {
+      "date": "2023-01-15",
+      "description": "Annual check-up",
+      "vet": "Dr. Smith",
+      "notes": "Healthy, vaccinations up to date."
+    },
+    {
+      "date": "2022-06-10",
+      "description": "Spaying surgery",
+      "vet": "Dr. Brown",
+      "notes": "Successful surgery, recovery well."
+    }
+  ],
+  "favorite_foods": ["Tuna", "Chicken", "Catnip"],
+  "is_adopted": true,
+  "adoption_date": "2021-05-20"
+}
+```
+
+This example includes various attributes for a cat, such as basic information, owner details, medical records, favorite foods, and adoption status. Let me know if you need any modifications or additional details!
